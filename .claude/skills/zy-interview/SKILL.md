@@ -52,6 +52,50 @@ AskUserQuestion:
 
 ---
 
+### Phase 0.5 — 비판적 검토 (trivial 제외)
+
+목적: 인터뷰 시작 전에 **외부 전문가 에이전트의 비판적 검토**를 1회 수행하여, 인터뷰의 질문 방향과 깊이를 개선한다.
+
+**실행 조건:**
+- `trivial`: 건너뛴다
+- `feature`, `bugfix`, `refactor`, `infra`: 실행한다
+
+**사전 준비:**
+Phase 0에서 수집한 다음 정보를 정리한다:
+- 작업 설명 (사용자 원본)
+- 작업 유형 분류 결과
+- 관련 파일/모듈 목록
+- 인터뷰 깊이 결정 (Deep/Medium/Light)
+
+**비판적 검토 실행:**
+2개의 리뷰 에이전트를 **병렬**로 실행한다:
+
+| 에이전트 | 역할 | 검토 초점 |
+|----------|------|-----------|
+| `analyst` | 사전 계획 컨설턴트 | 놓친 질문, 미정의 경계, scope creep 위험, 미검증 가정 |
+| `architect` | 아키텍처 조언자 | 기술적 타당성, 아키텍처 패턴 적합성, 의존성 위험 |
+
+**검토 결과 종합:**
+1. **추가 질문 목록** — 인터뷰에서 반드시 다뤄야 할 새로운 질문
+2. **위험 영역** — 특별히 깊이 파고들어야 할 영역
+3. **인터뷰 깊이 조정** — 검토 결과에 따라 상향 조정 가능
+4. **사전 확인 사항** — 이미 확인된 기술적 사실
+
+**사용자 보고:**
+검토 결과 요약을 AskUserQuestion으로 보고하고 인터뷰 진행 확인:
+
+- "네, 인터뷰를 시작해주세요"
+- "검토 결과를 더 자세히 보고 싶습니다"
+- "이미 충분합니다. 바로 스펙을 작성해주세요"
+
+**검토 결과 활용:**
+- analyst가 식별한 놓친 질문 → Phase 1-4의 질문에 추가
+- analyst가 식별한 scope 위험 → Phase 3에서 명시적으로 확인
+- architect가 식별한 기술적 우려 → Phase 2에서 집중 탐구
+- architect가 식별한 위험 영역 → Phase 4에서 추가 확인
+
+---
+
 ### Phase 1 — 스코프 및 컨텍스트 (항상 실행)
 
 목적: **무엇을, 왜, 누구를 위해** 하는지 명확히 한다.
@@ -186,7 +230,7 @@ AskUserQuestion:
 
 ## Spec Output
 
-인터뷰 완료 후 `.omc/specs/{task-name}-spec.md`에 구조화된 스펙을 작성한다.
+인터뷰 완료 후 `.jin/specs/{task-name}-spec.md`에 구조화된 스펙을 작성한다.
 
 ### 스펙 파일 형식
 
@@ -199,6 +243,19 @@ AskUserQuestion:
 - **Type**: {feature | bugfix | refactor | infra | trivial}
 - **Priority**: {high | medium | low}
 - **Estimated Scope**: {files/modules affected}
+
+## Critical Review Findings
+> Phase 0.5 비판적 검토 결과 (trivial 작업은 이 섹션 생략)
+
+### Analyst Findings
+- **Missing Questions**: {놓친 질문들}
+- **Scope Risks**: {scope creep 위험 영역}
+- **Unvalidated Assumptions**: {미검증 가정}
+
+### Architect Findings
+- **Technical Feasibility**: {기술적 타당성}
+- **Architecture Concerns**: {아키텍처 우려사항}
+- **Risk Areas**: {위험 영역}
 
 ## Requirements
 
@@ -238,7 +295,7 @@ AskUserQuestion:
 
 ### 스펙 작성 규칙
 
-1. `.omc/specs/` 디렉토리가 없으면 생성한다
+1. `.jin/specs/` 디렉토리가 없으면 생성한다
 2. 파일명은 kebab-case로 `{task-name}-spec.md` 형식
 3. 인터뷰에서 확인되지 않은 항목은 "Open Questions"에 기록
 4. 코드베이스 조사에서 발견한 관련 파일 경로를 포함
@@ -267,7 +324,9 @@ AskUserQuestion:
 ## Pipeline Position
 
 ```
-[사용자 작업 요청] → [zy-interview] → .omc/specs/{name}-spec.md → [planner/executor]
+[사용자 작업 요청] → [Phase 0: 분류] → [Phase 0.5: 비판적 검토] → [Phase 1-6: 인터뷰] → .jin/specs/{name}-spec.md
+                                          ├─ analyst (병렬)        ↑ trivial이면 건너뜀
+                                          └─ architect (병렬)
 ```
 
 이 스킬은 구현 전 단계에서만 사용된다. 스펙 작성 후에는 planner나 executor에게 넘긴다.
