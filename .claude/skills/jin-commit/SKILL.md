@@ -1,5 +1,5 @@
 ---
-name: mole-commit
+name: jin-commit
 description: gitmoji 기반 커밋 메시지 자동 추천 및 생성
 triggers:
   - commit
@@ -8,7 +8,7 @@ triggers:
 argument-hint: "[message]"
 ---
 
-# mole-commit: Gitmoji 기반 커밋 메시지 자동 추천
+# jin-commit: Gitmoji 기반 커밋 메시지 자동 추천
 
 ## Gitmoji 레지스트리 (gitmoji.dev 기반, 프로젝트 맞춤 선별)
 

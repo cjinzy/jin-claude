@@ -67,7 +67,7 @@ This directory contains the prompt templates that define agent behavior. Each fi
 
 | File | Agent | Model | Purpose |
 |------|-------|-------|---------|
-| `zy-interview-agent.md` | zy-interview-agent | sonnet | Structured requirements interview and spec generation |
+| `jin-interview-agent.md` | jin-interview-agent | sonnet | Structured requirements interview and spec generation |
 
 ## MOLE Agents (Korean CTI Specialists)
 
@@ -173,7 +173,7 @@ None - pure markdown files.
 | Communication | learning-guide, socratic-mentor, technical-writer | Read, Glob, Grep |
 | Meta | pm-agent | Read, Glob, Grep, Edit, Write, Bash |
 | Business | business-panel-experts | Read, Glob, Grep, WebSearch |
-| Interview | zy-interview-agent | AskUserQuestion, Read, Glob, Grep, Write |
+| Interview | jin-interview-agent | AskUserQuestion, Read, Glob, Grep, Write |
 | CTI (MOLE) | mole-research-agent, mole-review-agent, mole-report-presenter-agent, mole-intel-organizer-agent, mole-graph-generator-agent, mole-interview-agent, mole-user-identifier-agent | Read, Glob, Grep, WebSearch, WebFetch, Bash |
 
 <!-- MANUAL: -->

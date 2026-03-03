@@ -1,4 +1,4 @@
-"""Tests for zy-interview skill and zy-interview-agent.
+"""Tests for jin-interview skill and jin-interview-agent.
 
 Validates:
 - Skill YAML frontmatter parsing
@@ -21,13 +21,13 @@ PROJECT_ROOT = Path(__file__).parent.parent
 HOME_CLAUDE = Path.home() / ".claude"
 
 SKILL_PATHS = [
-    PROJECT_ROOT / ".claude" / "skills" / "zy-interview" / "SKILL.md",
-    HOME_CLAUDE / "skills" / "zy-interview" / "SKILL.md",
+    PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md",
+    HOME_CLAUDE / "skills" / "jin-interview" / "SKILL.md",
 ]
 
 AGENT_PATHS = [
-    PROJECT_ROOT / ".claude" / "agents" / "zy-interview-agent.md",
-    HOME_CLAUDE / "agents" / "zy-interview-agent.md",
+    PROJECT_ROOT / ".claude" / "agents" / "jin-interview-agent.md",
+    HOME_CLAUDE / "agents" / "jin-interview-agent.md",
 ]
 
 AGENTS_MD_PATHS = [
@@ -102,7 +102,7 @@ def _parse_frontmatter(content: str) -> dict:
 
 
 class TestSkillFrontmatter:
-    """Tests for zy-interview skill YAML frontmatter parsing."""
+    """Tests for jin-interview skill YAML frontmatter parsing."""
 
     @pytest.fixture(params=SKILL_PATHS, ids=["project", "home"])
     def skill_path(self, request: pytest.FixtureRequest) -> Path:
@@ -123,10 +123,10 @@ class TestSkillFrontmatter:
         assert isinstance(frontmatter, dict)
 
     def test_name_is_zy_interview(self, skill_path: Path) -> None:
-        """Skill name must be 'zy-interview', not 'mole-interview'."""
+        """Skill name must be 'jin-interview', not 'mole-interview'."""
         content = skill_path.read_text(encoding="utf-8")
         frontmatter = _parse_frontmatter(content)
-        assert frontmatter["name"] == "zy-interview"
+        assert frontmatter["name"] == "jin-interview"
 
     def test_has_description(self, skill_path: Path) -> None:
         """Skill must have a description field."""
@@ -164,7 +164,7 @@ class TestInterviewPhases:
     @pytest.fixture()
     def skill_content(self) -> str:
         """Read skill content from project repo."""
-        path = PROJECT_ROOT / ".claude" / "skills" / "zy-interview" / "SKILL.md"
+        path = PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md"
         if not path.exists():
             pytest.skip("Skill file not found in project repo")
         return path.read_text(encoding="utf-8")
@@ -192,7 +192,7 @@ class TestInterviewPhases:
     def test_spec_output_section(self, skill_content: str) -> None:
         """Skill must define a spec output section."""
         assert "Spec Output" in skill_content or "스펙" in skill_content
-        assert ".omc/specs/" in skill_content
+        assert ".jin/specs/" in skill_content
 
     def test_core_principles_section(self, skill_content: str) -> None:
         """Skill must define core principles."""
@@ -207,7 +207,7 @@ class TestInterviewPhases:
 
 
 class TestAgentStructure:
-    """Tests for zy-interview-agent file structure and frontmatter."""
+    """Tests for jin-interview-agent file structure and frontmatter."""
 
     @pytest.fixture(params=AGENT_PATHS, ids=["project", "home"])
     def agent_path(self, request: pytest.FixtureRequest) -> Path:
@@ -228,10 +228,10 @@ class TestAgentStructure:
         assert isinstance(frontmatter, dict)
 
     def test_agent_name(self, agent_path: Path) -> None:
-        """Agent name must be 'zy-interview-agent'."""
+        """Agent name must be 'jin-interview-agent'."""
         content = agent_path.read_text(encoding="utf-8")
         frontmatter = _parse_frontmatter(content)
-        assert frontmatter["name"] == "zy-interview-agent"
+        assert frontmatter["name"] == "jin-interview-agent"
 
     def test_model_is_sonnet(self, agent_path: Path) -> None:
         """Agent model should be sonnet for speed/quality balance."""
@@ -250,7 +250,7 @@ class TestAgentStructure:
     def test_has_role_section(self, agent_path: Path) -> None:
         """Agent must have a Role section."""
         content = agent_path.read_text(encoding="utf-8")
-        assert "## Role" in content or "# zy-interview-agent" in content
+        assert "## Role" in content or "# jin-interview-agent" in content
 
     def test_has_constraints_section(self, agent_path: Path) -> None:
         """Agent must have a Constraints section."""
@@ -267,7 +267,7 @@ class TestAgentStructure:
         """Agent must describe its pipeline position."""
         content = agent_path.read_text(encoding="utf-8")
         assert "Pipeline" in content or "pipeline" in content
-        assert ".omc/specs/" in content
+        assert ".jin/specs/" in content
 
 
 # --- Spec Output Format Tests ---
@@ -279,7 +279,7 @@ class TestSpecOutputFormat:
     @pytest.fixture()
     def skill_content(self) -> str:
         """Read skill content from project repo."""
-        path = PROJECT_ROOT / ".claude" / "skills" / "zy-interview" / "SKILL.md"
+        path = PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md"
         if not path.exists():
             pytest.skip("Skill file not found in project repo")
         return path.read_text(encoding="utf-8")
@@ -301,8 +301,8 @@ class TestSpecOutputFormat:
         assert section in skill_content, f"Missing spec section: {section}"
 
     def test_spec_output_path_format(self, skill_content: str) -> None:
-        """Spec output path must follow .omc/specs/{task-name}-spec.md pattern."""
-        assert ".omc/specs/" in skill_content
+        """Spec output path must follow .jin/specs/{task-name}-spec.md pattern."""
+        assert ".jin/specs/" in skill_content
         assert "-spec.md" in skill_content
 
 
@@ -310,7 +310,7 @@ class TestSpecOutputFormat:
 
 
 class TestAgentsRegistry:
-    """Tests for AGENTS.md containing zy-interview-agent entry."""
+    """Tests for AGENTS.md containing jin-interview-agent entry."""
 
     @pytest.fixture(params=AGENTS_MD_PATHS, ids=["project", "home"])
     def agents_md_content(self, request: pytest.FixtureRequest) -> str:
@@ -321,8 +321,8 @@ class TestAgentsRegistry:
         return path.read_text(encoding="utf-8")
 
     def test_agent_listed_in_key_files(self, agents_md_content: str) -> None:
-        """zy-interview-agent must appear in AGENTS.md."""
-        assert "zy-interview-agent" in agents_md_content
+        """jin-interview-agent must appear in AGENTS.md."""
+        assert "jin-interview-agent" in agents_md_content
 
     def test_interview_category_exists(self, agents_md_content: str) -> None:
         """Interview category must exist in Agent Categories."""
@@ -337,16 +337,16 @@ class TestFileSynchronization:
 
     def test_skill_files_match(self) -> None:
         """Skill SKILL.md should be identical in both locations."""
-        project = PROJECT_ROOT / ".claude" / "skills" / "zy-interview" / "SKILL.md"
-        home = HOME_CLAUDE / "skills" / "zy-interview" / "SKILL.md"
+        project = PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md"
+        home = HOME_CLAUDE / "skills" / "jin-interview" / "SKILL.md"
         if not project.exists() or not home.exists():
             pytest.skip("One or both skill files not found")
         assert project.read_text(encoding="utf-8") == home.read_text(encoding="utf-8")
 
     def test_agent_files_match(self) -> None:
         """Agent .md should be identical in both locations."""
-        project = PROJECT_ROOT / ".claude" / "agents" / "zy-interview-agent.md"
-        home = HOME_CLAUDE / "agents" / "zy-interview-agent.md"
+        project = PROJECT_ROOT / ".claude" / "agents" / "jin-interview-agent.md"
+        home = HOME_CLAUDE / "agents" / "jin-interview-agent.md"
         if not project.exists() or not home.exists():
             pytest.skip("One or both agent files not found")
         assert project.read_text(encoding="utf-8") == home.read_text(encoding="utf-8")
