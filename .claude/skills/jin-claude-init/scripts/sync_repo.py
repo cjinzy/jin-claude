@@ -10,7 +10,7 @@ import sys
 import traceback
 from pathlib import Path
 
-REPO_URL = "http://192.168.254.206:5000/jin/jin-claude.git"
+REPO_URL = "https://github.com/cjinzy/jin-claude.git"
 REPO_DIR = Path.home() / ".claude" / ".jin-claude-repo"
 CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"

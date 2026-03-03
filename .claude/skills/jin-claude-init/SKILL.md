@@ -46,7 +46,7 @@ python3 "SKILL_DIR/scripts/sync_repo.py"
 ```
 
 이 스크립트는:
-- `http://192.168.254.206:5000/jin/jin-claude.git`을 `~/.claude/.jin-claude-repo/`에 clone (또는 pull)
+- `https://github.com/cjinzy/jin-claude.git`을 `~/.claude/.jin-claude-repo/`에 clone (또는 pull)
 - `.claude/agents/` → `~/.claude/agents/` 로 파일 복사
 - `.claude/skills/` → `~/.claude/skills/` 로 파일 복사
 - `.claude/script/statusline-command.sh`, `.claude/CLAUDE.md` 등 개별 파일도 동기화
