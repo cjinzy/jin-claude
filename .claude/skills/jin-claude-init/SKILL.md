@@ -1,9 +1,9 @@
 ---
-name: mole-claude-init
-description: 팀원 Claude Code 환경 초기화. plugin 설치, settings 구성, agents/skills 동기화를 자동화. "mole init", "mole 초기화", "Claude Code 초기 설정", "환경 세팅" 등의 요청 시 사용.
+name: jin-claude-init
+description: 팀원 Claude Code 환경 초기화. plugin 설치, settings 구성, agents/skills 동기화를 자동화. "jin init", "jin 초기화", "Claude Code 초기 설정", "환경 세팅" 등의 요청 시 사용.
 ---
 
-# Mole Claude Init
+# Jin Claude Init
 
 팀원이 새 머신에서 Claude Code를 설치한 뒤, 동일한 플러그인·설정·에이전트·스킬 환경을 한 번에 구성하는 자동화 스킬.
 
@@ -83,7 +83,7 @@ python3 "SKILL_DIR/scripts/merge_settings.py"
 4. 결과를 사용자에게 요약 보고
 
 ```
-[DONE] mole-claude-init: 환경 초기화 완료
+[DONE] jin-claude-init: 환경 초기화 완료
 - Marketplace: N개 추가
 - Plugins: N개 설치
 - Agents: N개 동기화

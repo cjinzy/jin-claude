@@ -1,4 +1,4 @@
-# mole-claude-init
+# jin-claude-init
 
 Claude Code statusline utilities. Claude Code의 상태 표시줄(statusline)에 세션 정보, 컨텍스트, API 사용량 등을 실시간으로 표시합니다.
 
