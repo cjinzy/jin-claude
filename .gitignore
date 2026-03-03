@@ -1,0 +1,29 @@
+# User-local configuration
+.claude/settings.local.json
+.claude/memory/
+
+# Consumed plugin marketplaces (user-local state)
+plugins/
+
+# macOS
+.DS_Store
+
+# Node.js
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Build artifacts
+*.log
+
+# oh-my-claudecode local state
+.omc/
+
+# Runtime data
+.claude/skills/omc-learned/

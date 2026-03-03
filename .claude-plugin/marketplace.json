@@ -1,0 +1,44 @@
+{
+  "name": "jin-mp-claudecode",
+  "owner": {
+    "name": "jin",
+    "email": "jin@stealthmole.com"
+  },
+  "metadata": {
+    "description": "Multi-agent orchestration system for Claude Code: 57 agents, 51+ skills, 31 commands, lifecycle hooks",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "just-in-now",
+      "source": "./",
+      "description": "Multi-agent orchestration for Claude Code: tiered agents (opus/sonnet/haiku), execution skills (autopilot, ultrawork, ralph, swarm, pipeline), lifecycle hooks with keyword detection and skill injection",
+      "version": "1.0.0",
+      "author": {
+        "name": "jin",
+        "email": "jin@stealthmole.com"
+      },
+      "license": "MIT",
+      "keywords": [
+        "orchestration",
+        "multi-agent",
+        "autopilot",
+        "ultrawork",
+        "ralph",
+        "swarm",
+        "pipeline",
+        "skills",
+        "hooks",
+        "agents",
+        "workflow",
+        "tdd",
+        "code-review",
+        "research",
+        "cti",
+        "mole"
+      ],
+      "category": "development",
+      "strict": false
+    }
+  ]
+}

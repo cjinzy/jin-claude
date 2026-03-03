@@ -1,0 +1,19 @@
+{
+  "name": "just-in-now",
+  "version": "1.0.0",
+  "description": "Multi-agent orchestration for Claude Code: 57 agents, 51+ skills, 31 commands, lifecycle hooks",
+  "author": {
+    "name": "jin",
+    "email": "jin@stealthmole.com"
+  },
+  "license": "MIT",
+  "keywords": [
+    "orchestration",
+    "multi-agent",
+    "autopilot",
+    "ultrawork",
+    "ralph",
+    "swarm",
+    "pipeline"
+  ]
+}
