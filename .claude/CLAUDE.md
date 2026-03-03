@@ -9,7 +9,7 @@ Always save plans as files named Header1.
 
 ## completion report
 ```
-[DONE] {Recommend commit messages using jin-commit skills}
+[DONE] Recommend commit messages using jin-commit skills
 ```
 
 ## test case
