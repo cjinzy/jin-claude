@@ -72,9 +72,10 @@ def clone_or_pull() -> Path:
 
 
 def sync_directory(src: Path, dst: Path) -> int:
-    """소스 디렉토리의 파일을 대상 디렉토리로 복사한다.
+    """소스 디렉토리의 파일을 대상 디렉토리로 복사하고, 소스에 없는 항목을 제거한다.
 
-    기존 파일은 덮어쓴다. 소스에 없는 대상 파일은 유지한다.
+    기존 파일은 덮어쓴다. 소스에 없는 대상의 최상위 항목(파일/디렉토리)은
+    삭제하여 이름 변경이나 삭제된 항목이 잔류하지 않도록 한다.
 
     Args:
         src: 소스 디렉토리.
@@ -97,6 +98,16 @@ def sync_directory(src: Path, dst: Path) -> int:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, target)
             count += 1
+
+    # 소스에 없는 대상 최상위 항목 제거
+    src_top_names = {p.name for p in src.iterdir()} if src.exists() else set()
+    for item in dst.iterdir():
+        if item.name not in src_top_names:
+            if item.is_dir():
+                shutil.rmtree(item)
+            else:
+                item.unlink()
+            print(f"[sync_repo] 소스에 없는 항목 제거: {item.name}")
 
     return count
 

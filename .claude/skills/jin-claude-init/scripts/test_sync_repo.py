@@ -1,12 +1,127 @@
-"""install_superclaude() 함수의 단위 테스트.
+"""sync_repo 모듈의 단위 테스트.
 
-subprocess 호출을 mock하여 pipx 성공/실패, pip fallback 시나리오를 검증한다.
+sync_directory()의 파일 동기화 및 잔류 항목 제거,
+install_superclaude()의 subprocess fallback 시나리오를 검증한다.
 """
 
+import shutil
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from sync_repo import install_superclaude
+import pytest
+
+from sync_repo import install_superclaude, sync_directory
+
+
+def _make_skill(base: Path, name: str, content: str = "skill") -> None:
+    """스킬 디렉토리와 SKILL.md 파일을 생성한다."""
+    d = base / name
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "SKILL.md").write_text(content)
+
+
+@pytest.fixture
+def sync_dirs(tmp_path: Path) -> tuple[Path, Path]:
+    """소스/대상 디렉토리 쌍을 생성한다."""
+    src = tmp_path / "src"
+    dst = tmp_path / "dst"
+    src.mkdir()
+    dst.mkdir()
+    return src, dst
+
+
+class TestSyncDirectory:
+    """sync_directory() 테스트 스위트."""
+
+    def test_copies_files_from_src_to_dst(self, sync_dirs: tuple[Path, Path]) -> None:
+        """소스 파일이 대상에 복사된다."""
+        src, dst = sync_dirs
+        _make_skill(src, "jin-commit", "new content")
+
+        count = sync_directory(src, dst)
+
+        assert count == 1
+        assert (dst / "jin-commit" / "SKILL.md").read_text() == "new content"
+
+    def test_overwrites_existing_files(self, sync_dirs: tuple[Path, Path]) -> None:
+        """기존 파일은 덮어쓴다."""
+        src, dst = sync_dirs
+        _make_skill(src, "jin-commit", "updated")
+        _make_skill(dst, "jin-commit", "old")
+
+        sync_directory(src, dst)
+
+        assert (dst / "jin-commit" / "SKILL.md").read_text() == "updated"
+
+    def test_removes_stale_dirs_not_in_src(self, sync_dirs: tuple[Path, Path]) -> None:
+        """소스에 없는 대상 최상위 디렉토리를 제거한다."""
+        src, dst = sync_dirs
+        _make_skill(src, "jin-commit")
+        _make_skill(dst, "zy-commit")
+        _make_skill(dst, "zy-interview")
+
+        sync_directory(src, dst)
+
+        assert (dst / "jin-commit").exists()
+        assert not (dst / "zy-commit").exists()
+        assert not (dst / "zy-interview").exists()
+
+    def test_removes_stale_files(self, sync_dirs: tuple[Path, Path]) -> None:
+        """소스에 없는 대상 최상위 파일도 제거한다."""
+        src, dst = sync_dirs
+        _make_skill(src, "jin-commit")
+        (dst / "orphan.txt").write_text("stale")
+
+        sync_directory(src, dst)
+
+        assert not (dst / "orphan.txt").exists()
+
+    def test_preserves_items_in_src(self, sync_dirs: tuple[Path, Path]) -> None:
+        """소스에 있는 대상 항목은 유지한다."""
+        src, dst = sync_dirs
+        _make_skill(src, "jin-commit")
+        _make_skill(src, "py-standard")
+        _make_skill(dst, "jin-commit", "old")
+        _make_skill(dst, "py-standard", "old")
+
+        sync_directory(src, dst)
+
+        assert (dst / "jin-commit").exists()
+        assert (dst / "py-standard").exists()
+
+    def test_nonexistent_src_returns_zero(self, sync_dirs: tuple[Path, Path]) -> None:
+        """소스 디렉토리가 없으면 0을 반환한다."""
+        src, dst = sync_dirs
+        shutil.rmtree(src)
+
+        count = sync_directory(src, dst)
+
+        assert count == 0
+
+    def test_empty_src_removes_all_dst_items(self, sync_dirs: tuple[Path, Path]) -> None:
+        """소스가 비어있으면 대상의 모든 항목을 제거한다."""
+        src, dst = sync_dirs
+        _make_skill(dst, "zy-commit")
+        _make_skill(dst, "zy-interview")
+
+        sync_directory(src, dst)
+
+        assert list(dst.iterdir()) == []
+
+    def test_nested_files_copied(self, sync_dirs: tuple[Path, Path]) -> None:
+        """중첩된 파일 구조도 올바르게 복사된다."""
+        src, dst = sync_dirs
+        skill_dir = src / "jin-init" / "scripts"
+        skill_dir.mkdir(parents=True)
+        (skill_dir / "setup.py").write_text("setup")
+        (src / "jin-init" / "SKILL.md").write_text("init skill")
+
+        count = sync_directory(src, dst)
+
+        assert count == 2
+        assert (dst / "jin-init" / "scripts" / "setup.py").read_text() == "setup"
+        assert (dst / "jin-init" / "SKILL.md").read_text() == "init skill"
 
 
 def _make_result(returncode: int = 0, stdout: str = "", stderr: str = "") -> MagicMock:
