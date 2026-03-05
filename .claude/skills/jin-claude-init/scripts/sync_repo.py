@@ -350,6 +350,30 @@ def ensure_venv(repo_dir: Path, venv_dir: Path | None = None) -> bool:
     return _install_with_pip(repo_dir, venv_dir)
 
 
+def install_timer(repo_dir: Path) -> None:
+    """systemd user timer를 설치한다.
+
+    Args:
+        repo_dir: install-timer.sh가 위치한 저장소 루트 디렉토리.
+    """
+    install_script = repo_dir / "scripts" / "install-timer.sh"
+    if not install_script.exists():
+        print("[sync_repo] install-timer.sh 없음, timer 설치 건너뜀")
+        return
+    # systemctl --user 가능 여부 확인
+    try:
+        result = subprocess.run(
+            ["systemctl", "--user", "status"],
+            capture_output=True,
+            timeout=5,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        print("[sync_repo] systemd user session 불가, timer 설치 건너뜀")
+        return
+    subprocess.run(["bash", str(install_script)], check=False)
+    print("[sync_repo] systemd timer 설치: 완료")
+
+
 def main() -> None:
     """메인 진입점."""
     try:
@@ -373,6 +397,8 @@ def main() -> None:
         ok = install_superclaude()
         status = "완료" if ok else "건너뜀"
         print(f"[sync_repo] SuperClaude 설치: {status}")
+
+        install_timer(repo_dir)
 
         print("[sync_repo] 동기화 완료")
     except Exception:
