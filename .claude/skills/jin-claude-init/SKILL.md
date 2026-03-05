@@ -39,10 +39,16 @@ claude plugin install context-mode@claude-context-mode
 
 ## Step 3 — Git Repo에서 Agents & Skills 동기화
 
-jin-claude 저장소에서 에이전트 정의와 스킬을 동기화한다:
+jin-claude 저장소에서 에이전트 정의와 스킬을 동기화한다.
+
+**먼저 사용자에게 사용량 수집 주기를 물어본다:**
+
+> "사용량 수집 주기를 선택해 주세요: 1분 / 3분 / **5분(권장)** / 10분"
+
+사용자가 선택한 값을 `INTERVAL` 변수로 사용한다 (기본값: 5).
 
 ```bash
-python3 "SKILL_DIR/scripts/sync_repo.py"
+python3 "SKILL_DIR/scripts/sync_repo.py" $INTERVAL
 ```
 
 이 스크립트는:
@@ -53,6 +59,9 @@ python3 "SKILL_DIR/scripts/sync_repo.py"
 - `~/.claude/.venv/`에 Python 가상환경 생성 및 패키지 설치 (`uv` 우선, `pip` fallback)
   - `pyproject.toml`이 존재할 때만 실행
   - statusline에서 사용하는 `fetch-claude-usage` 등의 CLI 도구가 이 venv에 설치됨
+- systemd user timer 설치 (`scripts/install-timer.sh`)
+  - 사용자가 선택한 주기(`$INTERVAL`)를 인자로 전달
+  - systemd가 없는 환경(macOS 등)에서는 자동 건너뜀
 
 ## Step 4 — Settings 병합
 

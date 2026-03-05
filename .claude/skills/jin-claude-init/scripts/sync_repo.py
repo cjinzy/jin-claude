@@ -350,11 +350,12 @@ def ensure_venv(repo_dir: Path, venv_dir: Path | None = None) -> bool:
     return _install_with_pip(repo_dir, venv_dir)
 
 
-def install_timer(repo_dir: Path) -> None:
+def install_timer(repo_dir: Path, interval_minutes: int = 5) -> None:
     """systemd user timer를 설치한다.
 
     Args:
         repo_dir: install-timer.sh가 위치한 저장소 루트 디렉토리.
+        interval_minutes: 사용량 수집 주기 (1, 3, 5, 10분). 기본값 5분.
     """
     install_script = repo_dir / "scripts" / "install-timer.sh"
     if not install_script.exists():
@@ -362,7 +363,7 @@ def install_timer(repo_dir: Path) -> None:
         return
     # systemctl --user 가능 여부 확인
     try:
-        result = subprocess.run(
+        subprocess.run(
             ["systemctl", "--user", "status"],
             capture_output=True,
             timeout=5,
@@ -370,8 +371,11 @@ def install_timer(repo_dir: Path) -> None:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         print("[sync_repo] systemd user session 불가, timer 설치 건너뜀")
         return
-    subprocess.run(["bash", str(install_script)], check=False)
-    print("[sync_repo] systemd timer 설치: 완료")
+    subprocess.run(
+        ["bash", str(install_script), str(interval_minutes)],
+        check=False,
+    )
+    print(f"[sync_repo] systemd timer 설치: 완료 (주기: {interval_minutes}분)")
 
 
 def main() -> None:
@@ -398,7 +402,17 @@ def main() -> None:
         status = "완료" if ok else "건너뜀"
         print(f"[sync_repo] SuperClaude 설치: {status}")
 
-        install_timer(repo_dir)
+        # CLI 인자로 timer 주기를 받음 (기본값: 5분)
+        interval = 5
+        if len(sys.argv) > 1:
+            try:
+                interval = int(sys.argv[1])
+                if interval not in (1, 3, 5, 10):
+                    print(f"[sync_repo] 잘못된 주기 {interval}분, 기본값 5분 사용")
+                    interval = 5
+            except ValueError:
+                print(f"[sync_repo] 잘못된 인자 '{sys.argv[1]}', 기본값 5분 사용")
+        install_timer(repo_dir, interval_minutes=interval)
 
         print("[sync_repo] 동기화 완료")
     except Exception:
