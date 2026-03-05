@@ -22,7 +22,7 @@ from pathlib import Path
 CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
 CACHE_PATH = Path.home() / ".claude" / ".usage-cache.json"
 CACHE_TTL_SECONDS = 300        # 5분
-CACHE_TTL_ERROR_SECONDS = 15   # 에러 캐시는 15초
+CACHE_TTL_ERROR_SECONDS = 60   # 에러 캐시는 60초 (429 악순환 방지)
 
 API_URL = "https://api.anthropic.com/api/oauth/usage"
 BETA_HEADER = "oauth-2025-04-20"
@@ -167,7 +167,7 @@ def read_cache(allow_stale: bool = False) -> UsageResult | None:
 
     Args:
         allow_stale: True이면 TTL이 만료된 캐시도 반환한다.
-            단, 에러 캐시는 stale여도 반환하지 않는다.
+            에러 캐시라도 보존된 정상 데이터가 있으면 stale로 반환한다.
     """
     try:
         data = json.loads(CACHE_PATH.read_text())
@@ -177,8 +177,12 @@ def read_cache(allow_stale: bool = False) -> UsageResult | None:
 
         if not allow_stale and time.time() - fetched_at > ttl:
             return None
-        if is_error:
-            return None  # 에러 캐시는 stale여도 반환 안 함
+        if is_error and not allow_stale:
+            return None  # fresh 에러 캐시는 API 재시도 방지용
+        if is_error and allow_stale:
+            # 에러 캐시에 보존된 정상 데이터가 있으면 stale로 반환
+            if data.get("five_hour") is None:
+                return None
 
         five_hour = data.get("five_hour")
         if five_hour is None:
@@ -203,9 +207,12 @@ def read_cache(allow_stale: bool = False) -> UsageResult | None:
 def write_cache(api_response: dict | None, error: bool = False) -> None:
     """API 응답을 캐시 파일에 저장한다.
 
+    에러 시 기존 캐시의 정상 데이터(five_hour/seven_day)를 보존하여
+    stale fallback이 가능하도록 한다.
+
     Args:
         api_response: API 응답 dict. 에러 시 None.
-        error: True이면 에러 캐시로 저장 (15초 TTL).
+        error: True이면 에러 캐시로 저장 (60초 TTL).
     """
     cache_data: dict = {
         "fetched_at": time.time(),
@@ -214,6 +221,15 @@ def write_cache(api_response: dict | None, error: bool = False) -> None:
     if api_response is not None:
         cache_data["five_hour"] = api_response.get("five_hour")
         cache_data["seven_day"] = api_response.get("seven_day")
+    elif error:
+        # 에러 시 기존 캐시의 정상 데이터를 보존
+        try:
+            old = json.loads(CACHE_PATH.read_text())
+            if not old.get("error"):
+                cache_data["five_hour"] = old.get("five_hour")
+                cache_data["seven_day"] = old.get("seven_day")
+        except (FileNotFoundError, json.JSONDecodeError, KeyError):
+            pass
     try:
         CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         CACHE_PATH.write_text(json.dumps(cache_data))

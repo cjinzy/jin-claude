@@ -457,6 +457,48 @@ class TestStaleCacheFallback:
             assert result is not None
             assert result.five_hour.utilization == 30.0
 
+    def test_consecutive_errors_preserve_data(self, tmp_path: Path) -> None:
+        """연속 API 에러 시에도 최초 정상 데이터가 보존되어 반환된다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        # 만료된 정상 캐시
+        cache_data = {
+            "fetched_at": time.time() - CACHE_TTL_SECONDS - 100,
+            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch(
+                "jin_claude.fetch_claude_usage.fetch_usage",
+                side_effect=OSError("429"),
+            ),
+        ):
+            # 첫 번째 에러: stale 정상 캐시에서 데이터 반환
+            result1 = get_usage()
+            assert result1 is not None
+            assert result1.five_hour.utilization == 42.0
+
+        # 에러 캐시 TTL을 만료시킴
+        data = json.loads(cache_file.read_text())
+        data["fetched_at"] = time.time() - CACHE_TTL_ERROR_SECONDS - 1
+        cache_file.write_text(json.dumps(data))
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch(
+                "jin_claude.fetch_claude_usage.fetch_usage",
+                side_effect=OSError("429 again"),
+            ),
+        ):
+            # 두 번째 에러: 에러 캐시에 보존된 데이터에서 반환
+            result2 = get_usage()
+            assert result2 is not None
+            assert result2.five_hour.utilization == 42.0
+
     def test_returns_none_when_no_cache_and_api_fails(self, tmp_path: Path) -> None:
         cache_file = tmp_path / "nonexistent-cache.json"
 
@@ -499,7 +541,8 @@ class TestErrorCache:
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             assert read_cache() is None  # 만료 → None → API 재시도
 
-    def test_write_error_cache(self, tmp_path: Path) -> None:
+    def test_write_error_cache_without_prior_data(self, tmp_path: Path) -> None:
+        """이전 캐시가 없을 때 에러 캐시는 데이터 없이 저장된다."""
         cache_file = tmp_path / ".usage-cache.json"
 
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
@@ -508,3 +551,71 @@ class TestErrorCache:
         data = json.loads(cache_file.read_text())
         assert data["error"] is True
         assert "five_hour" not in data
+
+    def test_write_error_cache_preserves_prior_data(self, tmp_path: Path) -> None:
+        """에러 시 기존 캐시의 정상 데이터(five_hour/seven_day)를 보존한다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        # 기존 정상 캐시
+        old_cache = {
+            "fetched_at": time.time() - 100,
+            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
+        }
+        cache_file.write_text(json.dumps(old_cache))
+
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            write_cache(None, error=True)
+
+        data = json.loads(cache_file.read_text())
+        assert data["error"] is True
+        assert data["five_hour"]["utilization"] == 42.0
+        assert data["seven_day"]["utilization"] == 20.0
+
+    def test_write_error_cache_does_not_preserve_prior_error(self, tmp_path: Path) -> None:
+        """이전 캐시도 에러였으면 데이터를 보존하지 않는다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        old_cache = {
+            "fetched_at": time.time() - 100,
+            "error": True,
+        }
+        cache_file.write_text(json.dumps(old_cache))
+
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            write_cache(None, error=True)
+
+        data = json.loads(cache_file.read_text())
+        assert data["error"] is True
+        assert "five_hour" not in data
+
+    def test_read_error_cache_with_preserved_data_stale(self, tmp_path: Path) -> None:
+        """에러 캐시에 보존된 정상 데이터가 있으면 allow_stale=True 시 반환한다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        cache_data = {
+            "fetched_at": time.time(),
+            "error": True,
+            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            # allow_stale=False → None (fresh 에러 캐시는 재시도 방지)
+            assert read_cache(allow_stale=False) is None
+            # allow_stale=True → 보존된 데이터 반환
+            result = read_cache(allow_stale=True)
+            assert result is not None
+            assert result.five_hour.utilization == 42.0
+            assert result.seven_day is not None
+            assert result.seven_day.utilization == 20.0
+
+    def test_read_error_cache_without_data_stale(self, tmp_path: Path) -> None:
+        """에러 캐시에 데이터가 없으면 allow_stale=True여도 None을 반환한다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        cache_data = {
+            "fetched_at": time.time(),
+            "error": True,
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            assert read_cache(allow_stale=True) is None
