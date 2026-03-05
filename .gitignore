@@ -25,5 +25,8 @@ __pycache__/
 # oh-my-claudecode local state
 .omc/
 
+# Tests (local only)
+**/tests/*
+
 # Runtime data
 .claude/skills/omc-learned/
