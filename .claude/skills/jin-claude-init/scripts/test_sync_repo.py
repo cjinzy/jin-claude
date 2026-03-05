@@ -92,20 +92,61 @@ class TestInstallSuperclaude:
         assert install_superclaude() is True
         assert mock_run.call_count == 3
 
+    @patch("sync_repo.find_uv", return_value="/usr/local/bin/uv")
     @patch("sync_repo.subprocess.run")
-    def test_both_pipx_and_pip_fail(self, mock_run: MagicMock) -> None:
-        """pipx와 pip 모두 실패하면 False 반환."""
+    def test_pipx_and_pip_fail_uv_fallback_success(
+        self, mock_run: MagicMock, mock_find_uv: MagicMock
+    ) -> None:
+        """pipx+pip 실패 → uv tool install 성공."""
         mock_run.side_effect = [
             FileNotFoundError("pipx not found"),  # pipx 미설치
-            _make_result(1, stderr="pip error"),  # pip도 실패
+            _make_result(1, stderr="pip error"),  # pip 실패
+            _make_result(0, "installed superclaude"),  # uv tool install 성공
+            _make_result(0, "initialized"),  # superclaude install 성공
+        ]
+
+        assert install_superclaude() is True
+        assert mock_run.call_count == 4
+        mock_run.assert_any_call(
+            ["/usr/local/bin/uv", "tool", "install", "superclaude"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+
+    @patch("sync_repo.find_uv", return_value=None)
+    @patch("sync_repo.subprocess.run")
+    def test_all_three_fail(self, mock_run: MagicMock, mock_find_uv: MagicMock) -> None:
+        """pipx+pip+uv 모두 실패하면 False 반환."""
+        mock_run.side_effect = [
+            FileNotFoundError("pipx not found"),  # pipx 미설치
+            _make_result(1, stderr="pip error"),  # pip 실패
         ]
 
         assert install_superclaude() is False
         assert mock_run.call_count == 2
 
+    @patch("sync_repo.find_uv", return_value="/usr/local/bin/uv")
     @patch("sync_repo.subprocess.run")
-    def test_pip_fallback_timeout(self, mock_run: MagicMock) -> None:
-        """pipx 미설치, pip도 타임아웃이면 False 반환."""
+    def test_all_three_fail_uv_present_but_fails(
+        self, mock_run: MagicMock, mock_find_uv: MagicMock
+    ) -> None:
+        """pipx+pip 실패, uv 존재하지만 설치 실패 → False 반환."""
+        mock_run.side_effect = [
+            FileNotFoundError("pipx not found"),  # pipx 미설치
+            _make_result(1, stderr="pip error"),  # pip 실패
+            _make_result(1, stderr="uv error"),  # uv tool install 실패
+        ]
+
+        assert install_superclaude() is False
+        assert mock_run.call_count == 3
+
+    @patch("sync_repo.find_uv", return_value=None)
+    @patch("sync_repo.subprocess.run")
+    def test_pip_fallback_timeout(
+        self, mock_run: MagicMock, mock_find_uv: MagicMock
+    ) -> None:
+        """pipx 미설치, pip 타임아웃, uv 미설치 → False 반환."""
         mock_run.side_effect = [
             FileNotFoundError("pipx not found"),  # pipx 미설치
             subprocess.TimeoutExpired(cmd="pip", timeout=120),  # pip 타임아웃
@@ -113,3 +154,18 @@ class TestInstallSuperclaude:
 
         assert install_superclaude() is False
         assert mock_run.call_count == 2
+
+    @patch("sync_repo.find_uv", return_value="/usr/local/bin/uv")
+    @patch("sync_repo.subprocess.run")
+    def test_uv_fallback_timeout(
+        self, mock_run: MagicMock, mock_find_uv: MagicMock
+    ) -> None:
+        """pipx+pip 실패, uv 타임아웃 → False 반환."""
+        mock_run.side_effect = [
+            FileNotFoundError("pipx not found"),  # pipx 미설치
+            _make_result(1, stderr="pip error"),  # pip 실패
+            subprocess.TimeoutExpired(cmd="uv", timeout=120),  # uv 타임아웃
+        ]
+
+        assert install_superclaude() is False
+        assert mock_run.call_count == 3

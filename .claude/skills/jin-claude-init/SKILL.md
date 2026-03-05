@@ -35,7 +35,7 @@ claude plugin install context-mode@claude-context-mode
 
 이미 설치된 플러그인은 건너뛴다.
 
-> **SuperClaude:** marketplace/plugin 절차를 거치지 않고, Step 3의 `sync_repo.py` 내 `install_superclaude()` 함수가 `pipx install superclaude && superclaude install`을 직접 실행한다. pipx가 없으면 `pip install --user superclaude`로 fallback한다.
+> **SuperClaude:** marketplace/plugin 절차를 거치지 않고, Step 3의 `sync_repo.py` 내 `install_superclaude()` 함수가 `pipx install superclaude && superclaude install`을 직접 실행한다. fallback 순서: `pipx` → `pip install --user` → `uv tool install`.
 
 ## Step 3 — Git Repo에서 Agents & Skills 동기화
 

@@ -225,11 +225,28 @@ def _install_with_pip(repo_dir: Path, venv_dir: Path) -> bool:
     return True
 
 
+def _run_superclaude_install() -> None:
+    """superclaude install 명령을 실행하여 초기화한다."""
+    init_result = subprocess.run(
+        ["superclaude", "install"],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if init_result.returncode == 0:
+        print("[sync_repo] superclaude install 완료")
+    else:
+        print(f"[sync_repo] superclaude install 실패: {init_result.stderr}")
+
+
 def install_superclaude() -> bool:
     """SuperClaude Framework를 pipx로 설치한다.
 
-    pipx가 없으면 pip install --user로 fallback한다.
+    pipx가 없으면 pip install --user로, 그것도 실패하면
+    uv tool install로 fallback한다.
     설치 성공 시 superclaude install을 실행하여 초기화한다.
+
+    fallback 순서: pipx → pip --user → uv tool install
 
     Returns:
         설치 성공 여부.
@@ -244,16 +261,7 @@ def install_superclaude() -> bool:
         )
         if result.returncode == 0:
             print("[sync_repo] pipx install superclaude 완료")
-            init_result = subprocess.run(
-                ["superclaude", "install"],
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if init_result.returncode == 0:
-                print("[sync_repo] superclaude install 완료")
-            else:
-                print(f"[sync_repo] superclaude install 실패: {init_result.stderr}")
+            _run_superclaude_install()
             return True
         print(f"[sync_repo] pipx install 실패: {result.stderr}")
     except FileNotFoundError:
@@ -271,20 +279,31 @@ def install_superclaude() -> bool:
         )
         if result.returncode == 0:
             print("[sync_repo] pip install --user superclaude 완료")
-            init_result = subprocess.run(
-                ["superclaude", "install"],
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if init_result.returncode == 0:
-                print("[sync_repo] superclaude install 완료")
-            else:
-                print(f"[sync_repo] superclaude install 실패: {init_result.stderr}")
+            _run_superclaude_install()
             return True
         print(f"[sync_repo] pip install --user 실패: {result.stderr}")
     except subprocess.TimeoutExpired:
         print("[sync_repo] pip install --user 타임아웃")
+
+    # uv tool install fallback
+    uv_path = find_uv()
+    if uv_path:
+        try:
+            result = subprocess.run(
+                [uv_path, "tool", "install", "superclaude"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode == 0:
+                print("[sync_repo] uv tool install superclaude 완료")
+                _run_superclaude_install()
+                return True
+            print(f"[sync_repo] uv tool install 실패: {result.stderr}")
+        except subprocess.TimeoutExpired:
+            print("[sync_repo] uv tool install 타임아웃")
+    else:
+        print("[sync_repo] uv 미설치, 모든 설치 방법 실패")
 
     return False
 
