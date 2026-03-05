@@ -13,11 +13,16 @@ fi
 
 # Cross-platform date helpers
 parse_iso_to_epoch() {
-  local iso_time="$1"
+  local raw="$1"
   if date --version >/dev/null 2>&1; then
-    date -d "${iso_time}" "+%s" 2>/dev/null      # GNU date (Linux)
+    # GNU date handles full ISO 8601 with timezone natively
+    date -d "${raw}" "+%s" 2>/dev/null
   else
-    date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null  # BSD (macOS)
+    # BSD (macOS) — strip fractional seconds only, try with timezone then without
+    local clean=$(echo "$raw" | sed 's/\.[0-9]*//')
+    date -ju -f "%Y-%m-%dT%H:%M:%S%z" "$clean" "+%s" 2>/dev/null || \
+    date -ju -f "%Y-%m-%dT%H:%M:%SZ" "$clean" "+%s" 2>/dev/null || \
+    date -ju -f "%Y-%m-%dT%H:%M:%S" "$clean" "+%s" 2>/dev/null
   fi
 }
 
@@ -169,8 +174,7 @@ if [ "$show_usage" = "1" ]; then
       # 5h 리셋 시간 표시
       reset_5h_display=""
       if [ -n "$resets_5h" ]; then
-        iso_time=$(echo "$resets_5h" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
-        epoch=$(parse_iso_to_epoch "$iso_time")
+        epoch=$(parse_iso_to_epoch "$resets_5h")
         if [ -n "$epoch" ]; then
           reset_time=$(format_epoch "$epoch" "%H:%M")
           [ -n "$reset_time" ] && reset_5h_display=" →${reset_time}"
@@ -210,8 +214,7 @@ if [ "$show_usage" = "1" ]; then
 
       reset_7d_display=""
       if [ -n "$resets_7d" ]; then
-        iso_time=$(echo "$resets_7d" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
-        epoch=$(parse_iso_to_epoch "$iso_time")
+        epoch=$(parse_iso_to_epoch "$resets_7d")
         if [ -n "$epoch" ]; then
           reset_date=$(format_epoch "$epoch" "%m/%d(%a)")
           [ -n "$reset_date" ] && reset_7d_display=" →${reset_date}"

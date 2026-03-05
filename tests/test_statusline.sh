@@ -28,11 +28,11 @@ else
   fail "show_usage variable missing from script"
 fi
 
-# Test 2: Script should reference fetch-claude-usage
-if grep -q "fetch-claude-usage" "$SCRIPT"; then
-  pass "Script references fetch-claude-usage"
+# Test 2: Script should reference usage-cache.json
+if grep -q "usage-cache" "$SCRIPT"; then
+  pass "Script references usage-cache"
 else
-  fail "Script does not reference fetch-claude-usage"
+  fail "Script does not reference usage-cache"
 fi
 
 # Test 3: Cross-platform date helper parse_iso_to_epoch exists
@@ -86,11 +86,49 @@ else
   fail "Context info missing from output"
 fi
 
-# Test 9: STATUSLINE_DEBUG variable support
-if grep -q "STATUSLINE_DEBUG" "$SCRIPT"; then
-  pass "STATUSLINE_DEBUG debug logging support exists"
+# Test 9: error_reason support for token warning
+if grep -q "error_reason" "$SCRIPT"; then
+  pass "error_reason support exists for token warnings"
 else
-  fail "STATUSLINE_DEBUG debug logging support missing"
+  fail "error_reason support missing"
+fi
+
+# Test 10: parse_iso_to_epoch preserves timezone (24-hour display fix)
+# Define the function inline for testing
+_test_parse_iso_to_epoch() {
+  local raw="$1"
+  if date --version >/dev/null 2>&1; then
+    date -d "${raw}" "+%s" 2>/dev/null
+  else
+    local clean=$(echo "$raw" | sed 's/\.[0-9]*//')
+    date -ju -f "%Y-%m-%dT%H:%M:%S%z" "$clean" "+%s" 2>/dev/null || \
+    date -ju -f "%Y-%m-%dT%H:%M:%SZ" "$clean" "+%s" 2>/dev/null || \
+    date -ju -f "%Y-%m-%dT%H:%M:%S" "$clean" "+%s" 2>/dev/null
+  fi
+}
+
+epoch_utc=$(_test_parse_iso_to_epoch "2026-03-05T06:30:00.123Z")
+epoch_kst=$(_test_parse_iso_to_epoch "2026-03-05T15:30:00.123+09:00")
+if [ -n "$epoch_utc" ] && [ -n "$epoch_kst" ] && [ "$epoch_utc" = "$epoch_kst" ]; then
+  pass "parse_iso_to_epoch: UTC(Z) and +09:00 resolve to same epoch"
+else
+  fail "parse_iso_to_epoch: UTC=$epoch_utc vs +09:00=$epoch_kst (should be equal)"
+fi
+
+# Test 11: KST system should display 24-hour local time correctly
+kst_display=$(TZ=Asia/Seoul date -d "@$epoch_utc" "+%H:%M" 2>/dev/null)
+if [ "$kst_display" = "15:30" ]; then
+  pass "24-hour display: UTC 06:30Z shows as 15:30 in KST"
+else
+  fail "24-hour display: expected 15:30, got '$kst_display'"
+fi
+
+# Test 12: resets_at values are passed directly to parse_iso_to_epoch (no sed stripping)
+# Check that there's no 'sed ... | ... parse_iso_to_epoch' or 'iso_time=... sed' pattern
+if grep -q 'iso_time=.*sed.*resets' "$SCRIPT" 2>/dev/null; then
+  fail "Found timezone-stripping sed before parse_iso_to_epoch"
+else
+  pass "No timezone-stripping sed before parse_iso_to_epoch"
 fi
 
 echo ""

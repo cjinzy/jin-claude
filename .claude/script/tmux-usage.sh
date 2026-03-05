@@ -7,11 +7,16 @@ cache_file="$HOME/.claude/.usage-cache.json"
 
 # Cross-platform date helpers (동일 로직: statusline-command.sh)
 parse_iso_to_epoch() {
-  local iso_time="$1"
+  local raw="$1"
   if date --version >/dev/null 2>&1; then
-    date -d "${iso_time}" "+%s" 2>/dev/null      # GNU date (Linux)
+    # GNU date handles full ISO 8601 with timezone natively
+    date -d "${raw}" "+%s" 2>/dev/null
   else
-    date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null  # BSD (macOS)
+    # BSD (macOS) — strip fractional seconds only, try with timezone then without
+    local clean=$(echo "$raw" | sed 's/\.[0-9]*//')
+    date -ju -f "%Y-%m-%dT%H:%M:%S%z" "$clean" "+%s" 2>/dev/null || \
+    date -ju -f "%Y-%m-%dT%H:%M:%SZ" "$clean" "+%s" 2>/dev/null || \
+    date -ju -f "%Y-%m-%dT%H:%M:%S" "$clean" "+%s" 2>/dev/null
   fi
 }
 
@@ -100,11 +105,10 @@ if [ -n "$utilization" ]; then
   util_int=$(printf "%.0f" "$utilization" 2>/dev/null || echo 0)
   col=$(usage_colour "$util_int")
 
-  # 리셋 시간 파싱 (HH:MM)
+  # 리셋 시간 파싱 (HH:MM, 24시간제)
   reset_5h_display=""
   if [ -n "$resets_5h" ]; then
-    iso_time=$(echo "$resets_5h" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
-    epoch=$(parse_iso_to_epoch "$iso_time")
+    epoch=$(parse_iso_to_epoch "$resets_5h")
     if [ -n "$epoch" ]; then
       t=$(format_epoch "$epoch" "%H:%M")
       [ -n "$t" ] && reset_5h_display="→${t}"
@@ -130,8 +134,7 @@ if [ -n "$util_7d" ]; then
   # 리셋 날짜 파싱 (MM/DD(요일))
   reset_7d_display=""
   if [ -n "$resets_7d" ]; then
-    iso_time=$(echo "$resets_7d" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
-    epoch=$(parse_iso_to_epoch "$iso_time")
+    epoch=$(parse_iso_to_epoch "$resets_7d")
     if [ -n "$epoch" ]; then
       d=$(format_epoch "$epoch" "%m/%d(%a)")
       [ -n "$d" ] && reset_7d_display="→${d}"
