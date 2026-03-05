@@ -132,13 +132,13 @@ uv run fetch-claude-usage
 
 ```
 ./
-├── src/zyclaude/
+├── src/jin_claude/
 │   ├── __init__.py
 │   └── fetch_claude_usage.py       # OAuth usage API 클라이언트
 ├── tests/
 │   ├── __init__.py
-│   ├── test_fetch_claude_usage.py  # Python 유닛 테스트 (25개)
-│   └── test_statusline_no_usage.sh # Shell 통합 테스트
+│   ├── test_fetch_claude_usage.py  # Python 유닛 테스트 (38개)
+│   └── test_statusline.sh          # Shell 통합 테스트
 ├── .claude/
 │   ├── agents/                     # Claude Code 커스텀 에이전트
 │   ├── skills/                     # Claude Code 커스텀 스킬

@@ -1,5 +1,5 @@
 [project]
-name = "zyclaude"
+name = "jin-claude"
 version = "0.1.0"
 description = "Claude Code statusline utilities"
 readme = "README.md"
@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
-fetch-claude-usage = "zyclaude.fetch_claude_usage:main"
+fetch-claude-usage = "jin_claude.fetch_claude_usage:main"
 
 [dependency-groups]
 dev = [
