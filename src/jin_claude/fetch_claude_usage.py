@@ -4,7 +4,7 @@ Reads OAuth token from macOS Keychain or ~/.claude/.credentials.json,
 calls the usage API, caches the result, and outputs
 `5h_utilization|5h_resets_at|7d_resets_at` for statusline consumption.
 
-Cache: ~/.claude/.usage-cache.json (5m TTL, 15s for errors)
+Cache: ~/.claude/.usage-cache.json (5m TTL, 300s for errors)
 """
 
 from __future__ import annotations
@@ -21,10 +21,19 @@ from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 
+from loguru import logger
+
 CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
 CACHE_PATH = Path.home() / ".claude" / ".usage-cache.json"
 CACHE_TTL_SECONDS = 300        # 5분
-CACHE_TTL_ERROR_SECONDS = 60   # 에러 캐시는 60초 (429 악순환 방지)
+CACHE_TTL_ERROR_SECONDS = 300  # 에러 캐시 5분 — systemd 주기와 동기화
+
+logger.add(
+    Path.home() / ".claude" / ".usage-fetch.log",
+    rotation="1 MB",
+    retention=3,
+    level="DEBUG",
+)
 
 API_URL = "https://api.anthropic.com/api/oauth/usage"
 BETA_HEADER = "oauth-2025-04-20"
@@ -248,7 +257,9 @@ def get_token() -> str | None:
                         new_refresh=refreshed.get("refresh_token"),
                         expires_in=refreshed.get("expires_in"),
                     )
+                    logger.info("Token refreshed successfully")
                     return refreshed["access_token"]
+                logger.error("Token refresh failed")
             return None
         token = creds_data.get("claudeAiOauth", {}).get("accessToken")
         if token:
@@ -298,7 +309,11 @@ def read_cache(allow_stale: bool = False) -> UsageResult | None:
         return None
 
 
-def write_cache(api_response: dict | None, error: bool = False) -> None:
+def write_cache(
+    api_response: dict | None,
+    error: bool = False,
+    error_reason: str | None = None,
+) -> None:
     """API 응답을 캐시 파일에 저장한다.
 
     에러 시 기존 캐시의 정상 데이터(five_hour/seven_day)를 보존하여
@@ -306,11 +321,15 @@ def write_cache(api_response: dict | None, error: bool = False) -> None:
 
     Args:
         api_response: API 응답 dict. 에러 시 None.
-        error: True이면 에러 캐시로 저장 (60초 TTL).
+        error: True이면 에러 캐시로 저장 (300초 TTL).
+        error_reason: 에러 원인 식별자.
+            가능한 값: "rate_limited", "token_expired", "refresh_failed",
+            "network_error", "api_error", "token_needs_relogin".
     """
     cache_data: dict = {
         "fetched_at": time.time(),
         "error": error,
+        "error_reason": error_reason,
     }
     if api_response is not None:
         cache_data["five_hour"] = api_response.get("five_hour")
@@ -338,7 +357,8 @@ def fetch_usage(token: str) -> dict:
 
     Raises:
         urllib.error.URLError: 네트워크 오류 시.
-        urllib.error.HTTPError: HTTP 에러 응답 시.
+        urllib.error.HTTPError: HTTP 에러 응답 시. e.code로 상태 코드 확인 가능.
+            429 시 e.headers.get("Retry-After") 로 재시도 대기 시간 확인.
     """
     req = urllib.request.Request(
         API_URL,
@@ -359,13 +379,41 @@ def get_usage() -> UsageResult | None:
 
     token = get_token()
     if not token:
+        logger.warning("Usage fetch failed: token_needs_relogin - no valid token found")
+        write_cache(None, error=True, error_reason="token_needs_relogin")
         return read_cache(allow_stale=True)
 
     try:
         data = fetch_usage(token)
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, OSError):
+    except urllib.error.HTTPError as e:
         stale = read_cache(allow_stale=True)
-        write_cache(None, error=True)
+        if e.code == 429:
+            retry_after = e.headers.get("Retry-After", "unknown")
+            error_reason = "rate_limited"
+            logger.warning(
+                f"Usage fetch failed: {error_reason} - HTTP 429 (Retry-After: {retry_after})"
+            )
+        elif e.code in (401, 403):
+            error_reason = "token_expired"
+            logger.warning(
+                f"Usage fetch failed: {error_reason} - HTTP {e.code}"
+            )
+        else:
+            error_reason = "api_error"
+            logger.warning(
+                f"Usage fetch failed: {error_reason} - HTTP {e.code}"
+            )
+        write_cache(None, error=True, error_reason=error_reason)
+        return stale
+    except urllib.error.URLError as e:
+        stale = read_cache(allow_stale=True)
+        logger.warning(f"Usage fetch failed: network_error - {e.reason}")
+        write_cache(None, error=True, error_reason="network_error")
+        return stale
+    except (json.JSONDecodeError, OSError) as e:
+        stale = read_cache(allow_stale=True)
+        logger.warning(f"Usage fetch failed: api_error - {e}")
+        write_cache(None, error=True, error_reason="api_error")
         return stale
 
     write_cache(data)
@@ -374,7 +422,14 @@ def get_usage() -> UsageResult | None:
     if five_hour is None:
         return None
 
+    util = five_hour.get("utilization", 0)
     seven_day = data.get("seven_day")
+    util_7d = seven_day.get("utilization", 0) if seven_day else None
+    logger.info(
+        f"Usage fetched: 5h={util}%"
+        + (f", 7d={util_7d}%" if util_7d is not None else "")
+    )
+
     return UsageResult(
         five_hour=UsageBucket(
             utilization=five_hour["utilization"],

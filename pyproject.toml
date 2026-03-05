@@ -7,7 +7,9 @@ authors = [
     { name = "jin", email = "jin@stealthmole.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "loguru>=0.7",
+]
 
 [project.scripts]
 fetch-claude-usage = "jin_claude.fetch_claude_usage:main"
