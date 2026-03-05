@@ -45,6 +45,7 @@ MAGENTA=$'\033[0;35m'
 LIGHT_BLUE=$'\033[38;5;75m'
 AMBER=$'\033[38;5;214m'
 VIOLET=$'\033[38;5;141m'
+YELLOW=$'\033[38;5;220m'
 RESET=$'\033[0m'
 
 # 10-level gradient: dark green → deep red
@@ -147,6 +148,7 @@ if [ "$show_usage" = "1" ]; then
     resets_7d=$(jq -r '.seven_day.resets_at // empty' "$cache_file" 2>/dev/null)
     pacing_5h=$(jq -r '.pacing.five_hour.zone // empty' "$cache_file" 2>/dev/null)
     pacing_7d=$(jq -r '.pacing.seven_day.zone // empty' "$cache_file" 2>/dev/null)
+    error_reason=$(jq -r '.error_reason // empty' "$cache_file" 2>/dev/null)
 
     if [ -n "$utilization" ]; then
       util_int=$(printf "%.0f" "$utilization" 2>/dev/null || echo 0)
@@ -233,6 +235,13 @@ if [ "$show_usage" = "1" ]; then
     usage_text="${AMBER}5h:${RESET} ${GRAY}--%${RESET}"
     usage_7d_text="${VIOLET}7d:${RESET} ${GRAY}--%${RESET}"
   fi
+
+  token_warn_text=""
+  if [ "$error_reason" = "token_needs_relogin" ] || [ "$error_reason" = "token_expired" ] || [ "$error_reason" = "refresh_failed" ]; then
+    token_warn_text="${YELLOW}⚠ TOKEN?${RESET}"
+  elif [ "$error_reason" = "rate_limited" ]; then
+    token_warn_text="${GRAY}⏳ RATE${RESET}"
+  fi
 fi
 
 separator="${GRAY} │ ${RESET}"
@@ -264,6 +273,11 @@ fi
 if [ -n "$usage_7d_text" ]; then
   [ -n "$line1" ] && line1="${line1}${separator}"
   line1="${line1}${usage_7d_text}"
+fi
+
+if [ -n "$token_warn_text" ]; then
+  [ -n "$line1" ] && line1="${line1}${separator}"
+  line1="${line1}${token_warn_text}"
 fi
 
 # Line 2: ctx │ cache
