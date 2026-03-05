@@ -15,7 +15,6 @@ description: 팀원 Claude Code 환경 초기화. plugin 설치, settings 구성
 claude plugin marketplace add kepano/obsidian-skills
 claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
 claude plugin marketplace add obra/superpowers-marketplace
-claude plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
 claude plugin marketplace add mksglu/claude-context-mode
 ```
 
@@ -29,7 +28,6 @@ claude plugin marketplace add mksglu/claude-context-mode
 claude plugin install obsidian@obsidian-skills
 claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
 claude plugin install superpowers@superpowers-marketplace
-claude plugin install oh-my-claudecode@omc
 claude plugin install context-mode@claude-context-mode
 ```
 
