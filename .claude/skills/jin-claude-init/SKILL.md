@@ -90,3 +90,13 @@ python3 "SKILL_DIR/scripts/merge_settings.py"
 - Skills: N개 동기화
 - Settings: 병합 완료
 ```
+
+## Step 6 — oh-my-claudecode 셋업
+
+환경 초기화 완료 후, oh-my-claudecode 플러그인 셋업을 시작한다:
+
+```
+/oh-my-claudecode:omc-setup
+```
+
+HUD 설정은 제외한다. omc-setup 진행 중 HUD 관련 설정이 나오면 건너뛴다.
