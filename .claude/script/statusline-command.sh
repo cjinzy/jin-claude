@@ -129,75 +129,81 @@ if [ "$show_branch" = "1" ]; then
 fi
 
 usage_text=""
+usage_7d_text=""
 if [ "$show_usage" = "1" ]; then
-  script_dir="$(cd "$(dirname "$0")" && pwd)"
-  if [ "${STATUSLINE_DEBUG:-0}" = "1" ]; then
-    usage_result=$("${script_dir}/.venv/bin/fetch-claude-usage" 2>>"$HOME/.claude/.statusline-debug.log")
-  else
-    usage_result=$("${script_dir}/.venv/bin/fetch-claude-usage" 2>/dev/null)
-  fi
-  if [ $? -eq 0 ] && [ -n "$usage_result" ]; then
-    utilization=$(echo "$usage_result" | cut -d'|' -f1)
-    resets_5h=$(echo "$usage_result" | cut -d'|' -f2)
-    util_7d=$(echo "$usage_result" | cut -d'|' -f3)
-    resets_7d=$(echo "$usage_result" | cut -d'|' -f4)
+  cache_file="$HOME/.claude/.usage-cache.json"
+  stale_threshold=1800  # 30분
 
-    if [ "$utilization" -le 10 ] 2>/dev/null; then
-      usage_color="$LEVEL_1"
-    elif [ "$utilization" -le 20 ]; then
-      usage_color="$LEVEL_2"
-    elif [ "$utilization" -le 30 ]; then
-      usage_color="$LEVEL_3"
-    elif [ "$utilization" -le 40 ]; then
-      usage_color="$LEVEL_4"
-    elif [ "$utilization" -le 50 ]; then
-      usage_color="$LEVEL_5"
-    elif [ "$utilization" -le 60 ]; then
-      usage_color="$LEVEL_6"
-    elif [ "$utilization" -le 70 ]; then
-      usage_color="$LEVEL_7"
-    elif [ "$utilization" -le 80 ]; then
-      usage_color="$LEVEL_8"
-    elif [ "$utilization" -le 90 ]; then
-      usage_color="$LEVEL_9"
-    else
-      usage_color="$LEVEL_10"
-    fi
+  if [ -f "$cache_file" ]; then
+    fetched_at=$(jq -r '.fetched_at // 0' "$cache_file" 2>/dev/null)
+    now=$(date +%s)
+    cache_age=$((now - ${fetched_at%.*}))
+    is_stale=0
+    [ "$cache_age" -gt "$stale_threshold" ] && is_stale=1
 
-    # 5h reset time (24h format)
-    reset_5h_display=""
-    if [ -n "$resets_5h" ]; then
-      iso_time=$(echo "$resets_5h" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
-      epoch=$(parse_iso_to_epoch "$iso_time")
-      if [ -n "$epoch" ]; then
-        reset_time=$(format_epoch "$epoch" "%H:%M")
-        [ -n "$reset_time" ] && reset_5h_display=" →${reset_time}"
+    utilization=$(jq -r '.five_hour.utilization // empty' "$cache_file" 2>/dev/null)
+    resets_5h=$(jq -r '.five_hour.resets_at // empty' "$cache_file" 2>/dev/null)
+    util_7d=$(jq -r '.seven_day.utilization // empty' "$cache_file" 2>/dev/null)
+    resets_7d=$(jq -r '.seven_day.resets_at // empty' "$cache_file" 2>/dev/null)
+    pacing_5h=$(jq -r '.pacing.five_hour.zone // empty' "$cache_file" 2>/dev/null)
+    pacing_7d=$(jq -r '.pacing.seven_day.zone // empty' "$cache_file" 2>/dev/null)
+
+    if [ -n "$utilization" ]; then
+      util_int=$(printf "%.0f" "$utilization" 2>/dev/null || echo 0)
+
+      # 색상 그라데이션
+      if [ "$util_int" -le 10 ] 2>/dev/null; then usage_color="$LEVEL_1"
+      elif [ "$util_int" -le 20 ]; then usage_color="$LEVEL_2"
+      elif [ "$util_int" -le 30 ]; then usage_color="$LEVEL_3"
+      elif [ "$util_int" -le 40 ]; then usage_color="$LEVEL_4"
+      elif [ "$util_int" -le 50 ]; then usage_color="$LEVEL_5"
+      elif [ "$util_int" -le 60 ]; then usage_color="$LEVEL_6"
+      elif [ "$util_int" -le 70 ]; then usage_color="$LEVEL_7"
+      elif [ "$util_int" -le 80 ]; then usage_color="$LEVEL_8"
+      elif [ "$util_int" -le 90 ]; then usage_color="$LEVEL_9"
+      else usage_color="$LEVEL_10"
       fi
+
+      # 5h 리셋 시간 표시
+      reset_5h_display=""
+      if [ -n "$resets_5h" ]; then
+        iso_time=$(echo "$resets_5h" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
+        epoch=$(parse_iso_to_epoch "$iso_time")
+        if [ -n "$epoch" ]; then
+          reset_time=$(format_epoch "$epoch" "%H:%M")
+          [ -n "$reset_time" ] && reset_5h_display=" →${reset_time}"
+        fi
+      fi
+
+      # Pacing zone 라벨
+      pacing_5h_icon=""
+      case "$pacing_5h" in
+        chill)    pacing_5h_icon=" ${LEVEL_1}CHILL${RESET}" ;;
+        on_track) pacing_5h_icon=" ${LEVEL_5}PACE${RESET}" ;;
+        hot)      pacing_5h_icon=" ${LEVEL_10}HOT${RESET}" ;;
+      esac
+
+      # Stale 표시
+      stale_mark=""
+      [ "$is_stale" = "1" ] && stale_mark=" ${GRAY}STALE${RESET}"
+
+      usage_text="${AMBER}5h:${RESET} ${usage_color}${util_int}%${reset_5h_display}${RESET}${pacing_5h_icon}${stale_mark}"
     fi
 
-    # 7d: N% →MM/DD(weekday)
-    usage_7d_text=""
+    # 7d 표시
     if [ -n "$util_7d" ]; then
-      if [ "$util_7d" -le 10 ] 2>/dev/null; then
-        usage_7d_color="$LEVEL_1"
-      elif [ "$util_7d" -le 20 ]; then
-        usage_7d_color="$LEVEL_2"
-      elif [ "$util_7d" -le 30 ]; then
-        usage_7d_color="$LEVEL_3"
-      elif [ "$util_7d" -le 40 ]; then
-        usage_7d_color="$LEVEL_4"
-      elif [ "$util_7d" -le 50 ]; then
-        usage_7d_color="$LEVEL_5"
-      elif [ "$util_7d" -le 60 ]; then
-        usage_7d_color="$LEVEL_6"
-      elif [ "$util_7d" -le 70 ]; then
-        usage_7d_color="$LEVEL_7"
-      elif [ "$util_7d" -le 80 ]; then
-        usage_7d_color="$LEVEL_8"
-      elif [ "$util_7d" -le 90 ]; then
-        usage_7d_color="$LEVEL_9"
-      else
-        usage_7d_color="$LEVEL_10"
+      util_7d_int=$(printf "%.0f" "$util_7d" 2>/dev/null || echo 0)
+
+      if [ "$util_7d_int" -le 10 ] 2>/dev/null; then usage_7d_color="$LEVEL_1"
+      elif [ "$util_7d_int" -le 20 ]; then usage_7d_color="$LEVEL_2"
+      elif [ "$util_7d_int" -le 30 ]; then usage_7d_color="$LEVEL_3"
+      elif [ "$util_7d_int" -le 40 ]; then usage_7d_color="$LEVEL_4"
+      elif [ "$util_7d_int" -le 50 ]; then usage_7d_color="$LEVEL_5"
+      elif [ "$util_7d_int" -le 60 ]; then usage_7d_color="$LEVEL_6"
+      elif [ "$util_7d_int" -le 70 ]; then usage_7d_color="$LEVEL_7"
+      elif [ "$util_7d_int" -le 80 ]; then usage_7d_color="$LEVEL_8"
+      elif [ "$util_7d_int" -le 90 ]; then usage_7d_color="$LEVEL_9"
+      else usage_7d_color="$LEVEL_10"
       fi
 
       reset_7d_display=""
@@ -210,10 +216,22 @@ if [ "$show_usage" = "1" ]; then
         fi
       fi
 
-      usage_7d_text="${VIOLET}7d:${RESET} ${usage_7d_color}${util_7d}%${reset_7d_display}${RESET}"
-    fi
+      pacing_7d_icon=""
+      case "$pacing_7d" in
+        chill)    pacing_7d_icon=" ${LEVEL_1}CHILL${RESET}" ;;
+        on_track) pacing_7d_icon=" ${LEVEL_5}PACE${RESET}" ;;
+        hot)      pacing_7d_icon=" ${LEVEL_10}HOT${RESET}" ;;
+      esac
 
-    usage_text="${AMBER}5h:${RESET} ${usage_color}${utilization}%${reset_5h_display}${RESET}"
+      stale_mark_7d=""
+      [ "$is_stale" = "1" ] && stale_mark_7d=" ${GRAY}STALE${RESET}"
+
+      usage_7d_text="${VIOLET}7d:${RESET} ${usage_7d_color}${util_7d_int}%${reset_7d_display}${RESET}${pacing_7d_icon}${stale_mark_7d}"
+    fi
+  else
+    # 캐시 파일 없음
+    usage_text="${AMBER}5h:${RESET} ${GRAY}--%${RESET}"
+    usage_7d_text="${VIOLET}7d:${RESET} ${GRAY}--%${RESET}"
   fi
 fi
 
