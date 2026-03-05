@@ -3,6 +3,7 @@
 ## work method
 Make full use of agent or Claude Code team members
 Split files to prevent them becoming excessively large.
+Before beginning the task, I utilise jin-interview skills.
 
 ## write plan
 Always save plans as files named Header1.
@@ -43,3 +44,4 @@ https://github.com/microsoft/fluentui-system-icons
 
 ### management
 npm
+
