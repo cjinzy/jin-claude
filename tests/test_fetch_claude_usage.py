@@ -5,18 +5,23 @@ from __future__ import annotations
 import json
 import subprocess
 import time
+import urllib.error
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from zyclaude.fetch_claude_usage import (
+from jin_claude.fetch_claude_usage import (
+    CACHE_TTL_ERROR_SECONDS,
     CACHE_TTL_SECONDS,
     get_token,
     get_usage,
+    is_token_expired,
     read_cache,
     read_token_from_credentials_file,
     read_token_from_keychain,
+    refresh_access_token,
+    write_back_credentials,
     write_cache,
 )
 
@@ -31,30 +36,30 @@ class TestReadTokenFromCredentialsFile:
         creds_file = tmp_path / ".credentials.json"
         creds_file.write_text(json.dumps(creds))
 
-        with patch("zyclaude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
+        with patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
             assert read_token_from_credentials_file() == "test-token-123"
 
     def test_missing_file(self, tmp_path: Path) -> None:
         creds_file = tmp_path / "nonexistent.json"
-        with patch("zyclaude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
+        with patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
             assert read_token_from_credentials_file() is None
 
     def test_invalid_json(self, tmp_path: Path) -> None:
         creds_file = tmp_path / ".credentials.json"
         creds_file.write_text("not json")
-        with patch("zyclaude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
+        with patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
             assert read_token_from_credentials_file() is None
 
     def test_missing_access_token_key(self, tmp_path: Path) -> None:
         creds_file = tmp_path / ".credentials.json"
         creds_file.write_text(json.dumps({"claudeAiOauth": {}}))
-        with patch("zyclaude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
+        with patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
             assert read_token_from_credentials_file() is None
 
     def test_empty_access_token(self, tmp_path: Path) -> None:
         creds_file = tmp_path / ".credentials.json"
         creds_file.write_text(json.dumps({"claudeAiOauth": {"accessToken": ""}}))
-        with patch("zyclaude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
+        with patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
             assert read_token_from_credentials_file() is None
 
 
@@ -86,13 +91,14 @@ class TestGetToken:
     """Tests for token resolution priority."""
 
     def test_credentials_file_preferred(self) -> None:
+        creds = {"claudeAiOauth": {"accessToken": "file-token"}}
         with (
             patch(
-                "zyclaude.fetch_claude_usage.read_token_from_credentials_file",
-                return_value="file-token",
+                "jin_claude.fetch_claude_usage._read_credentials_data",
+                return_value=creds,
             ),
             patch(
-                "zyclaude.fetch_claude_usage.read_token_from_keychain",
+                "jin_claude.fetch_claude_usage.read_token_from_keychain",
                 return_value="keychain-token",
             ),
         ):
@@ -101,11 +107,11 @@ class TestGetToken:
     def test_fallback_to_keychain(self) -> None:
         with (
             patch(
-                "zyclaude.fetch_claude_usage.read_token_from_credentials_file",
+                "jin_claude.fetch_claude_usage._read_credentials_data",
                 return_value=None,
             ),
             patch(
-                "zyclaude.fetch_claude_usage.read_token_from_keychain",
+                "jin_claude.fetch_claude_usage.read_token_from_keychain",
                 return_value="keychain-token",
             ),
         ):
@@ -114,11 +120,11 @@ class TestGetToken:
     def test_no_token_available(self) -> None:
         with (
             patch(
-                "zyclaude.fetch_claude_usage.read_token_from_credentials_file",
+                "jin_claude.fetch_claude_usage._read_credentials_data",
                 return_value=None,
             ),
             patch(
-                "zyclaude.fetch_claude_usage.read_token_from_keychain",
+                "jin_claude.fetch_claude_usage.read_token_from_keychain",
                 return_value=None,
             ),
         ):
@@ -138,7 +144,7 @@ class TestCache:
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             write_cache(api_response)
             result = read_cache()
 
@@ -157,7 +163,7 @@ class TestCache:
         }
         cache_file.write_text(json.dumps(cache_data))
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             assert read_cache() is None
 
     def test_fresh_cache_returns_data(self, tmp_path: Path) -> None:
@@ -168,7 +174,7 @@ class TestCache:
         }
         cache_file.write_text(json.dumps(cache_data))
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             result = read_cache()
             assert result is not None
             assert result.five_hour.utilization == 15.0
@@ -178,7 +184,7 @@ class TestCache:
         cache_file = tmp_path / ".usage-cache.json"
         cache_file.write_text("invalid json")
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             assert read_cache() is None
 
     def test_missing_five_hour_in_cache(self, tmp_path: Path) -> None:
@@ -186,7 +192,7 @@ class TestCache:
         cache_data = {"fetched_at": time.time(), "five_hour": None}
         cache_file.write_text(json.dumps(cache_data))
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             assert read_cache() is None
 
     def test_cache_without_seven_day(self, tmp_path: Path) -> None:
@@ -197,7 +203,7 @@ class TestCache:
         }
         cache_file.write_text(json.dumps(cache_data))
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             result = read_cache()
             assert result is not None
             assert result.seven_day is None
@@ -218,7 +224,7 @@ class TestGetUsage:
         }
         cache_file.write_text(json.dumps(cache_data))
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             result = get_usage()
             assert result is not None
             assert result.five_hour.utilization == 55.0
@@ -228,8 +234,8 @@ class TestGetUsage:
     def test_returns_none_when_no_token(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         with (
-            patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file),
-            patch("zyclaude.fetch_claude_usage.get_token", return_value=None),
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value=None),
         ):
             assert get_usage() is None
 
@@ -241,9 +247,9 @@ class TestGetUsage:
         }
 
         with (
-            patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file),
-            patch("zyclaude.fetch_claude_usage.get_token", return_value="fake-token"),
-            patch("zyclaude.fetch_claude_usage.fetch_usage", return_value=api_response),
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch("jin_claude.fetch_claude_usage.fetch_usage", return_value=api_response),
         ):
             result = get_usage()
             assert result is not None
@@ -255,10 +261,10 @@ class TestGetUsage:
         cache_file = tmp_path / ".usage-cache.json"
 
         with (
-            patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file),
-            patch("zyclaude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
             patch(
-                "zyclaude.fetch_claude_usage.fetch_usage",
+                "jin_claude.fetch_claude_usage.fetch_usage",
                 side_effect=OSError("network error"),
             ),
         ):
@@ -282,9 +288,9 @@ class TestMainOutput:
         }
         cache_file.write_text(json.dumps(cache_data))
 
-        from zyclaude.fetch_claude_usage import main
+        from jin_claude.fetch_claude_usage import main
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             main()
 
         captured = capsys.readouterr()
@@ -305,9 +311,9 @@ class TestMainOutput:
         }
         cache_file.write_text(json.dumps(cache_data))
 
-        from zyclaude.fetch_claude_usage import main
+        from jin_claude.fetch_claude_usage import main
 
-        with patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file):
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             main()
 
         captured = capsys.readouterr()
@@ -320,13 +326,185 @@ class TestMainOutput:
     def test_output_exits_1_on_failure(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
 
-        from zyclaude.fetch_claude_usage import main
+        from jin_claude.fetch_claude_usage import main
 
         with (
-            patch("zyclaude.fetch_claude_usage.CACHE_PATH", cache_file),
-            patch("zyclaude.fetch_claude_usage.get_token", return_value=None),
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value=None),
             pytest.raises(SystemExit) as exc_info,
         ):
             main()
 
         assert exc_info.value.code == 1
+
+
+class TestTokenRefresh:
+    """OAuth 토큰 갱신 테스트."""
+
+    def test_is_token_expired_true(self) -> None:
+        creds = {"claudeAiOauth": {"expiresAt": 1000}}  # far past
+        assert is_token_expired(creds) is True
+
+    def test_is_token_expired_false(self) -> None:
+        future_ms = int(time.time() * 1000) + 3600_000  # 1h in future
+        creds = {"claudeAiOauth": {"expiresAt": future_ms}}
+        assert is_token_expired(creds) is False
+
+    def test_is_token_expired_no_field(self) -> None:
+        creds = {"claudeAiOauth": {}}
+        assert is_token_expired(creds) is False
+
+    def test_refresh_access_token_success(self) -> None:
+        response_data = {
+            "access_token": "new-token",
+            "refresh_token": "new-refresh",
+            "expires_in": 3600,
+        }
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps(response_data).encode()
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+
+        with patch("urllib.request.urlopen", return_value=mock_resp):
+            result = refresh_access_token("old-refresh")
+            assert result is not None
+            assert result["access_token"] == "new-token"
+
+    def test_refresh_access_token_failure(self) -> None:
+        with patch(
+            "urllib.request.urlopen",
+            side_effect=urllib.error.URLError("fail"),
+        ):
+            assert refresh_access_token("bad-refresh") is None
+
+    def test_write_back_credentials(self, tmp_path: Path) -> None:
+        creds_file = tmp_path / ".credentials.json"
+        creds_file.write_text(json.dumps({"claudeAiOauth": {"accessToken": "old"}}))
+
+        with patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file):
+            write_back_credentials("new-token", "new-refresh", 3600)
+
+        data = json.loads(creds_file.read_text())
+        assert data["claudeAiOauth"]["accessToken"] == "new-token"
+        assert data["claudeAiOauth"]["refreshToken"] == "new-refresh"
+        assert "expiresAt" in data["claudeAiOauth"]
+
+    def test_get_token_refreshes_expired(self, tmp_path: Path) -> None:
+        creds_file = tmp_path / ".credentials.json"
+        creds = {
+            "claudeAiOauth": {
+                "accessToken": "expired-token",
+                "refreshToken": "my-refresh",
+                "expiresAt": 1000,  # far past
+            }
+        }
+        creds_file.write_text(json.dumps(creds))
+
+        refreshed = {
+            "access_token": "fresh-token",
+            "refresh_token": "fresh-refresh",
+            "expires_in": 3600,
+        }
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file),
+            patch(
+                "jin_claude.fetch_claude_usage.refresh_access_token",
+                return_value=refreshed,
+            ),
+        ):
+            assert get_token() == "fresh-token"
+
+
+class TestStaleCacheFallback:
+    """Stale cache fallback 및 에러 캐싱 테스트."""
+
+    def test_returns_stale_cache_on_api_error(self, tmp_path: Path) -> None:
+        cache_file = tmp_path / ".usage-cache.json"
+        # 만료된 캐시 (정상 데이터)
+        cache_data = {
+            "fetched_at": time.time() - CACHE_TTL_SECONDS - 100,
+            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch(
+                "jin_claude.fetch_claude_usage.fetch_usage",
+                side_effect=OSError("network error"),
+            ),
+        ):
+            result = get_usage()
+            assert result is not None
+            assert result.five_hour.utilization == 42.0
+
+    def test_returns_stale_cache_when_no_token(self, tmp_path: Path) -> None:
+        cache_file = tmp_path / ".usage-cache.json"
+        cache_data = {
+            "fetched_at": time.time() - CACHE_TTL_SECONDS - 100,
+            "five_hour": {"utilization": 30.0, "resets_at": None},
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value=None),
+        ):
+            result = get_usage()
+            assert result is not None
+            assert result.five_hour.utilization == 30.0
+
+    def test_returns_none_when_no_cache_and_api_fails(self, tmp_path: Path) -> None:
+        cache_file = tmp_path / "nonexistent-cache.json"
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch(
+                "jin_claude.fetch_claude_usage.fetch_usage",
+                side_effect=OSError("fail"),
+            ),
+        ):
+            result = get_usage()
+            assert result is None
+
+
+class TestErrorCache:
+    """에러 캐시 TTL 테스트."""
+
+    def test_error_cache_short_ttl_fresh(self, tmp_path: Path) -> None:
+        """에러 캐시가 fresh(15초 이내)이면 None 반환 (API 재시도 방지)."""
+        cache_file = tmp_path / ".usage-cache.json"
+        cache_data = {
+            "fetched_at": time.time(),
+            "error": True,
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            assert read_cache() is None  # 에러 캐시는 항상 None
+
+    def test_error_cache_expired_allows_retry(self, tmp_path: Path) -> None:
+        """에러 캐시가 만료(15초 경과)되면 None 반환하여 API 재시도 허용."""
+        cache_file = tmp_path / ".usage-cache.json"
+        cache_data = {
+            "fetched_at": time.time() - CACHE_TTL_ERROR_SECONDS - 1,
+            "error": True,
+        }
+        cache_file.write_text(json.dumps(cache_data))
+
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            assert read_cache() is None  # 만료 → None → API 재시도
+
+    def test_write_error_cache(self, tmp_path: Path) -> None:
+        cache_file = tmp_path / ".usage-cache.json"
+
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            write_cache(None, error=True)
+
+        data = json.loads(cache_file.read_text())
+        assert data["error"] is True
+        assert "five_hour" not in data
