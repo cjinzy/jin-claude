@@ -11,6 +11,25 @@ else
   show_usage=1
 fi
 
+# Cross-platform date helpers
+parse_iso_to_epoch() {
+  local iso_time="$1"
+  if date --version >/dev/null 2>&1; then
+    date -d "${iso_time}" "+%s" 2>/dev/null      # GNU date (Linux)
+  else
+    date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null  # BSD (macOS)
+  fi
+}
+
+format_epoch() {
+  local epoch="$1" fmt="$2"
+  if date --version >/dev/null 2>&1; then
+    date -d "@${epoch}" "+${fmt}" 2>/dev/null     # GNU date
+  else
+    date -r "$epoch" "+${fmt}" 2>/dev/null        # BSD date
+  fi
+}
+
 input=$(cat)
 current_dir_path=$(echo "$input" | grep -o '"current_dir":"[^"]*"' | sed 's/"current_dir":"//;s/"$//')
 current_dir=$(basename "$current_dir_path")
@@ -112,7 +131,11 @@ fi
 usage_text=""
 if [ "$show_usage" = "1" ]; then
   script_dir="$(cd "$(dirname "$0")" && pwd)"
-  usage_result=$("${script_dir}/.venv/bin/fetch-claude-usage" 2>/dev/null)
+  if [ "${STATUSLINE_DEBUG:-0}" = "1" ]; then
+    usage_result=$("${script_dir}/.venv/bin/fetch-claude-usage" 2>>"$HOME/.claude/.statusline-debug.log")
+  else
+    usage_result=$("${script_dir}/.venv/bin/fetch-claude-usage" 2>/dev/null)
+  fi
   if [ $? -eq 0 ] && [ -n "$usage_result" ]; then
     utilization=$(echo "$usage_result" | cut -d'|' -f1)
     resets_5h=$(echo "$usage_result" | cut -d'|' -f2)
@@ -145,9 +168,9 @@ if [ "$show_usage" = "1" ]; then
     reset_5h_display=""
     if [ -n "$resets_5h" ]; then
       iso_time=$(echo "$resets_5h" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
-      epoch=$(date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null)
+      epoch=$(parse_iso_to_epoch "$iso_time")
       if [ -n "$epoch" ]; then
-        reset_time=$(date -r "$epoch" "+%H:%M" 2>/dev/null)
+        reset_time=$(format_epoch "$epoch" "%H:%M")
         [ -n "$reset_time" ] && reset_5h_display=" →${reset_time}"
       fi
     fi
@@ -180,9 +203,9 @@ if [ "$show_usage" = "1" ]; then
       reset_7d_display=""
       if [ -n "$resets_7d" ]; then
         iso_time=$(echo "$resets_7d" | sed 's/\.[0-9]*[+-].*$//' | sed 's/\.[0-9]*Z$//')
-        epoch=$(date -ju -f "%Y-%m-%dT%H:%M:%S" "$iso_time" "+%s" 2>/dev/null)
+        epoch=$(parse_iso_to_epoch "$iso_time")
         if [ -n "$epoch" ]; then
-          reset_date=$(date -r "$epoch" "+%m/%d(%a)" 2>/dev/null)
+          reset_date=$(format_epoch "$epoch" "%m/%d(%a)")
           [ -n "$reset_date" ] && reset_7d_display=" →${reset_date}"
         fi
       fi
