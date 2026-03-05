@@ -1,0 +1,10 @@
+[Unit]
+Description=Fetch Claude API usage data
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.claude/.venv/bin/fetch-claude-usage
+Environment=HOME=%h
+TimeoutStartSec=30

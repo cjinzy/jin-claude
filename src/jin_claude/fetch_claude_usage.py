@@ -17,6 +17,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 
 CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
@@ -31,6 +33,98 @@ KEYCHAIN_SERVICE = "Claude Code-credentials"
 
 OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
 TOKEN_REFRESH_URL = "https://platform.claude.com/v1/oauth/token"
+
+
+class PacingZone(StrEnum):
+    """Smart Pacing zone 판정."""
+
+    CHILL = "chill"
+    ON_TRACK = "on_track"
+    HOT = "hot"
+
+
+def calculate_pacing(usage_pct: float, elapsed_pct: float) -> dict:
+    """사용량 대비 경과 시간으로 pacing zone을 계산한다.
+
+    Args:
+        usage_pct: 현재 사용량 퍼센트 (0-100).
+        elapsed_pct: 윈도우 경과 퍼센트 (0-100).
+
+    Returns:
+        {"zone": PacingZone, "elapsed_pct": float,
+         "usage_pct": float, "burn_rate": float}
+    """
+    if elapsed_pct <= 0:
+        burn_rate = float("inf") if usage_pct > 0 else 0.0
+    else:
+        burn_rate = usage_pct / elapsed_pct
+
+    if burn_rate < 0.8:
+        zone = PacingZone.CHILL
+    elif burn_rate < 1.2:
+        zone = PacingZone.ON_TRACK
+    else:
+        zone = PacingZone.HOT
+
+    return {
+        "zone": zone,
+        "elapsed_pct": elapsed_pct,
+        "usage_pct": usage_pct,
+        "burn_rate": burn_rate,
+    }
+
+
+FIVE_HOUR_WINDOW = 5 * 3600
+SEVEN_DAY_WINDOW = 7 * 86400
+
+
+def _parse_resets_at(resets_at: str | None) -> float | None:
+    """ISO 8601 resets_at 문자열을 epoch으로 변환한다."""
+    if not resets_at:
+        return None
+    try:
+        dt = datetime.fromisoformat(resets_at.replace("Z", "+00:00"))
+        return dt.timestamp()
+    except (ValueError, TypeError):
+        return None
+
+
+def compute_elapsed_pct(resets_at_epoch: float | None, window_seconds: int) -> float:
+    """리셋 시간으로부터 윈도우 경과 퍼센트를 계산한다.
+
+    Args:
+        resets_at_epoch: 리셋 시각 (epoch seconds). None이면 50.0 반환.
+        window_seconds: 윈도우 전체 길이 (초).
+
+    Returns:
+        경과 퍼센트 (0.0 ~ 100.0).
+    """
+    if resets_at_epoch is None:
+        return 50.0
+    remaining = resets_at_epoch - time.time()
+    if remaining <= 0:
+        return 100.0
+    elapsed = window_seconds - remaining
+    return max(0.0, min(100.0, (elapsed / window_seconds) * 100))
+
+
+def _compute_pacing_for_cache(api_response: dict) -> dict | None:
+    """API 응답으로부터 pacing 데이터를 계산한다."""
+    pacing = {}
+
+    five_hour = api_response.get("five_hour")
+    if five_hour and five_hour.get("utilization") is not None:
+        resets_epoch = _parse_resets_at(five_hour.get("resets_at"))
+        elapsed = compute_elapsed_pct(resets_epoch, FIVE_HOUR_WINDOW)
+        pacing["five_hour"] = calculate_pacing(five_hour["utilization"], elapsed)
+
+    seven_day = api_response.get("seven_day")
+    if seven_day and seven_day.get("utilization") is not None:
+        resets_epoch = _parse_resets_at(seven_day.get("resets_at"))
+        elapsed = compute_elapsed_pct(resets_epoch, SEVEN_DAY_WINDOW)
+        pacing["seven_day"] = calculate_pacing(seven_day["utilization"], elapsed)
+
+    return pacing if pacing else None
 
 
 @dataclass
@@ -221,6 +315,7 @@ def write_cache(api_response: dict | None, error: bool = False) -> None:
     if api_response is not None:
         cache_data["five_hour"] = api_response.get("five_hour")
         cache_data["seven_day"] = api_response.get("seven_day")
+        cache_data["pacing"] = _compute_pacing_for_cache(api_response)
     elif error:
         # 에러 시 기존 캐시의 정상 데이터를 보존
         try:
@@ -228,6 +323,7 @@ def write_cache(api_response: dict | None, error: bool = False) -> None:
             if not old.get("error"):
                 cache_data["five_hour"] = old.get("five_hour")
                 cache_data["seven_day"] = old.get("seven_day")
+                cache_data["pacing"] = old.get("pacing")
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
             pass
     try:

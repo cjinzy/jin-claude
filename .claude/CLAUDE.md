@@ -38,5 +38,8 @@ Minimise code duplication.
 ## Frontend
 React + TypeScript + vite
 
+### icon bundle
+https://github.com/microsoft/fluentui-system-icons
+
 ### management
 npm
