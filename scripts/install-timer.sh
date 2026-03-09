@@ -3,7 +3,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 
 # 주기 선택: CLI 인자 또는 대화형 입력
 # Usage: install-timer.sh [1|3|5|10]
@@ -36,14 +35,29 @@ else
 fi
 
 echo "[install-timer] 수집 주기: $INTERVAL"
-echo "[install-timer] systemd user directory: $SYSTEMD_USER_DIR"
-mkdir -p "$SYSTEMD_USER_DIR"
 
-# Service는 symlink
-ln -sf "$REPO_DIR/systemd/fetch-claude-usage.service" "$SYSTEMD_USER_DIR/"
+# 주기를 초 단위로 변환
+case "$INTERVAL" in
+  1min)  INTERVAL_SEC=60 ;;
+  3min)  INTERVAL_SEC=180 ;;
+  5min)  INTERVAL_SEC=300 ;;
+  10min) INTERVAL_SEC=600 ;;
+esac
 
-# Timer는 선택한 주기로 생성
-cat > "$SYSTEMD_USER_DIR/fetch-claude-usage.timer" << EOF
+# OS 감지
+OS_TYPE="$(uname -s)"
+
+if [ "$OS_TYPE" = "Linux" ]; then
+  #── Linux: systemd timer/service ──────────────────────────────
+  SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
+  echo "[install-timer] systemd user directory: $SYSTEMD_USER_DIR"
+  mkdir -p "$SYSTEMD_USER_DIR"
+
+  # Service는 symlink
+  ln -sf "$REPO_DIR/systemd/fetch-claude-usage.service" "$SYSTEMD_USER_DIR/"
+
+  # Timer는 선택한 주기로 생성
+  cat > "$SYSTEMD_USER_DIR/fetch-claude-usage.timer" << EOF
 [Unit]
 Description=Fetch Claude API usage every $INTERVAL
 
@@ -56,15 +70,57 @@ Persistent=true
 WantedBy=timers.target
 EOF
 
-# Reload and enable
-systemctl --user daemon-reload
-systemctl --user enable --now fetch-claude-usage.timer
+  # Reload and enable
+  systemctl --user daemon-reload
+  systemctl --user enable --now fetch-claude-usage.timer
 
-echo "[install-timer] Timer status:"
-systemctl --user status fetch-claude-usage.timer --no-pager || true
+  echo "[install-timer] Timer status:"
+  systemctl --user status fetch-claude-usage.timer --no-pager || true
 
-echo ""
-echo "[install-timer] Done. Usage will be fetched every $INTERVAL."
-echo "[install-timer] Initial fetch..."
-systemctl --user start fetch-claude-usage.service || true
+  echo ""
+  echo "[install-timer] Done. Usage will be fetched every $INTERVAL."
+  echo "[install-timer] Initial fetch..."
+  systemctl --user start fetch-claude-usage.service || true
+
+elif [ "$OS_TYPE" = "Darwin" ]; then
+  #── macOS: launchd LaunchAgent ────────────────────────────────
+  LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+  PLIST_NAME="com.jin-claude.fetch-usage.plist"
+  PLIST_DEST="$LAUNCH_AGENTS_DIR/$PLIST_NAME"
+  PLIST_TEMPLATE="$REPO_DIR/launchd/$PLIST_NAME"
+  VENV_BIN="$HOME/.claude/.venv/bin"
+  LABEL="com.jin-claude.fetch-usage"
+  GUI_DOMAIN="gui/$(id -u)"
+
+  echo "[install-timer] macOS LaunchAgent 설치"
+  echo "[install-timer] plist 대상: $PLIST_DEST"
+  mkdir -p "$LAUNCH_AGENTS_DIR"
+
+  # 템플릿에서 플레이스홀더를 치환하여 plist 생성
+  sed -e "s|__VENV_BIN__|$VENV_BIN|g" \
+      -e "s|__INTERVAL_SEC__|$INTERVAL_SEC|g" \
+      -e "s|__HOME__|$HOME|g" \
+      "$PLIST_TEMPLATE" > "$PLIST_DEST"
+
+  # 기존 에이전트 제거 (존재할 경우)
+  if launchctl print "$GUI_DOMAIN/$LABEL" &>/dev/null; then
+    echo "[install-timer] 기존 에이전트 제거 중..."
+    launchctl bootout "$GUI_DOMAIN/$LABEL" 2>/dev/null || true
+  fi
+
+  # 에이전트 등록
+  echo "[install-timer] 에이전트 등록 중..."
+  launchctl bootstrap "$GUI_DOMAIN" "$PLIST_DEST"
+
+  echo ""
+  echo "[install-timer] Done. Usage will be fetched every $INTERVAL."
+  echo "[install-timer] Initial fetch..."
+  "$VENV_BIN/fetch-claude-usage" || true
+
+else
+  echo "[install-timer] 지원하지 않는 OS: $OS_TYPE"
+  echo "[install-timer] Linux(systemd) 또는 macOS(launchd)만 지원됩니다."
+  exit 1
+fi
+
 echo "[install-timer] Check cache: cat ~/.claude/.usage-cache.json"
