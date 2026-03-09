@@ -35,9 +35,11 @@ claude plugin install context-mode@claude-context-mode
 
 > **SuperClaude:** marketplace/plugin 절차를 거치지 않고, Step 3의 `sync_repo.py` 내 `install_superclaude()` 함수가 `pipx install superclaude && superclaude install`을 직접 실행한다. fallback 순서: `pipx` → `pip install --user` → `uv tool install`.
 
-## Step 3 — Git Repo에서 Agents & Skills 동기화
+## Step 3 — Git Repo에서 Statusline·설정 동기화
 
-jin-claude 저장소에서 에이전트 정의와 스킬을 동기화한다.
+jin-claude 저장소에서 statusline, 설정 파일, venv를 동기화한다.
+
+> **참고:** Agents와 Skills는 Step 2의 `claude plugin install`이 자동으로 설치하므로, 이 단계에서는 동기화하지 않는다.
 
 **먼저 사용자에게 사용량 수집 주기를 물어본다:**
 
@@ -51,9 +53,7 @@ python3 "SKILL_DIR/scripts/sync_repo.py" $INTERVAL
 
 이 스크립트는:
 - `https://github.com/cjinzy/jin-claude.git`을 `~/.claude/.jin-claude-repo/`에 clone (또는 pull)
-- `plugins/jin-claude/agents/` → `~/.claude/agents/` 로 파일 복사
-- `plugins/jin-claude/skills/` → `~/.claude/skills/` 로 파일 복사
-- `plugins/jin-claude/scripts/statusline-command.sh`, `.claude/CLAUDE.md` 등 개별 파일도 동기화
+- `plugins/jin-claude/scripts/statusline-command.sh`, `.claude/CLAUDE.md` 등 개별 파일 동기화
 - `~/.claude/.venv/`에 Python 가상환경 생성 및 패키지 설치 (`uv` 우선, `pip` fallback)
   - `pyproject.toml`이 존재할 때만 실행
   - statusline에서 사용하는 `fetch-claude-usage` 등의 CLI 도구가 이 venv에 설치됨

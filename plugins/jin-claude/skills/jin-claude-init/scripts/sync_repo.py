@@ -15,10 +15,8 @@ REPO_DIR = Path.home() / ".claude" / ".jin-claude-repo"
 CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"
 
-SYNC_TARGETS = [
-    ("plugins/jin-claude/agents", CLAUDE_DIR / "agents"),
-    ("plugins/jin-claude/skills", CLAUDE_DIR / "skills"),
-]
+# Agents와 Skills는 marketplace plugin install이 자동 처리하므로 동기화 대상에서 제외.
+SYNC_TARGETS: list[tuple[str, Path]] = []
 
 # (소스 상대경로, 대상 경로, 백업 여부)
 SYNC_FILES = [
