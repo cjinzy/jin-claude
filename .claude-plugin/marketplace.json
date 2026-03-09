@@ -1,18 +1,18 @@
 {
-  "name": "jin-mp-claudecode",
+  "name": "jin-claudecode-mp",
   "owner": {
     "name": "jin",
     "email": "jin@stealthmole.com"
   },
   "metadata": {
-    "description": "Multi-agent orchestration system for Claude Code: 58 agents, 6 skills, statusline utilities",
+    "description": "Multi-agent orchestration system for Claude Code: 9 agents, 6 skills, statusline utilities",
     "version": "2.0.0"
   },
   "plugins": [
     {
       "name": "jin-claude",
       "source": "./plugins/jin-claude",
-      "description": "Multi-agent orchestration for Claude Code: tiered agents (opus/sonnet/haiku), execution skills, lifecycle hooks, CTI pipeline, statusline",
+      "description": "Multi-agent orchestration for Claude Code: 9 agents, execution skills, lifecycle hooks, CTI pipeline, statusline",
       "version": "2.0.0",
       "author": {
         "name": "jin",
