@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
+PLUGIN_DIR="$(dirname "$SCRIPT_DIR")"              # plugins/jin-claude/
+REPO_DIR="$(dirname "$(dirname "$PLUGIN_DIR")")"   # repo root
 
 # 주기 선택: CLI 인자 또는 대화형 입력
 # Usage: install-timer.sh [1|3|5|10]
@@ -54,7 +55,7 @@ if [ "$OS_TYPE" = "Linux" ]; then
   mkdir -p "$SYSTEMD_USER_DIR"
 
   # Service는 symlink
-  ln -sf "$REPO_DIR/systemd/fetch-claude-usage.service" "$SYSTEMD_USER_DIR/"
+  ln -sf "$PLUGIN_DIR/systemd/fetch-claude-usage.service" "$SYSTEMD_USER_DIR/"
 
   # Timer는 선택한 주기로 생성
   cat > "$SYSTEMD_USER_DIR/fetch-claude-usage.timer" << EOF
@@ -126,7 +127,7 @@ elif [ "$OS_TYPE" = "Darwin" ]; then
   LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
   PLIST_NAME="com.jin-claude.fetch-usage.plist"
   PLIST_DEST="$LAUNCH_AGENTS_DIR/$PLIST_NAME"
-  PLIST_TEMPLATE="$REPO_DIR/launchd/$PLIST_NAME"
+  PLIST_TEMPLATE="$PLUGIN_DIR/launchd/$PLIST_NAME"
   VENV_BIN="$HOME/.claude/.venv/bin"
   LABEL="com.jin-claude.fetch-usage"
   GUI_DOMAIN="gui/$(id -u)"

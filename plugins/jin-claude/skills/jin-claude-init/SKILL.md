@@ -51,9 +51,9 @@ python3 "SKILL_DIR/scripts/sync_repo.py" $INTERVAL
 
 이 스크립트는:
 - `https://github.com/cjinzy/jin-claude.git`을 `~/.claude/.jin-claude-repo/`에 clone (또는 pull)
-- `.claude/agents/` → `~/.claude/agents/` 로 파일 복사
-- `.claude/skills/` → `~/.claude/skills/` 로 파일 복사
-- `.claude/script/statusline-command.sh`, `.claude/CLAUDE.md` 등 개별 파일도 동기화
+- `plugins/jin-claude/agents/` → `~/.claude/agents/` 로 파일 복사
+- `plugins/jin-claude/skills/` → `~/.claude/skills/` 로 파일 복사
+- `plugins/jin-claude/scripts/statusline-command.sh`, `.claude/CLAUDE.md` 등 개별 파일도 동기화
 - `~/.claude/.venv/`에 Python 가상환경 생성 및 패키지 설치 (`uv` 우선, `pip` fallback)
   - `pyproject.toml`이 존재할 때만 실행
   - statusline에서 사용하는 `fetch-claude-usage` 등의 CLI 도구가 이 venv에 설치됨

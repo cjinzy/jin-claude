@@ -2,8 +2,8 @@
 .claude/settings.local.json
 .claude/memory/
 
-# Consumed plugin marketplaces (user-local state)
-plugins/
+# Note: plugins/ is tracked (marketplace source code)
+# User-installed plugin state is managed by Claude Code CLI
 
 # macOS
 .DS_Store

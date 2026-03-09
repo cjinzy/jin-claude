@@ -16,12 +16,12 @@ CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"
 
 SYNC_TARGETS = [
-    (".claude/agents", CLAUDE_DIR / "agents"),
-    (".claude/skills", CLAUDE_DIR / "skills"),
+    ("plugins/jin-claude/agents", CLAUDE_DIR / "agents"),
+    ("plugins/jin-claude/skills", CLAUDE_DIR / "skills"),
 ]
 
 SYNC_FILES = [
-    (".claude/script/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh"),
+    ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh"),
     (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md"),
 ]
 
@@ -357,7 +357,7 @@ def install_timer(repo_dir: Path, interval_minutes: int = 5) -> None:
         repo_dir: install-timer.sh가 위치한 저장소 루트 디렉토리.
         interval_minutes: 사용량 수집 주기 (1, 3, 5, 10분). 기본값 5분.
     """
-    install_script = repo_dir / "scripts" / "install-timer.sh"
+    install_script = repo_dir / "plugins" / "jin-claude" / "scripts" / "install-timer.sh"
     if not install_script.exists():
         print("[sync_repo] install-timer.sh 없음, timer 설치 건너뜀")
         return

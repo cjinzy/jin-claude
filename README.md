@@ -65,7 +65,7 @@ uv sync
 {
   "statusLine": {
     "type": "command",
-    "command": "bash {$HOME}/.claude/script/statusline-command.sh"
+    "command": "bash {$HOME}/.claude/statusline-command.sh"
   }
 }
 ```
@@ -128,24 +128,48 @@ uv run pytest tests/ -v
 uv run fetch-claude-usage
 ```
 
+## 마켓플레이스 설치
+
+```bash
+# 1. Marketplace 등록
+claude plugin marketplace add cjinzy/jin-claude
+
+# 2. Plugin 설치
+claude plugin install jin-claude@jin-mp-claudecode
+```
+
 ## 프로젝트 구조
 
 ```
 ./
+├── .claude-plugin/
+│   └── marketplace.json                 # 마켓플레이스 카탈로그
+├── plugins/
+│   └── jin-claude/                      # 단일 플러그인
+│       ├── .claude-plugin/
+│       │   └── plugin.json              # 플러그인 매니페스트
+│       ├── agents/                      # 58 에이전트 (mole 포함)
+│       │   └── templates/               # 에이전트 템플릿
+│       ├── skills/                      # 6 스킬
+│       │   ├── jin-claude-init/
+│       │   ├── jin-commit/
+│       │   ├── jin-interview/
+│       │   ├── manage-skills/
+│       │   ├── py-standard/
+│       │   └── verify-implementation/
+│       ├── scripts/                     # statusline + timer
+│       │   ├── statusline-command.sh
+│       │   ├── statusline-config.txt
+│       │   ├── tmux-usage.sh
+│       │   └── install-timer.sh
+│       ├── settings.json                # 플러그인 설정
+│       ├── systemd/                     # Linux timer
+│       └── launchd/                     # macOS timer
 ├── src/jin_claude/
 │   ├── __init__.py
-│   └── fetch_claude_usage.py       # OAuth usage API 클라이언트
-├── tests/
-│   ├── __init__.py
-│   ├── test_fetch_claude_usage.py  # Python 유닛 테스트 (38개)
-│   └── test_statusline.sh          # Shell 통합 테스트
+│   └── fetch_claude_usage.py            # OAuth usage API 클라이언트
 ├── .claude/
-│   ├── agents/                     # Claude Code 커스텀 에이전트
-│   ├── skills/                     # Claude Code 커스텀 스킬
-│   ├── script/
-│   │   ├── statusline-command.sh   # statusline 렌더러 (bash)
-│   │   └── statusline-config.txt   # 표시 설정
-│   ├── settings.json               # 공유 프로젝트 설정
-│   └── CLAUDE.md                   # 프로젝트 지침
-└── pyproject.toml                  # uv 프로젝트 설정
+│   ├── CLAUDE.md                        # 프로젝트 지침
+│   └── settings.json                    # 개발용 설정
+└── pyproject.toml                       # uv 프로젝트 설정
 ```

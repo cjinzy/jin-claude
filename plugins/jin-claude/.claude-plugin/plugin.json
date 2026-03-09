@@ -1,0 +1,15 @@
+{
+  "name": "jin-claude",
+  "version": "2.0.0",
+  "description": "Multi-agent orchestration for Claude Code: 58 tiered agents, 6 skills, statusline, CTI pipeline",
+  "author": {
+    "name": "jin",
+    "email": "jin@stealthmole.com"
+  },
+  "repository": "https://github.com/cjinzy/jin-claude",
+  "license": "MIT",
+  "keywords": [
+    "orchestration", "multi-agent", "agents", "skills",
+    "workflow", "tdd", "code-review", "statusline", "cti"
+  ]
+}
