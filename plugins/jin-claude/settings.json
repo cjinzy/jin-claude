@@ -7,5 +7,18 @@
   },
   "enableAllProjectMcpServers": true,
   "outputStyle": "Explanatory",
-  "language": "korean"
+  "language": "korean",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'for d in \"$HOME\"/.claude/plugins/marketplaces/*/plugins/jin-claude; do [ -d \"$d\" ] && git -C \"${d%/plugins/jin-claude}\" pull --ff-only 2>/dev/null; done || true'"
+          }
+        ]
+      }
+    ]
+  }
 }
