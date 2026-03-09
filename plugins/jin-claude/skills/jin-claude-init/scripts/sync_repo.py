@@ -403,9 +403,7 @@ def main() -> None:
         status = "완료" if ok else "건너뜀"
         print(f"[sync_repo] venv 패키지 설치: {status}")
 
-        ok = install_superclaude()
-        status = "완료" if ok else "건너뜀"
-        print(f"[sync_repo] SuperClaude 설치: {status}")
+        # SuperClaude는 marketplace plugin install로 설치되므로 여기서는 건너뜀
 
         # CLI 인자로 timer 주기를 받음 (기본값: 5분)
         interval = 5

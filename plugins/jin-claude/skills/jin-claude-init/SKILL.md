@@ -16,6 +16,7 @@ claude plugin marketplace add kepano/obsidian-skills
 claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
 claude plugin marketplace add obra/superpowers-marketplace
 claude plugin marketplace add mksglu/claude-context-mode
+claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
 ```
 
 각 명령어 실행 결과를 확인하고, 이미 추가된 marketplace는 건너뛴다.
@@ -29,11 +30,12 @@ claude plugin install obsidian@obsidian-skills
 claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
 claude plugin install superpowers@superpowers-marketplace
 claude plugin install context-mode@claude-context-mode
+claude plugin install sc@SuperClaude-Org
 ```
 
 이미 설치된 플러그인은 건너뛴다.
 
-> **SuperClaude:** marketplace/plugin 절차를 거치지 않고, Step 3의 `sync_repo.py` 내 `install_superclaude()` 함수가 `pipx install superclaude && superclaude install`을 직접 실행한다. fallback 순서: `pipx` → `pip install --user` → `uv tool install`.
+> **SuperClaude:** Step 2의 `claude plugin install sc@SuperClaude-Org`으로 설치된다.
 
 ## Step 3 — Git Repo에서 Statusline·설정 동기화
 
