@@ -29,7 +29,7 @@ claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
 claude plugin install obsidian@obsidian-skills
 claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
 claude plugin install superpowers@superpowers-marketplace
-claude plugin install context-mode@claude-context-mode
+claude plugin install context-mode@context-mode
 claude plugin install sc@SuperClaude-Org
 ```
 
