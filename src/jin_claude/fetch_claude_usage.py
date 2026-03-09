@@ -336,11 +336,11 @@ def write_cache(
         cache_data["seven_day"] = api_response.get("seven_day")
         cache_data["pacing"] = _compute_pacing_for_cache(api_response)
     elif error:
-        # 에러 시 기존 캐시의 정상 데이터를 보존
+        # 에러 시 기존 캐시의 usage 데이터를 보존 (연속 에러에도 유지)
         try:
             old = json.loads(CACHE_PATH.read_text())
-            if not old.get("error"):
-                cache_data["five_hour"] = old.get("five_hour")
+            if old.get("five_hour") is not None:
+                cache_data["five_hour"] = old["five_hour"]
                 cache_data["seven_day"] = old.get("seven_day")
                 cache_data["pacing"] = old.get("pacing")
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
