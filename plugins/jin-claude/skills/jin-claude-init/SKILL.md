@@ -17,7 +17,7 @@ claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
 claude plugin marketplace add obra/superpowers-marketplace
 claude plugin marketplace add mksglu/claude-context-mode
 claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
-claude plugin marketplace add Yeachan-Heo/oh-my-claudecode
+claude plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
 ```
 
 각 명령어 실행 결과를 확인하고, 이미 추가된 marketplace는 건너뛴다.
@@ -32,13 +32,13 @@ claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
 claude plugin install superpowers@superpowers-marketplace
 claude plugin install context-mode@context-mode
 claude plugin install sc@SuperClaude-Org
-claude plugin install oh-my-claudecode@oh-my-claudecode
+claude plugin install oh-my-claudecode
 ```
 
 이미 설치된 플러그인은 건너뛴다.
 
 > **SuperClaude:** Step 2의 `claude plugin install sc@SuperClaude-Org`으로 설치된다.
-> **oh-my-claudecode:** Step 2의 `claude plugin install oh-my-claudecode@oh-my-claudecode`으로 설치된다. Step 6에서 `/oh-my-claudecode:omc-setup`으로 초기 셋업을 진행한다.
+> **oh-my-claudecode:** Step 2의 `claude plugin install oh-my-claudecode`으로 설치된다. Step 6에서 `/oh-my-claudecode:omc-setup`으로 초기 셋업을 진행한다.
 
 ## Step 3 — Git Repo에서 Statusline·설정 동기화
 
