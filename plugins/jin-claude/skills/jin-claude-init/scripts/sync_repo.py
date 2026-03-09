@@ -20,9 +20,10 @@ SYNC_TARGETS = [
     ("plugins/jin-claude/skills", CLAUDE_DIR / "skills"),
 ]
 
+# (소스 상대경로, 대상 경로, 백업 여부)
 SYNC_FILES = [
-    ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh"),
-    (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md"),
+    ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh", False),
+    (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md", True),
 ]
 
 
@@ -112,12 +113,13 @@ def sync_directory(src: Path, dst: Path) -> int:
     return count
 
 
-def sync_file(src: Path, dst: Path) -> bool:
+def sync_file(src: Path, dst: Path, *, backup: bool = False) -> bool:
     """단일 파일을 복사한다.
 
     Args:
         src: 소스 파일.
         dst: 대상 파일 경로.
+        backup: True이면 기존 파일을 .bak으로 백업한다.
 
     Returns:
         복사 성공 여부.
@@ -125,6 +127,11 @@ def sync_file(src: Path, dst: Path) -> bool:
     if not src.exists():
         print(f"[sync_repo] 소스 파일 없음, 건너뜀: {src}")
         return False
+
+    if backup and dst.exists():
+        bak = dst.with_suffix(dst.suffix + ".bak")
+        shutil.copy2(dst, bak)
+        print(f"[sync_repo] 기존 파일 백업: {bak}")
 
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst)
@@ -388,9 +395,9 @@ def main() -> None:
             count = sync_directory(src, target)
             print(f"[sync_repo] {dir_name}/ → {target}: {count}개 파일 동기화")
 
-        for file_name, target in SYNC_FILES:
+        for file_name, target, backup in SYNC_FILES:
             src = repo_dir / file_name
-            ok = sync_file(src, target)
+            ok = sync_file(src, target, backup=backup)
             status = "완료" if ok else "건너뜀"
             print(f"[sync_repo] {file_name} → {target}: {status}")
 
