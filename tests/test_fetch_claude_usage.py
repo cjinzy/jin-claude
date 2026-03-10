@@ -14,6 +14,7 @@ import pytest
 from jin_claude.fetch_claude_usage import (
     CACHE_TTL_ERROR_SECONDS,
     CACHE_TTL_SECONDS,
+    _should_skip_due_to_backoff,
     get_token,
     get_usage,
     is_token_expired,
@@ -24,6 +25,14 @@ from jin_claude.fetch_claude_usage import (
     write_back_credentials,
     write_cache,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_last_good_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """모든 테스트에서 LAST_GOOD_CACHE_PATH를 tmp_path로 격리한다."""
+    lg_path = tmp_path / ".usage-last-good.json"
+    monkeypatch.setattr("jin_claude.fetch_claude_usage.LAST_GOOD_CACHE_PATH", lg_path)
+
 
 # --- Token reading tests ---
 
@@ -619,3 +628,188 @@ class TestErrorCache:
 
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             assert read_cache(allow_stale=True) is None
+
+
+# --- Last-known-good cache tests ---
+
+
+class TestLastGoodCache:
+    """Last-known-good 캐시 테스트."""
+
+    def test_last_good_written_on_success(self, tmp_path: Path) -> None:
+        """성공 응답 시 last-good 파일이 생성된다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        last_good_file = tmp_path / ".usage-last-good.json"
+        api_response = {
+            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
+        }
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.LAST_GOOD_CACHE_PATH", last_good_file),
+        ):
+            write_cache(api_response)
+
+        assert last_good_file.exists()
+        data = json.loads(last_good_file.read_text())
+        assert data["five_hour"]["utilization"] == 42.0
+        assert data["seven_day"]["utilization"] == 20.0
+
+    def test_cascade_error_preserves_last_good(self, tmp_path: Path) -> None:
+        """연속 에러 시 last-good 파일에서 데이터를 복원한다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        last_good_file = tmp_path / ".usage-last-good.json"
+
+        # last-good 파일에 이전 성공 데이터 존재
+        last_good_data = {
+            "fetched_at": time.time() - 3600,
+            "five_hour": {"utilization": 35.0, "resets_at": "2026-03-02T17:00:00Z"},
+            "seven_day": {"utilization": 15.0, "resets_at": "2026-03-05T00:00:00Z"},
+        }
+        last_good_file.write_text(json.dumps(last_good_data))
+
+        # 에러 캐시: five_hour 없음 (cascade failure 상태)
+        error_cache = {
+            "fetched_at": time.time() - 400,
+            "error": True,
+            "error_reason": "rate_limited",
+            "consecutive_errors": 5,
+        }
+        cache_file.write_text(json.dumps(error_cache))
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.LAST_GOOD_CACHE_PATH", last_good_file),
+        ):
+            write_cache(None, error=True, error_reason="rate_limited")
+
+        data = json.loads(cache_file.read_text())
+        assert data["error"] is True
+        assert data["five_hour"]["utilization"] == 35.0  # last-good에서 복원됨
+        assert data["consecutive_errors"] == 6
+
+    def test_get_usage_falls_back_to_last_good(self, tmp_path: Path) -> None:
+        """API 실패 + 캐시 없을 때 last-good에서 데이터를 반환한다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        last_good_file = tmp_path / ".usage-last-good.json"
+
+        last_good_data = {
+            "fetched_at": time.time() - 7200,
+            "five_hour": {"utilization": 25.0, "resets_at": "2026-03-02T16:00:00Z"},
+        }
+        last_good_file.write_text(json.dumps(last_good_data))
+
+        mock_headers = MagicMock()
+        mock_headers.get.return_value = "0"
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.LAST_GOOD_CACHE_PATH", last_good_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch(
+                "jin_claude.fetch_claude_usage.fetch_usage",
+                side_effect=urllib.error.HTTPError(
+                    url="", code=429, msg="", hdrs=mock_headers, fp=None
+                ),
+            ),
+        ):
+            result = get_usage()
+            assert result is not None
+            assert result.five_hour.utilization == 25.0
+
+
+# --- Exponential backoff tests ---
+
+
+class TestExponentialBackoff:
+    """Exponential backoff 테스트."""
+
+    def test_exponential_backoff_ttl(self, tmp_path: Path) -> None:
+        """consecutive_errors에 따른 TTL 증가를 확인한다."""
+        cache_file = tmp_path / ".usage-cache.json"
+
+        # consecutive_errors=1: TTL=300*1=300s, age=200s → skip
+        cache_data = {
+            "fetched_at": time.time() - 200,
+            "error": True,
+            "consecutive_errors": 1,
+        }
+        cache_file.write_text(json.dumps(cache_data))
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            assert _should_skip_due_to_backoff() is True
+
+        # consecutive_errors=3: TTL=300*4=1200s, age=600s → skip
+        cache_data["consecutive_errors"] = 3
+        cache_data["fetched_at"] = time.time() - 600
+        cache_file.write_text(json.dumps(cache_data))
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            assert _should_skip_due_to_backoff() is True
+
+        # consecutive_errors=3: TTL=300*4=1200s, age=1300s → don't skip
+        cache_data["fetched_at"] = time.time() - 1300
+        cache_file.write_text(json.dumps(cache_data))
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            assert _should_skip_due_to_backoff() is False
+
+    def test_backoff_reset_on_success(self, tmp_path: Path) -> None:
+        """성공 시 consecutive_errors가 리셋된다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        last_good_file = tmp_path / ".usage-last-good.json"
+
+        # 에러 캐시 (consecutive_errors=5)
+        error_cache = {
+            "fetched_at": time.time() - 100,
+            "error": True,
+            "consecutive_errors": 5,
+            "first_error_at": time.time() - 1500,
+            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+        }
+        cache_file.write_text(json.dumps(error_cache))
+
+        api_response = {
+            "five_hour": {"utilization": 50.0, "resets_at": "2026-03-02T19:00:00Z"},
+            "seven_day": {"utilization": 25.0, "resets_at": "2026-03-06T00:00:00Z"},
+        }
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.LAST_GOOD_CACHE_PATH", last_good_file),
+        ):
+            write_cache(api_response)
+
+        data = json.loads(cache_file.read_text())
+        assert data["consecutive_errors"] == 0
+        assert data.get("first_error_at") is None
+        assert data["five_hour"]["utilization"] == 50.0
+
+    def test_backoff_skips_api_call(self, tmp_path: Path) -> None:
+        """backoff window 내에서 API 호출을 건너뛴다."""
+        cache_file = tmp_path / ".usage-cache.json"
+        last_good_file = tmp_path / ".usage-last-good.json"
+
+        # 최근 에러 캐시 (consecutive_errors=2, TTL=300*2=600s)
+        error_cache = {
+            "fetched_at": time.time() - 100,  # 100초 전 → 600s TTL 내
+            "error": True,
+            "error_reason": "rate_limited",
+            "consecutive_errors": 2,
+            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
+        }
+        cache_file.write_text(json.dumps(error_cache))
+
+        mock_fetch = MagicMock()
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.LAST_GOOD_CACHE_PATH", last_good_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch("jin_claude.fetch_claude_usage.fetch_usage", mock_fetch),
+        ):
+            result = get_usage()
+            # API 호출이 발생하지 않음
+            mock_fetch.assert_not_called()
+            # 보존된 stale 데이터 반환
+            assert result is not None
+            assert result.five_hour.utilization == 42.0

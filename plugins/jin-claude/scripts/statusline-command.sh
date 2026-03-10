@@ -243,7 +243,32 @@ if [ "$show_usage" = "1" ]; then
   if [ "$error_reason" = "token_needs_relogin" ] || [ "$error_reason" = "token_expired" ] || [ "$error_reason" = "refresh_failed" ]; then
     token_warn_text="${YELLOW}⚠ TOKEN?${RESET}"
   elif [ "$error_reason" = "rate_limited" ]; then
-    token_warn_text="${GRAY}⏳ RATE${RESET}"
+    # Rate limit 지속 시간 계산 (first_error_at 기준)
+    rate_duration=""
+    first_error_at=$(jq -r '.first_error_at // 0' "$cache_file" 2>/dev/null)
+    if [ -n "$first_error_at" ] && [ "${first_error_at%.*}" -gt 0 ] 2>/dev/null; then
+      now=$(date +%s)
+      rate_secs=$((now - ${first_error_at%.*}))
+      if [ "$rate_secs" -ge 3600 ]; then
+        rate_hours=$((rate_secs / 3600))
+        rate_duration=" ${rate_hours}h"
+      elif [ "$rate_secs" -ge 60 ]; then
+        rate_mins=$((rate_secs / 60))
+        rate_duration=" ${rate_mins}m"
+      fi
+    fi
+    # last-good fallback: 캐시에 usage 없으면 last-good에서 표시
+    if [ -z "$utilization" ]; then
+      last_good="$HOME/.claude/.usage-last-good.json"
+      if [ -f "$last_good" ]; then
+        lg_util=$(jq -r '.five_hour.utilization // empty' "$last_good" 2>/dev/null)
+        if [ -n "$lg_util" ]; then
+          lg_int=$(printf "%.0f" "$lg_util" 2>/dev/null || echo 0)
+          usage_text="${AMBER}5h:${RESET} ${GRAY}${lg_int}% STALE${RESET}"
+        fi
+      fi
+    fi
+    token_warn_text="${GRAY}⏳ RATE${rate_duration}${RESET}"
   fi
 fi
 

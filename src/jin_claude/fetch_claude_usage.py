@@ -5,6 +5,7 @@ calls the usage API, caches the result, and outputs
 `5h_utilization|5h_resets_at|7d_resets_at` for statusline consumption.
 
 Cache: ~/.claude/.usage-cache.json (5m TTL, 300s for errors)
+Last-good cache: ~/.claude/.usage-last-good.json (마지막 성공 데이터 영구 보존)
 """
 
 from __future__ import annotations
@@ -27,6 +28,8 @@ CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
 CACHE_PATH = Path.home() / ".claude" / ".usage-cache.json"
 CACHE_TTL_SECONDS = 300        # 5분
 CACHE_TTL_ERROR_SECONDS = 300  # 에러 캐시 5분 — systemd 주기와 동기화
+LAST_GOOD_CACHE_PATH = Path.home() / ".claude" / ".usage-last-good.json"
+BACKOFF_MULTIPLIERS = [1, 2, 4, 6]  # 5min → 10min → 20min → 30min cap
 
 logger.add(
     Path.home() / ".claude" / ".usage-fetch.log",
@@ -309,6 +312,77 @@ def read_cache(allow_stale: bool = False) -> UsageResult | None:
         return None
 
 
+def _write_last_good(api_response: dict) -> None:
+    """성공한 API 응답을 last-known-good 캐시에 저장한다."""
+    try:
+        data = {
+            "fetched_at": time.time(),
+            "five_hour": api_response.get("five_hour"),
+            "seven_day": api_response.get("seven_day"),
+            "pacing": _compute_pacing_for_cache(api_response),
+        }
+        LAST_GOOD_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        LAST_GOOD_CACHE_PATH.write_text(json.dumps(data))
+    except OSError:
+        pass
+
+
+def _read_last_good() -> dict | None:
+    """last-known-good 캐시에서 데이터를 읽는다."""
+    try:
+        return json.loads(LAST_GOOD_CACHE_PATH.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def _should_skip_due_to_backoff() -> bool:
+    """exponential backoff 기반으로 API 호출을 건너뛸지 판단한다.
+
+    연속 에러 횟수에 따라 backoff window를 계산하고,
+    현재 시간이 window 내에 있으면 True를 반환하여 API 호출을 건너뛰게 한다.
+    """
+    try:
+        data = json.loads(CACHE_PATH.read_text())
+        if not data.get("error"):
+            return False
+        consecutive = data.get("consecutive_errors", 0)
+        if consecutive <= 0:
+            return False
+        idx = min(consecutive - 1, len(BACKOFF_MULTIPLIERS) - 1)
+        multiplier = BACKOFF_MULTIPLIERS[idx]
+        effective_ttl = CACHE_TTL_ERROR_SECONDS * multiplier
+        age = time.time() - data.get("fetched_at", 0)
+        return age < effective_ttl
+    except (FileNotFoundError, json.JSONDecodeError):
+        return False
+
+
+def _read_last_good_as_result() -> UsageResult | None:
+    """last-known-good 캐시에서 UsageResult를 생성한다."""
+    data = _read_last_good()
+    if data is None:
+        return None
+    five_hour = data.get("five_hour")
+    if five_hour is None:
+        return None
+    seven_day = data.get("seven_day")
+    try:
+        return UsageResult(
+            five_hour=UsageBucket(
+                utilization=five_hour["utilization"],
+                resets_at=five_hour.get("resets_at"),
+            ),
+            seven_day=UsageBucket(
+                utilization=seven_day["utilization"],
+                resets_at=seven_day.get("resets_at"),
+            )
+            if seven_day
+            else None,
+        )
+    except (KeyError, TypeError):
+        return None
+
+
 def write_cache(
     api_response: dict | None,
     error: bool = False,
@@ -317,7 +391,8 @@ def write_cache(
     """API 응답을 캐시 파일에 저장한다.
 
     에러 시 기존 캐시의 정상 데이터(five_hour/seven_day)를 보존하여
-    stale fallback이 가능하도록 한다.
+    stale fallback이 가능하도록 한다. 기존 캐시에도 데이터가 없으면
+    last-known-good 캐시에서 복원을 시도한다.
 
     Args:
         api_response: API 응답 dict. 에러 시 None.
@@ -335,16 +410,39 @@ def write_cache(
         cache_data["five_hour"] = api_response.get("five_hour")
         cache_data["seven_day"] = api_response.get("seven_day")
         cache_data["pacing"] = _compute_pacing_for_cache(api_response)
+        cache_data["consecutive_errors"] = 0
+        _write_last_good(api_response)
     elif error:
         # 에러 시 기존 캐시의 usage 데이터를 보존 (연속 에러에도 유지)
         try:
             old = json.loads(CACHE_PATH.read_text())
+            old_consecutive = old.get("consecutive_errors", 0)
+            cache_data["consecutive_errors"] = old_consecutive + 1
+            # first_error_at: 연속 에러의 시작 시점 보존
+            if old_consecutive > 0 and old.get("first_error_at"):
+                cache_data["first_error_at"] = old["first_error_at"]
+            else:
+                cache_data["first_error_at"] = time.time()
             if old.get("five_hour") is not None:
                 cache_data["five_hour"] = old["five_hour"]
                 cache_data["seven_day"] = old.get("seven_day")
                 cache_data["pacing"] = old.get("pacing")
+            else:
+                # 기존 캐시에도 데이터 없으면 last-good에서 복원
+                last_good = _read_last_good()
+                if last_good is not None:
+                    cache_data["five_hour"] = last_good.get("five_hour")
+                    cache_data["seven_day"] = last_good.get("seven_day")
+                    cache_data["pacing"] = last_good.get("pacing")
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            pass
+            cache_data["consecutive_errors"] = 1
+            cache_data["first_error_at"] = time.time()
+            # 기존 캐시 읽기 실패 시에도 last-good 시도
+            last_good = _read_last_good()
+            if last_good is not None:
+                cache_data["five_hour"] = last_good.get("five_hour")
+                cache_data["seven_day"] = last_good.get("seven_day")
+                cache_data["pacing"] = last_good.get("pacing")
     try:
         CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         CACHE_PATH.write_text(json.dumps(cache_data))
@@ -372,16 +470,27 @@ def fetch_usage(token: str) -> dict:
 
 
 def get_usage() -> UsageResult | None:
-    """사용량 데이터를 가져온다. 캐시 우선, API fallback, stale cache 최종 fallback."""
+    """사용량 데이터를 가져온다.
+
+    캐시 우선 → backoff 체크 → API fallback → stale cache → last-good 최종 fallback.
+    """
     cached = read_cache()
     if cached is not None:
         return cached
+
+    # Exponential backoff: 연속 에러 시 API 호출 건너뜀
+    if _should_skip_due_to_backoff():
+        logger.debug("Skipping API call: within exponential backoff window")
+        stale = read_cache(allow_stale=True)
+        if stale is not None:
+            return stale
+        return _read_last_good_as_result()
 
     token = get_token()
     if not token:
         logger.warning("Usage fetch failed: token_needs_relogin - no valid token found")
         write_cache(None, error=True, error_reason="token_needs_relogin")
-        return read_cache(allow_stale=True)
+        return read_cache(allow_stale=True) or _read_last_good_as_result()
 
     try:
         data = fetch_usage(token)
@@ -404,17 +513,17 @@ def get_usage() -> UsageResult | None:
                 f"Usage fetch failed: {error_reason} - HTTP {e.code}"
             )
         write_cache(None, error=True, error_reason=error_reason)
-        return stale
+        return stale or _read_last_good_as_result()
     except urllib.error.URLError as e:
         stale = read_cache(allow_stale=True)
         logger.warning(f"Usage fetch failed: network_error - {e.reason}")
         write_cache(None, error=True, error_reason="network_error")
-        return stale
+        return stale or _read_last_good_as_result()
     except (json.JSONDecodeError, OSError) as e:
         stale = read_cache(allow_stale=True)
         logger.warning(f"Usage fetch failed: api_error - {e}")
         write_cache(None, error=True, error_reason="api_error")
-        return stale
+        return stale or _read_last_good_as_result()
 
     write_cache(data)
 
