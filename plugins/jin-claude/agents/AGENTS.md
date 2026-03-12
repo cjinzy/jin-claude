@@ -37,6 +37,17 @@ Specialized agents for MOLE (Malware/threat intelligence Organizer and Lifecycle
 | `mole-interview-agent.md` | mole-interview-agent | sonnet | Pre-investigation interview for CTI scope |
 | `mole-user-identifier-agent.md` | mole-user-identifier-agent | sonnet | Target user and audience identification |
 
+## SWE Agents (Live-SWE-agent Integration)
+
+Specialized agents for systematic software issue resolution, adapted from the Live-SWE-agent workflow (SWE-bench Verified #1, 79.2%).
+
+| File | Agent | Model | Purpose |
+|------|-------|-------|---------|
+| `swe-agent.md` | swe-agent | sonnet | 6단계 워크플로우 이슈 해결 실행자 |
+| `swe-agent-high.md` | swe-agent-high | opus | 복잡한 교차 모듈 이슈 해결 |
+| `swe-analyst.md` | swe-analyst | sonnet | 읽기 전용 근본원인 진단 |
+| `swe-verifier.md` | swe-verifier | sonnet | 수정 후 독립 검증 |
+
 ## For AI Agents
 
 ### Working In This Directory
@@ -99,5 +110,8 @@ None - pure markdown files.
 | Specialized | python-expert | Read, Glob, Grep, Edit, Write, Bash |
 | Interview | jin-interview-agent | AskUserQuestion, Read, Glob, Grep, Write |
 | CTI (MOLE) | mole-research-agent, mole-review-agent, mole-report-presenter-agent, mole-intel-organizer-agent, mole-graph-generator-agent, mole-interview-agent, mole-user-identifier-agent | Read, Glob, Grep, WebSearch, WebFetch, Bash |
+| SWE | swe-agent, swe-agent-high | Read, Glob, Grep, Edit, Write, Bash, lsp_diagnostics, lsp_diagnostics_directory, lsp_goto_definition, lsp_find_references, python_repl |
+| SWE Analysis | swe-analyst | Read, Glob, Grep, Bash, lsp_diagnostics, lsp_goto_definition, lsp_find_references, lsp_hover, python_repl |
+| SWE Verification | swe-verifier | Read, Glob, Grep, Bash, lsp_diagnostics, lsp_diagnostics_directory, python_repl |
 
 <!-- MANUAL: -->
