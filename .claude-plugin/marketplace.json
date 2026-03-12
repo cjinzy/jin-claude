@@ -5,15 +5,15 @@
     "email": "jin@stealthmole.com"
   },
   "metadata": {
-    "description": "Multi-agent orchestration system for Claude Code: 9 agents, 6 skills, statusline utilities",
-    "version": "2.0.0"
+    "description": "Multi-agent orchestration system for Claude Code: 13 agents, 7 skills, statusline utilities",
+    "version": "2.1.0"
   },
   "plugins": [
     {
       "name": "jin-claude",
       "source": "./plugins/jin-claude",
-      "description": "Multi-agent orchestration for Claude Code: 9 agents, execution skills, lifecycle hooks, CTI pipeline, statusline",
-      "version": "2.0.0",
+      "description": "Multi-agent orchestration for Claude Code: 13 agents, 7 skills, lifecycle hooks, CTI pipeline, statusline",
+      "version": "2.1.0",
       "author": {
         "name": "jin",
         "email": "jin@stealthmole.com"
@@ -22,7 +22,7 @@
       "keywords": [
         "orchestration", "multi-agent", "agents", "skills",
         "workflow", "tdd", "code-review", "research",
-        "cti", "mole", "statusline"
+        "cti", "mole", "statusline", "swe"
       ],
       "category": "development",
       "strict": false

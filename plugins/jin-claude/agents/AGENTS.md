@@ -3,7 +3,7 @@
 
 # agents (Prompt Templates)
 
-Markdown prompt templates for all 9 agents in jinzy.
+Markdown prompt templates for all 13 agents in jinzy.
 
 ## Purpose
 

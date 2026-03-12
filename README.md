@@ -1,6 +1,6 @@
 # jin-claude
 
-Claude Code용 멀티 에이전트 오케스트레이션 시스템. 9개 에이전트, 6개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
+Claude Code용 멀티 에이전트 오케스트레이션 시스템. 13개 에이전트, 7개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
 
 ## 빠른 시작
 
@@ -20,13 +20,14 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 
 ---
 
-## 에이전트 (9개)
+## 에이전트 (13개)
 
 ### Opus (고비용, 고품질)
 
 | 에이전트 | 설명 |
 |----------|------|
 | `mole-review-agent` | CTI 프로파일링 오케스트레이터 |
+| `swe-agent-high` | 복잡한 교차 모듈 이슈 해결 (고급 SWE) |
 
 ### Sonnet (기본, 균형)
 
@@ -40,10 +41,13 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 | `mole-user-identifier-agent` | 사용자 신원 상관관계 분석 |
 | `mole-graph-generator-agent` | Mermaid 그래프 시각화 |
 | `mole-report-presenter-agent` | 발표자료 생성 |
+| `swe-agent` | Live-SWE-agent 워크플로우 이슈 해결 실행자 |
+| `swe-analyst` | 이슈 근본 원인 진단 (읽기 전용) |
+| `swe-verifier` | 수정 후 독립 검증 (읽기 전용) |
 
 ---
 
-## 스킬 (6개)
+## 스킬 (7개)
 
 | 스킬 | 설명 |
 |------|------|
@@ -53,6 +57,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 | `manage-skills` | 스킬 관리 (추가/제거/목록) |
 | `py-standard` | Python 프로젝트 컨벤션 가이드 |
 | `verify-implementation` | 구현 검증 체크리스트 |
+| `jin-swe-fix` | Live-SWE-agent 워크플로우 기반 이슈 수정 |
 
 ---
 
@@ -174,12 +179,13 @@ jin-claude/
 │   └── jin-claude/                      # 단일 플러그인
 │       ├── .claude-plugin/
 │       │   └── plugin.json              # 플러그인 매니페스트
-│       ├── agents/                      # 9 에이전트
+│       ├── agents/                      # 13 에이전트
 │       │   └── templates/               # 에이전트 템플릿
-│       ├── skills/                      # 6 스킬
+│       ├── skills/                      # 7 스킬
 │       │   ├── jin-claude-init/
 │       │   ├── jin-commit/
 │       │   ├── jin-interview/
+│       │   ├── jin-swe-fix/
 │       │   ├── manage-skills/
 │       │   ├── py-standard/
 │       │   └── verify-implementation/

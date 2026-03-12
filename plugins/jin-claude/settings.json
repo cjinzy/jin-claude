@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'for d in \"$HOME\"/.claude/plugins/marketplaces/*/plugins/jin-claude; do [ -d \"$d\" ] && git -C \"${d%/plugins/jin-claude}\" pull --ff-only 2>/dev/null; done || true'"
+            "command": "bash -c 'for d in \"$HOME\"/.claude/plugins/marketplaces/*/plugins/jin-claude; do [ -d \"$d\" ] && { git -C \"${d%/plugins/jin-claude}\" pull --ff-only 2>&1 || echo \"[jin-claude] warning: auto-update failed for $d\" >&2; }; done || true'"
           }
         ]
       }
