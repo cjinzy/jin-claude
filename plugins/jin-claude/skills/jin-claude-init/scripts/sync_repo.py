@@ -14,6 +14,7 @@ REPO_URL = "git@github.com:cjinzy/jin-claude.git"
 REPO_DIR = Path.home() / ".claude" / ".jin-claude-repo"
 CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"
+CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jin-claudecode-mp" / "jin-claude"
 
 # Agents와 Skills는 marketplace plugin install이 자동 처리하므로 동기화 대상에서 제외.
 SYNC_TARGETS: list[tuple[str, Path]] = []
@@ -355,8 +356,33 @@ def ensure_venv(repo_dir: Path, venv_dir: Path | None = None) -> bool:
     return _install_with_pip(repo_dir, venv_dir)
 
 
+def clean_stale_cache(cache_dir: Path | None = None) -> int:
+    """플러그인 캐시에서 구버전을 제거하고 최신 버전만 유지한다.
+
+    Args:
+        cache_dir: 캐시 디렉토리. None이면 CACHE_BASE 사용.
+
+    Returns:
+        제거된 구버전 수.
+    """
+    base = cache_dir or CACHE_BASE
+    if not base.exists():
+        return 0
+    versions = sorted(
+        [d for d in base.iterdir() if d.is_dir() and d.name[0].isdigit()],
+        key=lambda d: d.name,
+    )
+    if len(versions) <= 1:
+        return 0
+    stale = versions[:-1]
+    for v in stale:
+        shutil.rmtree(v)
+        print(f"[sync_repo] 구버전 캐시 제거: {v.name}")
+    return len(stale)
+
+
 def install_timer(repo_dir: Path, interval_minutes: int = 5) -> None:
-    """systemd user timer를 설치한다.
+    """OS별 타이머를 설치한다 (install-timer.sh가 Darwin/Linux 자동 감지).
 
     Args:
         repo_dir: install-timer.sh가 위치한 저장소 루트 디렉토리.
@@ -366,27 +392,31 @@ def install_timer(repo_dir: Path, interval_minutes: int = 5) -> None:
     if not install_script.exists():
         print("[sync_repo] install-timer.sh 없음, timer 설치 건너뜀")
         return
-    # systemctl --user 가능 여부 확인
     try:
-        subprocess.run(
-            ["systemctl", "--user", "status"],
+        result = subprocess.run(
+            ["bash", str(install_script), str(interval_minutes)],
             capture_output=True,
-            timeout=5,
+            text=True,
+            timeout=60,
         )
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        print("[sync_repo] systemd user session 불가, timer 설치 건너뜀")
-        return
-    subprocess.run(
-        ["bash", str(install_script), str(interval_minutes)],
-        check=False,
-    )
-    print(f"[sync_repo] systemd timer 설치: 완료 (주기: {interval_minutes}분)")
+        if result.returncode == 0:
+            print(f"[sync_repo] timer 설치 완료 (주기: {interval_minutes}분)")
+        else:
+            print(f"[sync_repo] timer 설치 실패: {result.stderr}")
+    except subprocess.TimeoutExpired:
+        print("[sync_repo] timer 설치 타임아웃")
+    except OSError as e:
+        print(f"[sync_repo] timer 설치 오류: {e}")
 
 
 def main() -> None:
     """메인 진입점."""
     try:
         repo_dir = clone_or_pull()
+
+        removed = clean_stale_cache()
+        if removed:
+            print(f"[sync_repo] 구버전 캐시 {removed}개 제거 완료")
 
         for dir_name, target in SYNC_TARGETS:
             src = repo_dir / dir_name

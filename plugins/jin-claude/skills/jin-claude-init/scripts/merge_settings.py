@@ -23,6 +23,7 @@ REQUIRED_SETTINGS: dict = {
     "outputStyle": "Explanatory",
     "language": "korean",
     "skipDangerousModePermissionPrompt": True,
+    "effortLevel": "high",
 }
 
 

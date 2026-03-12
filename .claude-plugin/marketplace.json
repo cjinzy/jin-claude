@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Multi-agent orchestration system for Claude Code: 13 agents, 7 skills, statusline utilities",
-    "version": "2.1.0"
+    "version": "2.2.0"
   },
   "plugins": [
     {
       "name": "jin-claude",
       "source": "./plugins/jin-claude",
       "description": "Multi-agent orchestration for Claude Code: 13 agents, 7 skills, lifecycle hooks, CTI pipeline, statusline",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "author": {
         "name": "jin",
         "email": "jin@stealthmole.com"
@@ -21,7 +21,7 @@
       "license": "MIT",
       "keywords": [
         "orchestration", "multi-agent", "agents", "skills",
-        "workflow", "tdd", "code-review", "research",
+        "workflow", "tdd", "code-review", "hooks", "research",
         "cti", "mole", "statusline", "swe"
       ],
       "category": "development",

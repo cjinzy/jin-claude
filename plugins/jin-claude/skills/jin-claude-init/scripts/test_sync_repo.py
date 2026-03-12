@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sync_repo import install_superclaude, sync_directory
+from sync_repo import clean_stale_cache, install_superclaude, install_timer, sync_directory
 
 
 def _make_skill(base: Path, name: str, content: str = "skill") -> None:
@@ -269,6 +269,102 @@ class TestInstallSuperclaude:
 
         assert install_superclaude() is False
         assert mock_run.call_count == 2
+
+class TestCleanStaleCache:
+    """clean_stale_cache() 테스트 스위트."""
+
+    def test_no_cache_dir(self, tmp_path: Path) -> None:
+        """캐시 디렉토리가 없으면 0을 반환한다."""
+        nonexistent = tmp_path / "nonexistent"
+        assert clean_stale_cache(nonexistent) == 0
+
+    def test_single_version_kept(self, tmp_path: Path) -> None:
+        """버전이 1개뿐이면 제거하지 않는다."""
+        (tmp_path / "1.0.0").mkdir()
+        assert clean_stale_cache(tmp_path) == 0
+        assert (tmp_path / "1.0.0").exists()
+
+    def test_removes_old_versions(self, tmp_path: Path) -> None:
+        """구버전을 제거하고 최신 버전만 유지한다."""
+        (tmp_path / "1.0.0").mkdir()
+        (tmp_path / "2.0.0").mkdir()
+        (tmp_path / "2.1.0").mkdir()
+
+        removed = clean_stale_cache(tmp_path)
+
+        assert removed == 2
+        assert not (tmp_path / "1.0.0").exists()
+        assert not (tmp_path / "2.0.0").exists()
+        assert (tmp_path / "2.1.0").exists()
+
+    def test_ignores_non_version_dirs(self, tmp_path: Path) -> None:
+        """숫자로 시작하지 않는 디렉토리는 무시한다."""
+        (tmp_path / "1.0.0").mkdir()
+        (tmp_path / "2.0.0").mkdir()
+        (tmp_path / ".tmp").mkdir()
+
+        removed = clean_stale_cache(tmp_path)
+
+        assert removed == 1
+        assert (tmp_path / ".tmp").exists()
+        assert (tmp_path / "2.0.0").exists()
+
+    def test_empty_cache_dir(self, tmp_path: Path) -> None:
+        """빈 캐시 디렉토리이면 0을 반환한다."""
+        assert clean_stale_cache(tmp_path) == 0
+
+
+class TestInstallTimer:
+    """install_timer() 테스트 스위트."""
+
+    @patch("sync_repo.subprocess.run")
+    def test_script_not_found(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        """install-timer.sh가 없으면 건너뛴다."""
+        install_timer(tmp_path)
+        mock_run.assert_not_called()
+
+    @patch("sync_repo.subprocess.run")
+    def test_success(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        """install-timer.sh 실행 성공."""
+        script = tmp_path / "plugins" / "jin-claude" / "scripts" / "install-timer.sh"
+        script.parent.mkdir(parents=True)
+        script.write_text("#!/bin/bash\necho ok")
+
+        mock_run.return_value = _make_result(0)
+        install_timer(tmp_path, interval_minutes=5)
+        mock_run.assert_called_once()
+
+    @patch("sync_repo.subprocess.run")
+    def test_failure(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        """install-timer.sh 실행 실패 시 오류 메시지 출력."""
+        script = tmp_path / "plugins" / "jin-claude" / "scripts" / "install-timer.sh"
+        script.parent.mkdir(parents=True)
+        script.write_text("#!/bin/bash\nexit 1")
+
+        mock_run.return_value = _make_result(1, stderr="error")
+        install_timer(tmp_path)
+        mock_run.assert_called_once()
+
+    @patch("sync_repo.subprocess.run")
+    def test_timeout(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        """타임아웃 시 오류 메시지 출력."""
+        script = tmp_path / "plugins" / "jin-claude" / "scripts" / "install-timer.sh"
+        script.parent.mkdir(parents=True)
+        script.write_text("#!/bin/bash\nsleep 100")
+
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="bash", timeout=60)
+        install_timer(tmp_path)
+
+    @patch("sync_repo.subprocess.run")
+    def test_os_error(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        """OSError 발생 시 오류 메시지 출력."""
+        script = tmp_path / "plugins" / "jin-claude" / "scripts" / "install-timer.sh"
+        script.parent.mkdir(parents=True)
+        script.write_text("#!/bin/bash")
+
+        mock_run.side_effect = OSError("permission denied")
+        install_timer(tmp_path)
+
 
     @patch("sync_repo.find_uv", return_value="/usr/local/bin/uv")
     @patch("sync_repo.subprocess.run")
