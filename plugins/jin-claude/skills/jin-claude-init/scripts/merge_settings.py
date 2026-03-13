@@ -67,6 +67,13 @@ def merge_settings(settings_path: Path | None = None) -> dict:
 
     merged = deep_merge(existing, REQUIRED_SETTINGS)
 
+    # hooks는 .claude-plugin/hooks/hooks.json에서 관리하므로 글로벌 설정에서 제거.
+    # 구버전(3.0.0) 플러그인이 settings.json에 hooks를 정의했고,
+    # 플러그인 시스템이 이를 글로벌 설정에 병합/저장했을 수 있다.
+    if "hooks" in merged:
+        del merged["hooks"]
+        print("[merge_settings] 글로벌 설정에서 hooks 제거 (플러그인 hooks.json으로 이관)")
+
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(merged, indent=2, ensure_ascii=False) + "\n",
