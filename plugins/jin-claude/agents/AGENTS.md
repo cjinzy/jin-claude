@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-01-28 | Updated: 2026-03-09 -->
+<!-- Generated: 2026-01-28 | Updated: 2026-03-13 -->
 
 # agents (Prompt Templates)
 
@@ -63,6 +63,7 @@ Specialized agents for systematic software issue resolution, adapted from the Li
 
 | Skill | 트리거 | 설명 |
 |-------|--------|------|
+| `jin-suggest` | "jin suggest", "추천", "뭐 써야", "어떤 스킬" | 스킬/에이전트 추천 엔진 — 요청 분석 후 최적 조합 추천 |
 | `jin-orchestrator` | "jin orchestrate", "오케스트레이션" | 풀 오케스트레이션 파이프라인 (Planning→Executing→Verifying→Fixing) |
 | `jin-maxwork` | "jin maxwork", "병렬" | 병렬 실행 엔진 — 독립 태스크를 worktree 격리 병렬 실행 |
 | `jin-fsd` | "jin fsd", "자율실행" | 단계별 승인 자율실행 (오케스트레이터 + AskUserQuestion 게이트) |

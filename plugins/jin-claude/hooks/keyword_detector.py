@@ -35,6 +35,11 @@ KEYWORDS = {
     # Phase 3C: Deepinit (2개)
     "jin deepinit": "jin-deepinit",
     "프로젝트 분석": "jin-deepinit",
+    # Phase 4: Suggest (4개)
+    "jin suggest": "jin-suggest",
+    "추천": "jin-suggest",
+    "뭐 써야": "jin-suggest",
+    "어떤 스킬": "jin-suggest",
 }
 
 
