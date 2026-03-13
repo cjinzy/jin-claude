@@ -33,27 +33,26 @@ class TestCheckMarketplaces:
                 "superpowers-marketplace",
                 "context-mode",
                 "superclaude",
-                "omc",
             ]
         }
         result = check_marketplaces(settings)
-        assert result["ok"] == 6
-        assert result["total"] == 6
+        assert result["ok"] == 5
+        assert result["total"] == 5
         assert result["missing"] == []
 
     def test_none_present(self) -> None:
         """marketplace 키가 없으면 모두 missing이어야 한다."""
         result = check_marketplaces({})
         assert result["ok"] == 0
-        assert result["total"] == 6
-        assert len(result["missing"]) == 6
+        assert result["total"] == 5
+        assert len(result["missing"]) == 5
 
     def test_partial(self) -> None:
         """일부만 있으면 나머지가 missing이어야 한다."""
-        settings = {"extraKnownMarketplaces": ["obsidian-skills", "omc"]}
+        settings = {"extraKnownMarketplaces": ["obsidian-skills", "superclaude"]}
         result = check_marketplaces(settings)
         assert result["ok"] == 2
-        assert len(result["missing"]) == 4
+        assert len(result["missing"]) == 3
 
 
 class TestCheckPlugins:
@@ -68,18 +67,17 @@ class TestCheckPlugins:
                 "superpowers": True,
                 "context-mode": True,
                 "sc": True,
-                "oh-my-claudecode": True,
             }
         }
         result = check_plugins(settings)
-        assert result["ok"] == 6
+        assert result["ok"] == 5
         assert result["missing"] == []
 
     def test_empty(self) -> None:
         """enabledPlugins가 없으면 모두 missing이어야 한다."""
         result = check_plugins({})
         assert result["ok"] == 0
-        assert len(result["missing"]) == 6
+        assert len(result["missing"]) == 5
 
 
 class TestCheckSettings:
@@ -181,8 +179,8 @@ class TestDetermineRecommendation:
     def test_none_when_all_ok(self) -> None:
         """모든 항목이 OK이면 'none'."""
         report = {
-            "marketplaces": {"ok": 6, "total": 6},
-            "plugins": {"ok": 6, "total": 6},
+            "marketplaces": {"ok": 5, "total": 5},
+            "plugins": {"ok": 5, "total": 5},
             "statusline": True,
             "settings": {"complete": True},
             "venv": True,
@@ -197,8 +195,8 @@ class TestDetermineRecommendation:
     def test_full_when_nothing_installed(self) -> None:
         """아무것도 설치되지 않았으면 'full'."""
         report = {
-            "marketplaces": {"ok": 0, "total": 6},
-            "plugins": {"ok": 0, "total": 6},
+            "marketplaces": {"ok": 0, "total": 5},
+            "plugins": {"ok": 0, "total": 5},
             "statusline": False,
             "settings": {"complete": False},
             "venv": False,
@@ -213,8 +211,8 @@ class TestDetermineRecommendation:
     def test_partial(self) -> None:
         """일부만 설치되었으면 'partial'."""
         report = {
-            "marketplaces": {"ok": 3, "total": 6},
-            "plugins": {"ok": 6, "total": 6},
+            "marketplaces": {"ok": 3, "total": 5},
+            "plugins": {"ok": 5, "total": 5},
             "statusline": True,
             "settings": {"complete": True},
             "venv": True,

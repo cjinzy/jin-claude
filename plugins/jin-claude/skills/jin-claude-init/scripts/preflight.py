@@ -38,7 +38,6 @@ EXPECTED_MARKETPLACES = [
     "superpowers-marketplace",
     "context-mode",
     "superclaude",
-    "omc",
 ]
 
 EXPECTED_PLUGINS = [
@@ -47,7 +46,6 @@ EXPECTED_PLUGINS = [
     "superpowers",
     "context-mode",
     "sc",
-    "oh-my-claudecode",
 ]
 
 HOOK_TYPES = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "SessionStart"]

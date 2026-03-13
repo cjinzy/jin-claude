@@ -17,7 +17,7 @@ jin-claude-init/
 
 | 항목 | SKILL.md | 코드 | 일치 |
 |------|----------|------|------|
-| Step 1 Marketplace 목록 (5개) | obsidian, ui-ux-pro-max, superpowers, omc, context-mode | N/A (수동 실행) | — |
+| Step 1 Marketplace 목록 (5개) | obsidian, ui-ux-pro-max, superpowers, context-mode, superclaude | N/A (수동 실행) | — |
 | Step 2 Plugin 설치 목록 (5개) | 동일 5개 | N/A (수동 실행) | — |
 | SuperClaude fallback 순서 | pipx → pip → uv | 코드 일치 | ✅ |
 | Step 3 sync 대상 dirs | agents/, skills/ | `SYNC_TARGETS` 일치 | ✅ |
@@ -41,8 +41,8 @@ jin-claude-init/
 - `clone_or_pull()`, `sync_directory()`, `sync_file()`, `ensure_venv()`, `find_uv()` 등 다른 함수들의 테스트 없음
 - `test_merge_settings.py`는 `deep_merge()` + `merge_settings()` 포괄적 테스트 (11개) ✅
 
-#### 4. `.omc/` 및 `__pycache__/` 잔재 파일 (Trivial)
-- `.gitignore`에 의해 트래킹되지는 않지만, `scripts/` 안에 `.omc/state/`와 `__pycache__/`가 로컬에 존재
+#### 4. `__pycache__/` 잔재 파일 (Trivial)
+- `.gitignore`에 의해 트래킹되지는 않지만, `scripts/` 안에 `__pycache__/`가 로컬에 존재
 - 정리 권장 (필수 아님)
 
 ---
@@ -79,6 +79,5 @@ Step 3의 "이 스크립트는:" 목록 끝에 SuperClaude 설치 단계 추가:
 **우선순위: Trivial**
 
 ```bash
-rm -rf .claude/skills/jin-claude-init/scripts/.omc/
 rm -rf .claude/skills/jin-claude-init/scripts/__pycache__/
 ```
