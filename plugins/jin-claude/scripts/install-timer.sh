@@ -54,6 +54,10 @@ if [ "$OS_TYPE" = "Linux" ]; then
   echo "[install-timer] systemd user directory: $SYSTEMD_USER_DIR"
   mkdir -p "$SYSTEMD_USER_DIR"
 
+  # 기존 파일/깨진 symlink 정리 (이전 설치에서 다른 경로를 가리키는 경우 대비)
+  rm -f "$SYSTEMD_USER_DIR/fetch-claude-usage.service"
+  rm -f "$SYSTEMD_USER_DIR/fetch-claude-usage.timer"
+
   # Service는 symlink
   ln -sf "$PLUGIN_DIR/systemd/fetch-claude-usage.service" "$SYSTEMD_USER_DIR/"
 
@@ -97,6 +101,13 @@ elif [[ "$OS_TYPE" == MINGW* || "$OS_TYPE" == MSYS* || "$OS_TYPE" == CYGWIN* ]];
     elif [ -f "$VENV_SCRIPTS/fetch-claude-usage" ]; then
       FETCH_CMD="$VENV_SCRIPTS/fetch-claude-usage"
     fi
+  fi
+
+  # 실행파일 존재 확인
+  if [ ! -f "$FETCH_CMD" ]; then
+    echo "[install-timer] 경고: fetch-claude-usage를 찾을 수 없습니다: $FETCH_CMD"
+    echo "[install-timer] venv 패키지가 설치되었는지 확인하세요."
+    exit 1
   fi
 
   # Git Bash 경로를 Windows 네이티브 경로로 변환
