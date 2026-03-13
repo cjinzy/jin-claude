@@ -1,6 +1,6 @@
 # jin-claude
 
-Claude Code용 멀티 에이전트 오케스트레이션 시스템. 13개 에이전트, 7개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
+Claude Code용 멀티 에이전트 오케스트레이션 시스템. 13개 에이전트, 8개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
 
 ## 빠른 시작
 
@@ -47,7 +47,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 
 ---
 
-## 스킬 (7개)
+## 스킬 (8개)
 
 | 스킬 | 설명 |
 |------|------|
@@ -57,6 +57,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 | `manage-skills` | 스킬 관리 (추가/제거/목록) |
 | `py-standard` | Python 프로젝트 컨벤션 가이드 |
 | `verify-implementation` | 구현 검증 체크리스트 |
+| `jin-suggest` | 적합한 스킬/에이전트 추천 |
 | `jin-swe-fix` | Live-SWE-agent 워크플로우 기반 이슈 수정 |
 
 ---
@@ -181,11 +182,12 @@ jin-claude/
 │       │   └── plugin.json              # 플러그인 매니페스트
 │       ├── agents/                      # 13 에이전트
 │       │   └── templates/               # 에이전트 템플릿
-│       ├── skills/                      # 7 스킬
+│       ├── skills/                      # 8 스킬
 │       │   ├── jin-claude-init/
 │       │   ├── jin-commit/
 │       │   ├── jin-interview/
 │       │   ├── jin-swe-fix/
+│       │   ├── jin-suggest/
 │       │   ├── manage-skills/
 │       │   ├── py-standard/
 │       │   └── verify-implementation/
