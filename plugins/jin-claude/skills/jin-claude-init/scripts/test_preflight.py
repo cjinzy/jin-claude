@@ -188,6 +188,7 @@ class TestDetermineRecommendation:
             "context7": True,
             "filesystem": True,
             "context-mode": True,
+            "serena": True,
             "hooks": {"installed": 4, "total": 4},
         }
         assert determine_recommendation(report) == "none"
@@ -204,6 +205,7 @@ class TestDetermineRecommendation:
             "context7": False,
             "filesystem": False,
             "context-mode": False,
+            "serena": False,
             "hooks": {"installed": 0, "total": 4},
         }
         assert determine_recommendation(report) == "full"
@@ -220,6 +222,7 @@ class TestDetermineRecommendation:
             "context7": True,
             "filesystem": False,
             "context-mode": False,
+            "serena": False,
             "hooks": {"installed": 1, "total": 4},
         }
         assert determine_recommendation(report) == "partial"

@@ -50,7 +50,7 @@ EXPECTED_PLUGINS = [
 
 HOOK_TYPES = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "SessionStart"]
 
-MCP_SERVERS = ["context7", "filesystem", "context-mode"]
+MCP_SERVERS = ["context7", "filesystem", "context-mode", "serena"]
 
 
 def _load_settings() -> dict:

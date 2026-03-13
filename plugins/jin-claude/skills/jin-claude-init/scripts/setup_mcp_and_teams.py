@@ -1,6 +1,6 @@
 """MCP 서버 설치 스크립트.
 
-Context7, Filesystem, context-mode MCP 서버를 설치한다.
+Context7, Filesystem, context-mode, Serena MCP 서버를 설치한다.
 이미 설치된 서버는 건너뛴다 (멱등성 보장).
 """
 
@@ -21,6 +21,18 @@ MCP_SERVERS = [
     {
         "name": "context-mode",
         "args": ["npx", "-y", "context-mode"],
+    },
+    {
+        "name": "serena",
+        "args": [
+            "uvx",
+            "--from",
+            "git+https://github.com/oraios/serena",
+            "serena",
+            "start-mcp-server",
+            "--context=claude-code",
+            "--project-from-cwd",
+        ],
     },
 ]
 
