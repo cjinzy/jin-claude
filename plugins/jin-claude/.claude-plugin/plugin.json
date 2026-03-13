@@ -1,6 +1,6 @@
 {
   "name": "jin-claude",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Multi-agent orchestration for Claude Code: 15 agents, 15 skills, orchestrator, parallel execution, hooks, statusline, CTI pipeline",
   "author": {
     "name": "jin",

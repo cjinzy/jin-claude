@@ -19,10 +19,17 @@ CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jin-claudecode-mp"
 # Agents와 Skills는 marketplace plugin install이 자동 처리하므로 동기화 대상에서 제외.
 SYNC_TARGETS: list[tuple[str, Path]] = []
 
+# hooks는 ${CLAUDE_PLUGIN_ROOT}가 치환되지 않으므로 고정 경로에 복사.
+HOOKS_DIR = CLAUDE_DIR / "jin-hooks"
+
 # (소스 상대경로, 대상 경로, 백업 여부)
 SYNC_FILES = [
     ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh", False),
     (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md", True),
+    ("plugins/jin-claude/hooks/keyword_detector.py", HOOKS_DIR / "keyword_detector.py", False),
+    ("plugins/jin-claude/hooks/pre_tool_enforcer.sh", HOOKS_DIR / "pre_tool_enforcer.sh", False),
+    ("plugins/jin-claude/hooks/post_tool_verifier.sh", HOOKS_DIR / "post_tool_verifier.sh", False),
+    ("plugins/jin-claude/hooks/session_init.py", HOOKS_DIR / "session_init.py", False),
 ]
 
 

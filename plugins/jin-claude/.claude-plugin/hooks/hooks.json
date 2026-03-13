@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/keyword_detector.py",
+            "command": "python3 $HOME/.claude/jin-hooks/keyword_detector.py",
             "timeout": 5
           }
         ]
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/pre_tool_enforcer.sh",
+            "command": "bash $HOME/.claude/jin-hooks/pre_tool_enforcer.sh",
             "timeout": 5
           }
         ]
@@ -31,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PLUGIN_ROOT}/hooks/post_tool_verifier.sh",
+            "command": "bash $HOME/.claude/jin-hooks/post_tool_verifier.sh",
             "timeout": 5
           }
         ]
@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/session_init.py",
+            "command": "python3 $HOME/.claude/jin-hooks/session_init.py",
             "timeout": 10
           }
         ]
