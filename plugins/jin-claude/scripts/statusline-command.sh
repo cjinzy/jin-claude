@@ -171,13 +171,17 @@ if [ "$show_usage" = "1" ]; then
       else usage_color="$LEVEL_10"
       fi
 
-      # 5h 리셋 시간 표시
+      # 5h 리셋 남은 시간 표시
       reset_5h_display=""
       if [ -n "$resets_5h" ]; then
         epoch=$(parse_iso_to_epoch "$resets_5h")
         if [ -n "$epoch" ]; then
-          reset_time=$(format_epoch "$epoch" "%H:%M")
-          [ -n "$reset_time" ] && reset_5h_display=" →${reset_time}"
+          remain_sec=$((epoch - $(date +%s)))
+          if [ "$remain_sec" -gt 0 ]; then
+            remain_h=$((remain_sec / 3600))
+            remain_m=$(( (remain_sec % 3600) / 60 ))
+            reset_5h_display=" →${remain_h}:$(printf '%02d' $remain_m)"
+          fi
         fi
       fi
 
@@ -216,8 +220,17 @@ if [ "$show_usage" = "1" ]; then
       if [ -n "$resets_7d" ]; then
         epoch=$(parse_iso_to_epoch "$resets_7d")
         if [ -n "$epoch" ]; then
-          reset_date=$(format_epoch "$epoch" "%m/%d(%a)")
-          [ -n "$reset_date" ] && reset_7d_display=" →${reset_date}"
+          remain_sec=$((epoch - $(date +%s)))
+          if [ "$remain_sec" -gt 0 ]; then
+            remain_days=$((remain_sec / 86400))
+            remain_hours=$(( (remain_sec % 86400) / 3600 ))
+            remain_mins=$(( (remain_sec % 3600) / 60 ))
+            if [ "$remain_days" -ge 1 ]; then
+              reset_7d_display=" →${remain_days}D/${remain_hours}H"
+            else
+              reset_7d_display=" →${remain_hours}:$(printf '%02d' $remain_mins)"
+            fi
+          fi
         fi
       fi
 
