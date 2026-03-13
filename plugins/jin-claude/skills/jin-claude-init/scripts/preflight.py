@@ -206,13 +206,34 @@ def check_mcp_server(name: str) -> bool:
 def check_hooks(settings: dict) -> dict:
     """jin-claude hooks 설정 존재 여부를 확인한다.
 
+    플러그인 캐시의 .claude-plugin/hooks/hooks.json을 우선 확인하고,
+    없으면 글로벌 settings.json의 hooks 키를 fallback으로 확인한다.
+
     Args:
         settings: settings.json 딕셔너리.
 
     Returns:
         installed, total, missing 정보가 담긴 딕셔너리.
     """
-    hooks = settings.get("hooks", {})
+    hooks: dict = {}
+
+    # 플러그인 캐시에서 hooks.json 탐색
+    cache_base = CLAUDE_DIR / "plugins" / "cache" / "jin-claudecode-mp" / "jin-claude"
+    if cache_base.exists():
+        versions = sorted(
+            [d for d in cache_base.iterdir() if d.is_dir() and d.name[0].isdigit()],
+            key=lambda d: d.name,
+        )
+        if versions:
+            hooks_json = versions[-1] / ".claude-plugin" / "hooks" / "hooks.json"
+            if hooks_json.exists():
+                data = json.loads(hooks_json.read_text(encoding="utf-8"))
+                hooks = data.get("hooks", {})
+
+    # fallback: 글로벌 settings.json
+    if not hooks:
+        hooks = settings.get("hooks", {})
+
     missing = [h for h in HOOK_TYPES if h not in hooks]
     installed = len(HOOK_TYPES) - len(missing)
     return {"installed": installed, "total": len(HOOK_TYPES), "missing": missing}

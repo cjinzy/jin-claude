@@ -143,8 +143,27 @@ class TestCheckVenv:
 class TestCheckHooks:
     """check_hooks() 테스트 스위트."""
 
-    def test_all_hooks(self) -> None:
-        """4개 hooks가 모두 있으면 installed=4."""
+    def test_all_hooks_from_plugin_cache(self, tmp_path: Path) -> None:
+        """플러그인 캐시의 hooks.json에서 4개 hooks를 찾으면 installed=4."""
+        hooks_dir = tmp_path / "plugins" / "cache" / "jin-claudecode-mp" / "jin-claude" / "3.0.0" / ".claude-plugin" / "hooks"
+        hooks_dir.mkdir(parents=True)
+        hooks_json = hooks_dir / "hooks.json"
+        hooks_json.write_text(json.dumps({
+            "hooks": {
+                "UserPromptSubmit": [{}],
+                "PreToolUse": [{}],
+                "PostToolUse": [{}],
+                "SessionStart": [{}],
+            }
+        }))
+        with patch("preflight.CLAUDE_DIR", tmp_path):
+            result = check_hooks({})
+        assert result["installed"] == 4
+        assert result["total"] == 4
+        assert result["missing"] == []
+
+    def test_fallback_to_settings(self) -> None:
+        """플러그인 캐시가 없으면 settings.json의 hooks를 fallback으로 사용한다."""
         settings = {
             "hooks": {
                 "UserPromptSubmit": [],
@@ -153,22 +172,28 @@ class TestCheckHooks:
                 "SessionStart": [],
             }
         }
-        result = check_hooks(settings)
+        with patch("preflight.CLAUDE_DIR", Path("/nonexistent")):
+            result = check_hooks(settings)
         assert result["installed"] == 4
-        assert result["total"] == 4
         assert result["missing"] == []
 
     def test_no_hooks(self) -> None:
-        """hooks가 없으면 installed=0."""
-        result = check_hooks({})
+        """hooks가 어디에도 없으면 installed=0."""
+        with patch("preflight.CLAUDE_DIR", Path("/nonexistent")):
+            result = check_hooks({})
         assert result["installed"] == 0
         assert result["total"] == 4
         assert len(result["missing"]) == 4
 
-    def test_partial_hooks(self) -> None:
-        """일부 hooks만 있으면 나머지가 missing."""
-        settings = {"hooks": {"SessionStart": []}}
-        result = check_hooks(settings)
+    def test_partial_hooks_from_cache(self, tmp_path: Path) -> None:
+        """플러그인 캐시에 일부 hooks만 있으면 나머지가 missing."""
+        hooks_dir = tmp_path / "plugins" / "cache" / "jin-claudecode-mp" / "jin-claude" / "1.0.0" / ".claude-plugin" / "hooks"
+        hooks_dir.mkdir(parents=True)
+        (hooks_dir / "hooks.json").write_text(json.dumps({
+            "hooks": {"SessionStart": [{}]}
+        }))
+        with patch("preflight.CLAUDE_DIR", tmp_path):
+            result = check_hooks({})
         assert result["installed"] == 1
         assert len(result["missing"]) == 3
 
