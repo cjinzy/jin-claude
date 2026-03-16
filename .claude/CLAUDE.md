@@ -5,6 +5,13 @@ Make full use of agent or Claude Code team members
 Split files to prevent them becoming excessively large.
 Before beginning the task, I utilise jin-interview skills.
 
+## MCP
+Actively use MCP servers for efficient work:
+- **Serena**: Use symbolic tools (find_symbol, get_symbols_overview) for code exploration instead of reading entire files
+- **Context7**: Query library docs before implementing unfamiliar APIs
+- **context-mode**: Route large outputs (>20 lines) through ctx_execute to protect context window
+- **filesystem**: Use for file operations when appropriate
+
 ## write plan
 Always save plans as files named Header1.
 
