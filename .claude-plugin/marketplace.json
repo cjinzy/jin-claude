@@ -5,14 +5,14 @@
     "email": "jin@stealthmole.com"
   },
   "metadata": {
-    "description": "Multi-agent orchestration system for Claude Code: 15 agents, 14 skills, orchestrator, parallel execution",
+    "description": "Multi-agent orchestration system for Claude Code: 15 agents, 15 skills, orchestrator, parallel execution",
     "version": "3.0.0"
   },
   "plugins": [
     {
       "name": "jin-claude",
       "source": "./plugins/jin-claude",
-      "description": "Multi-agent orchestration for Claude Code: 15 agents, 14 skills, orchestrator, parallel execution, lifecycle hooks, CTI pipeline",
+      "description": "Multi-agent orchestration for Claude Code: 15 agents, 15 skills, orchestrator, parallel execution, lifecycle hooks, CTI pipeline",
       "version": "3.0.0",
       "author": {
         "name": "jin",
@@ -23,7 +23,7 @@
         "orchestration", "multi-agent", "agents", "skills",
         "workflow", "tdd", "code-review", "hooks", "research",
         "cti", "mole", "statusline", "swe",
-        "parallel", "maxwork", "fsd", "ralph", "gcc", "cleanser", "deepinit"
+        "parallel", "maxwork", "fsd", "ralph", "gcc", "cleanser", "deepinit", "chub", "context-hub"
       ],
       "category": "development",
       "strict": false

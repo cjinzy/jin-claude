@@ -9,37 +9,59 @@ import json
 import sys
 
 KEYWORDS = {
+    # ── 순서 주의: 긴 키워드를 짧은 부분 문자열보다 먼저 배치 ──
+    # (예: "deepinit"이 "init"보다 앞에 와야 올바르게 매칭됨)
+    #
+    # Phase 3C: Deepinit (init 부분 문자열 충돌 방지를 위해 최상단 배치)
+    "jin deepinit": "jin-deepinit",
+    "deepinit": "jin-deepinit",
+    "프로젝트 분석": "jin-deepinit",
     # 기존 스킬 (jin 접두사 + 접두사 없음)
     "jin init": "jin-claude-init",
+    "init": "jin-claude-init",
     "jin 초기화": "jin-claude-init",
+    "초기화": "jin-claude-init",
     "jin commit": "jin-commit",
+    "commit": "jin-commit",
     "jin interview": "jin-interview",
+    "interview": "jin-interview",
     "jin swe": "jin-swe-fix",
-    # Phase 1: Orchestrator (2개)
+    "swe": "jin-swe-fix",
+    # Phase 1: Orchestrator
     "jin orchestrate": "jin-orchestrator",
+    "orchestrate": "jin-orchestrator",
     "오케스트레이션": "jin-orchestrator",
-    # Phase 2A: Maxwork (2개)
+    # Phase 2A: Maxwork
     "jin maxwork": "jin-maxwork",
+    "maxwork": "jin-maxwork",
     "병렬": "jin-maxwork",
-    # Phase 2B: FSD (2개)
+    # Phase 2B: FSD
     "jin fsd": "jin-fsd",
+    "fsd": "jin-fsd",
     "자율실행": "jin-fsd",
-    # Phase 2C: Ralph (1개)
+    # Phase 2C: Ralph
     "jin ralph": "jin-ralph",
-    # Phase 3A: GCC (2개)
+    "ralph": "jin-ralph",
+    # Phase 3A: GCC
     "jin gcc": "jin-gcc",
+    "gcc": "jin-gcc",
     "다관점": "jin-gcc",
-    # Phase 3B: Cleanser (2개)
+    # Phase 3B: Cleanser
     "jin cleanser": "jin-cleanser",
+    "cleanser": "jin-cleanser",
     "jin deslop": "jin-cleanser",
-    # Phase 3C: Deepinit (2개)
-    "jin deepinit": "jin-deepinit",
-    "프로젝트 분석": "jin-deepinit",
-    # Phase 4: Suggest (4개)
+    "deslop": "jin-cleanser",
+    # Phase 4: Suggest
     "jin suggest": "jin-suggest",
+    "suggest": "jin-suggest",
     "추천": "jin-suggest",
     "뭐 써야": "jin-suggest",
     "어떤 스킬": "jin-suggest",
+    # Phase 5: Chub
+    "jin chub": "jin-chub",
+    "chub": "jin-chub",
+    "context-hub": "jin-chub",
+    "api 문서": "jin-chub",
 }
 
 
