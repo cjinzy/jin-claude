@@ -29,6 +29,7 @@ jin-claude 전용 스킬/에이전트만 추천하며, 외부 플러그인(sc, s
 | 버그수정 | 버그, 수정, 에러, fix, bug, error, issue | `jin-swe-fix`, `jin-ralph` | `swe-agent`, `swe-agent-high` |
 | 코드리뷰/분석 | 리뷰, 분석, 검토, review, analyze, check | `jin-gcc`, `jin-cleanser`, `verify-implementation` | `swe-analyst` |
 | 커밋/배포 | 커밋, 배포, commit, deploy | `jin-commit` | — |
+| API 문서 | API 문서, 라이브러리 문서, chub, context-hub | `jin-chub` | — |
 | CTI/보안 | 위협, 보안, CTI, threat, malware, 다크웹 | — | `mole-review-agent` (파이프라인) |
 
 ---

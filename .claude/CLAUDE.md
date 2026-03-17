@@ -10,6 +10,7 @@ Actively use MCP servers for efficient work:
 - **Serena**: Use symbolic tools (find_symbol, get_symbols_overview) for code exploration instead of reading entire files
 - **Context7**: Query library docs before implementing unfamiliar APIs
 - **context-mode**: Route large outputs (>20 lines) through ctx_execute to protect context window
+- **Context-Hub (chub)**: Use `chub search/get` for community-curated agent-optimized docs when Context7 lacks coverage
 
 ## write plan
 Always save plans as files named Header1.
