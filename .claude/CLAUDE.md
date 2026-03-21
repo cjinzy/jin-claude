@@ -1,5 +1,11 @@
 # GENERAL
 
+## Tool Priority (Serena vs context-mode)
+- 코드 탐색/심볼 검색/리팩터링: Serena 심볼릭 도구 우선 사용 (find_symbol, get_symbols_overview, find_referencing_symbols, replace_symbol_body)
+- 외부 URL 수집, 대용량 명령 출력(빌드/테스트), 데이터 분석: context-mode 도구 사용 (ctx_execute, ctx_batch_execute, ctx_fetch_and_index)
+- Read: 편집할 파일을 읽을 때만 사용. 코드 구조 파악은 Serena의 get_symbols_overview → find_symbol(include_body=True) 순서로 진행
+- Grep/search_for_pattern: 심볼 이름을 모를 때는 Serena의 search_for_pattern 우선, 비코드 파일 검색은 Grep 사용
+
 ## work method
 Make full use of agent or Claude Code team members
 Split files to prevent them becoming excessively large.
