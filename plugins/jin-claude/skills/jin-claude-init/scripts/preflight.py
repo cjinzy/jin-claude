@@ -54,7 +54,8 @@ EXPECTED_PLUGINS = [
 
 HOOK_TYPES = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "SessionStart"]
 
-MCP_SERVERS = ["context7", "context-mode", "serena"]
+# context-mode는 Step 2의 플러그인이 자동 제공 (plugin:context-mode:context-mode)
+MCP_SERVERS = ["context7", "serena"]
 
 
 def _load_settings() -> dict:
@@ -189,6 +190,8 @@ def _get_uid() -> int:
 def check_mcp_server(name: str) -> bool:
     """특정 MCP 서버가 설치되어 있는지 확인한다.
 
+    standalone (예: "serena:") 또는 플러그인 제공 (예: "plugin:*:serena:") 모두 감지한다.
+
     Args:
         name: MCP 서버 이름.
 
@@ -202,7 +205,12 @@ def check_mcp_server(name: str) -> bool:
             text=True,
             timeout=30,
         )
-        return name in result.stdout
+        for line in result.stdout.splitlines():
+            raw = line.strip().split(":")[0] if ":" in line else line.strip().split()[0] if line.strip() else ""
+            # standalone: "serena: ..." 또는 plugin: "plugin:X:serena: ..."
+            if line.strip().startswith(f"{name}:") or f":{name}:" in line:
+                return True
+        return False
     except (subprocess.TimeoutExpired, OSError, FileNotFoundError):
         return False
 

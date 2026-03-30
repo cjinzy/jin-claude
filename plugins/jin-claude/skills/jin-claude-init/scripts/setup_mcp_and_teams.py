@@ -14,10 +14,6 @@ MCP_SERVERS = [
         "name": "context7",
         "args": ["npx", "-y", "@anthropic-ai/context7-mcp@latest"],
     },
-{
-        "name": "context-mode",
-        "args": ["npx", "-y", "context-mode"],
-    },
     {
         "name": "serena",
         "args": [
@@ -31,6 +27,7 @@ MCP_SERVERS = [
         ],
     },
 ]
+# context-mode는 Step 2의 context-mode 플러그인이 자동 제공 (plugin:context-mode:context-mode)
 
 
 def get_installed_mcps() -> set[str]:
@@ -55,12 +52,17 @@ def get_installed_mcps() -> set[str]:
             parts = line.strip().split()
             if parts:
                 # "name: context7" 또는 "context7 ..." 형태 모두 처리
-                name = parts[0].rstrip(":")
-                if name in ("name", "Name"):
+                raw = parts[0].rstrip(":")
+                if raw in ("name", "Name"):
                     if len(parts) > 1:
                         names.add(parts[1])
+                elif raw.startswith("plugin:"):
+                    # "plugin:marketplace:name" → name도 등록 (중복 감지용)
+                    plugin_name = raw.split(":")[-1]
+                    names.add(raw)
+                    names.add(plugin_name)
                 else:
-                    names.add(name)
+                    names.add(raw)
         return names
     except (subprocess.TimeoutExpired, OSError, FileNotFoundError) as e:
         print(f"[mcp] claude mcp list 오류: {e}")
