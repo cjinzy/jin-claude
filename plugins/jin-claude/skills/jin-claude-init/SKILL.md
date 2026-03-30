@@ -33,6 +33,8 @@ claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
 claude plugin marketplace add obra/superpowers-marketplace
 claude plugin marketplace add mksglu/claude-context-mode
 claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
+claude plugin marketplace add revfactory/harness
+claude plugin marketplace add uditgoenka/autoresearch
 ```
 
 각 명령어 실행 결과를 확인하고, 이미 추가된 marketplace는 건너뛴다.
@@ -47,6 +49,8 @@ claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
 claude plugin install superpowers@superpowers-marketplace
 claude plugin install context-mode@context-mode
 claude plugin install sc@superclaude
+claude plugin install harness@harness
+claude plugin install autoresearch@autoresearch
 ```
 
 이미 설치된 플러그인은 건너뛴다.

@@ -38,6 +38,8 @@ EXPECTED_MARKETPLACES = [
     "superpowers-marketplace",
     "context-mode",
     "superclaude",
+    "harness",
+    "autoresearch",
 ]
 
 EXPECTED_PLUGINS = [
@@ -46,6 +48,8 @@ EXPECTED_PLUGINS = [
     "superpowers",
     "context-mode",
     "sc",
+    "harness",
+    "autoresearch",
 ]
 
 HOOK_TYPES = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "SessionStart"]
