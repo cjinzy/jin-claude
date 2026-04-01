@@ -1,6 +1,6 @@
 # jin-claude
 
-Claude Code용 멀티 에이전트 오케스트레이션 시스템. 13개 에이전트, 8개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
+Claude Code용 멀티 에이전트 오케스트레이션 시스템. 15개 에이전트, 16개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
 
 ## 빠른 시작
 
@@ -20,7 +20,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 
 ---
 
-## 에이전트 (13개)
+## 에이전트 (15개)
 
 ### Opus (고비용, 고품질)
 
@@ -35,6 +35,8 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 |----------|------|
 | `python-expert` | Python 프로덕션 코드 |
 | `jin-interview-agent` | 구조적 요구사항 인터뷰 |
+| `orchestrator-agent` | 멀티 에이전트 파이프라인 관리 및 태스크 분배 |
+| `task-planner-agent` | 사용자 요청을 원자적 태스크로 분해 및 의존성 그래프 생성 |
 | `mole-research-agent` | 위협 인텔리전스 수집 |
 | `mole-intel-organizer-agent` | 인텔리전스 분류 및 구조화 |
 | `mole-interview-agent` | CTI 조사 전 인터뷰 |
@@ -47,18 +49,43 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 
 ---
 
-## 스킬 (8개)
+## 스킬 (16개)
+
+### 핵심 워크플로우
 
 | 스킬 | 설명 |
 |------|------|
 | `jin-claude-init` | 팀원 환경 초기화 자동화 |
 | `jin-commit` | gitmoji 기반 커밋 메시지 추천 |
 | `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
+| `jin-suggest` | 적합한 스킬/에이전트 추천 |
+| `jin-swe-fix` | Live-SWE-agent 워크플로우 기반 이슈 수정 |
+
+### 오케스트레이션 & 자동화
+
+| 스킬 | 설명 |
+|------|------|
+| `jin-orchestrator` | 멀티 에이전트 오케스트레이션 파이프라인 |
+| `jin-fsd` | Full Self-Driving 모드 (단계별 승인 기반 자율 실행) |
+| `jin-maxwork` | 병렬 에이전트 실행 엔진 |
+| `jin-ralph` | 자기참조 반복 루프 (검증 통과까지 반복) |
+
+### 코드 품질 & 분석
+
+| 스킬 | 설명 |
+|------|------|
+| `jin-cleanser` | AI 생성 코드 슬롭 리뷰어 (deslop) |
+| `jin-gcc` | 다중 관점 분석 (codex/gemini CLI 우선) |
+| `jin-deepinit` | 프로젝트 구조 분석 → AGENTS.md 생성 |
+| `jin-chub` | Context-Hub CLI 기반 커뮤니티 API 문서 검색 |
+
+### 유틸리티
+
+| 스킬 | 설명 |
+|------|------|
 | `manage-skills` | 스킬 관리 (추가/제거/목록) |
 | `py-standard` | Python 프로젝트 컨벤션 가이드 |
 | `verify-implementation` | 구현 검증 체크리스트 |
-| `jin-suggest` | 적합한 스킬/에이전트 추천 |
-| `jin-swe-fix` | Live-SWE-agent 워크플로우 기반 이슈 수정 |
 
 ---
 
@@ -180,14 +207,22 @@ jin-claude/
 │   └── jin-claude/                      # 단일 플러그인
 │       ├── .claude-plugin/
 │       │   └── plugin.json              # 플러그인 매니페스트
-│       ├── agents/                      # 13 에이전트
+│       ├── agents/                      # 15 에이전트
 │       │   └── templates/               # 에이전트 템플릿
-│       ├── skills/                      # 8 스킬
+│       ├── skills/                      # 16 스킬
+│       │   ├── jin-chub/
 │       │   ├── jin-claude-init/
+│       │   ├── jin-cleanser/
 │       │   ├── jin-commit/
+│       │   ├── jin-deepinit/
+│       │   ├── jin-fsd/
+│       │   ├── jin-gcc/
 │       │   ├── jin-interview/
-│       │   ├── jin-swe-fix/
+│       │   ├── jin-maxwork/
+│       │   ├── jin-orchestrator/
+│       │   ├── jin-ralph/
 │       │   ├── jin-suggest/
+│       │   ├── jin-swe-fix/
 │       │   ├── manage-skills/
 │       │   ├── py-standard/
 │       │   └── verify-implementation/

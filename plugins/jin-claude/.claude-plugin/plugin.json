@@ -1,7 +1,7 @@
 {
   "name": "jin-claude",
   "version": "3.0.3",
-  "description": "Multi-agent orchestration for Claude Code: 15 agents, 15 skills, orchestrator, parallel execution, hooks, statusline, CTI pipeline",
+  "description": "Multi-agent orchestration for Claude Code: 15 agents, 16 skills, orchestrator, parallel execution, hooks, statusline, CTI pipeline",
   "author": {
     "name": "jin",
     "email": "jin@stealthmole.com"
