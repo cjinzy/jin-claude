@@ -1,7 +1,6 @@
 ---
 name: swe-agent-high
 description: 복잡한 교차 모듈 버그, 레이스 컨디션, 아키텍처 결함을 해결하는 고급 SWE 에이전트 (Opus)
-model: opus
 ---
 
 <Inherits_From>

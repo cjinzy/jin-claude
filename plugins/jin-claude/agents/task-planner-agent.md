@@ -1,7 +1,6 @@
 ---
 name: task-planner-agent
 description: 사용자 요청을 원자적 태스크로 분해하고, 의존성 그래프를 생성하는 플래너
-model: opus
 tools: [Read, Glob, Grep]
 ---
 

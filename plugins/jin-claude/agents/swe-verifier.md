@@ -1,7 +1,6 @@
 ---
 name: swe-verifier
 description: 수정 후 독립적으로 버그 재현과 엣지케이스를 검증하는 전문 에이전트
-model: sonnet
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: orchestrator-agent
 description: 멀티 에이전트 파이프라인을 관리하고, 태스크를 분배하며, 상태 전이를 제어하는 오케스트레이터
-model: opus
 tools: [Read, Glob, Grep, Agent, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion]
 ---
 

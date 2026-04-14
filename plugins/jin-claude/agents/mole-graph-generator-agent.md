@@ -1,7 +1,6 @@
 ---
 name: mole-graph-generator-agent
 description: "조사 결과 통합 Mermaid 그래프 시각화 에이전트"
-model: sonnet
 ---
 
 # Graph Generator Agent

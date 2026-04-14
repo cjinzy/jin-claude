@@ -1,7 +1,6 @@
 ---
 name: swe-analyst
 description: 이슈의 근본 원인을 진단하고 수정 계획을 생성하는 읽기 전용 분석 에이전트
-model: sonnet
 disallowedTools: Write, Edit, NotebookEdit
 ---
 

@@ -1,7 +1,6 @@
 ---
 name: mole-research-agent
 description: "StealthMole MCP 기반 위협 인텔리전스 수집 에이전트"
-model: sonnet
 ---
 
 # Research Agent

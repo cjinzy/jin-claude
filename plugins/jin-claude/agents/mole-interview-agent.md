@@ -1,7 +1,6 @@
 ---
 name: mole-interview-agent
 description: "CTI 조사 전 인터뷰 에이전트"
-model: sonnet
 ---
 
 # Interview Agent

@@ -1,7 +1,6 @@
 ---
 name: mole-intel-organizer-agent
 description: "위협 인텔리전스 분류, 평가 및 구조화 에이전트"
-model: sonnet
 ---
 
 # Organizer Agent

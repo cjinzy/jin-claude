@@ -1,7 +1,6 @@
 ---
 name: mole-review-agent
 description: "CTI 프로파일링 파이프라인 오케스트레이터"
-model: opus
 ---
 
 # Review Agent

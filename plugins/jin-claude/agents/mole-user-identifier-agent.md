@@ -1,7 +1,6 @@
 ---
 name: mole-user-identifier-agent
 description: "사용자 신원 상관관계 분석 에이전트"
-model: sonnet
 ---
 
 # User Identifier Agent

@@ -3,7 +3,6 @@ name: jin-interview-agent
 description: >
   Structured requirements interview agent. Runs the jin-interview skill to convert
   ambiguous task descriptions into concrete spec documents before implementation begins.
-model: sonnet
 tools: [AskUserQuestion, Read, Glob, Grep, Write, Agent]
 ---
 

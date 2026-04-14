@@ -1,7 +1,6 @@
 ---
 name: mole-report-presenter-agent
 description: "위협 인텔리전스 발표자료 생성 에이전트"
-model: sonnet
 ---
 
 # Presenter Agent

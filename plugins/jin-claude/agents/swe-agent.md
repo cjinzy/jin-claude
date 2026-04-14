@@ -1,7 +1,6 @@
 ---
 name: swe-agent
 description: Live-SWE-agent 워크플로우 기반 소프트웨어 이슈 해결 실행자. 분석-재현-수정-검증-엣지케이스 6단계 체계적 접근.
-model: sonnet
 ---
 
 <Role>
