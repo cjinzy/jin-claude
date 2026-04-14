@@ -22,30 +22,42 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 
 ## 에이전트 (15개)
 
-### Opus (고비용, 고품질)
+> v3.0.4+ 부터 **모든 에이전트가 호출자 모델을 상속**합니다. 모델을 고정하지 않으므로 Opus 세션에서 호출하면 Opus로, Sonnet 세션에서 호출하면 Sonnet으로 실행됩니다. 필요 시 `Agent({model: ...})`로 명시 오버라이드 가능.
+
+### Interview & Planning (3)
 
 | 에이전트 | 설명 |
 |----------|------|
-| `mole-review-agent` | CTI 프로파일링 오케스트레이터 |
-| `swe-agent-high` | 복잡한 교차 모듈 이슈 해결 (고급 SWE) |
+| `jin-interview-agent` | 구조적 요구사항 인터뷰 → 구체적 spec 문서 생성 |
+| `orchestrator-agent` | 멀티 에이전트 파이프라인 관리 · 태스크 분배 · 상태 전이 |
+| `task-planner-agent` | 사용자 요청을 원자적 태스크로 분해 + 의존성 그래프 생성 |
 
-### Sonnet (기본, 균형)
+### SWE Engineering (4)
 
 | 에이전트 | 설명 |
 |----------|------|
-| `python-expert` | Python 프로덕션 코드 |
-| `jin-interview-agent` | 구조적 요구사항 인터뷰 |
-| `orchestrator-agent` | 멀티 에이전트 파이프라인 관리 및 태스크 분배 |
-| `task-planner-agent` | 사용자 요청을 원자적 태스크로 분해 및 의존성 그래프 생성 |
-| `mole-research-agent` | 위협 인텔리전스 수집 |
-| `mole-intel-organizer-agent` | 인텔리전스 분류 및 구조화 |
-| `mole-interview-agent` | CTI 조사 전 인터뷰 |
+| `swe-agent` | Live-SWE-agent 6단계 워크플로우 이슈 해결 실행자 |
+| `swe-agent-high` | 복잡한 교차 모듈 · 레이스 컨디션 · 아키텍처 결함 대응 |
+| `swe-analyst` | 읽기 전용 근본 원인 진단 + 수정 계획 생성 |
+| `swe-verifier` | 수정 후 독립 검증 (버그 재현 + 엣지케이스) |
+
+### MOLE / CTI (7)
+
+| 에이전트 | 설명 |
+|----------|------|
+| `mole-review-agent` | CTI 프로파일링 파이프라인 오케스트레이터 |
+| `mole-interview-agent` | CTI 조사 전 인터뷰로 조사 방향 확정 |
+| `mole-research-agent` | StealthMole MCP 기반 위협 인텔리전스 수집 |
+| `mole-intel-organizer-agent` | 위협 인텔리전스 분류 · 평가 · 구조화 |
 | `mole-user-identifier-agent` | 사용자 신원 상관관계 분석 |
-| `mole-graph-generator-agent` | Mermaid 그래프 시각화 |
-| `mole-report-presenter-agent` | 발표자료 생성 |
-| `swe-agent` | Live-SWE-agent 워크플로우 이슈 해결 실행자 |
-| `swe-analyst` | 이슈 근본 원인 진단 (읽기 전용) |
-| `swe-verifier` | 수정 후 독립 검증 (읽기 전용) |
+| `mole-graph-generator-agent` | 조사 결과를 Mermaid 그래프로 통합 시각화 |
+| `mole-report-presenter-agent` | 위협 인텔리전스 발표자료/보고서 생성 |
+
+### Language Expert (1)
+
+| 에이전트 | 설명 |
+|----------|------|
+| `python-expert` | Production-ready Python (SOLID + modern best practices) |
 
 ---
 
