@@ -155,7 +155,7 @@ def check_timer() -> bool:
     if platform.system() == "Darwin":
         try:
             result = subprocess.run(
-                ["launchctl", "print", f"gui/{_get_uid()}/com.jin-claude.usage"],
+                ["launchctl", "print", f"gui/{_get_uid()}/com.jin-claude.fetch-usage"],
                 capture_output=True,
                 text=True,
                 timeout=10,

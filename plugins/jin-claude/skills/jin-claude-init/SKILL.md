@@ -49,7 +49,7 @@ claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
 claude plugin install superpowers@superpowers-marketplace
 claude plugin install context-mode@context-mode
 claude plugin install sc@superclaude
-claude plugin install harness@harness
+claude plugin install harness@harness-marketplace
 claude plugin install autoresearch@autoresearch
 ```
 
