@@ -96,7 +96,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, �
 | 스킬 | 설명 |
 |------|------|
 | `manage-skills` | 스킬 관리 (추가/제거/목록) |
-| `py-standard` | Python 프로젝트 컨벤션 가이드 |
+| `guidelines` | LLM 코딩 행동 가이드 (Karpathy 기반) |
 | `verify-implementation` | 구현 검증 체크리스트 |
 
 ---
@@ -222,6 +222,7 @@ jin-claude/
 │       ├── agents/                      # 15 에이전트
 │       │   └── templates/               # 에이전트 템플릿
 │       ├── skills/                      # 16 스킬
+│       │   ├── guidelines/
 │       │   ├── jin-chub/
 │       │   ├── jin-claude-init/
 │       │   ├── jin-cleanser/
@@ -236,7 +237,6 @@ jin-claude/
 │       │   ├── jin-suggest/
 │       │   ├── jin-swe-fix/
 │       │   ├── manage-skills/
-│       │   ├── py-standard/
 │       │   └── verify-implementation/
 │       ├── scripts/                     # statusline + timer
 │       │   ├── statusline-command.sh    # statusline 렌더러

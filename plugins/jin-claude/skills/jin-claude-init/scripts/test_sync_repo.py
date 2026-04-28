@@ -81,14 +81,14 @@ class TestSyncDirectory:
         """소스에 있는 대상 항목은 유지한다."""
         src, dst = sync_dirs
         _make_skill(src, "jin-commit")
-        _make_skill(src, "py-standard")
+        _make_skill(src, "guidelines")
         _make_skill(dst, "jin-commit", "old")
-        _make_skill(dst, "py-standard", "old")
+        _make_skill(dst, "guidelines", "old")
 
         sync_directory(src, dst)
 
         assert (dst / "jin-commit").exists()
-        assert (dst / "py-standard").exists()
+        assert (dst / "guidelines").exists()
 
     def test_nonexistent_src_returns_zero(self, sync_dirs: tuple[Path, Path]) -> None:
         """소스 디렉토리가 없으면 0을 반환한다."""

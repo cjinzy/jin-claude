@@ -121,11 +121,11 @@ Korean Cyber Threat Intelligence 파이프라인 전용 에이전트.
 |------|---------|-------------|
 | `jin-claude-init` | `jin init`, `초기화`, `환경 세팅` | 팀원 Claude Code 환경 초기화 — plugin 설치/settings/MCP/hooks/agents·skills 동기화 |
 
-### Conventions (1)
+### Behavioral Guidelines (1)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
-| `py-standard` | Python 프로젝트 관련 요청 시 | Python 표준 컨벤션 (uv · Ruff · loguru · 타입 힌트) |
+| `guidelines` | 코드 작성/리뷰/리팩토링 시 | LLM 코딩 행동 가이드 — Think Before · Simplicity · Surgical · Goal-Driven (Karpathy 기반) |
 
 ### Meta (1)
 
