@@ -1,5 +1,7 @@
 # GENERAL
 
+skills/guidelines 를 먼저 참고하고 작업을 시작합니다.
+
 ## Tool Priority (Serena vs context-mode)
 - 코드 탐색/심볼 검색/리팩터링: Serena 심볼릭 도구 우선 사용 (find_symbol, get_symbols_overview, find_referencing_symbols, replace_symbol_body)
 - 외부 URL 수집, 대용량 명령 출력(빌드/테스트), 데이터 분석: context-mode 도구 사용 (ctx_execute, ctx_batch_execute, ctx_fetch_and_index)
@@ -27,22 +29,18 @@ Always save plans as files named Header1.
 ```
 
 ## test case
-alway create teset case (do not git commit)
+always create teset case (do not git commit)
 
 ## Backend
-python 3.12
+python 3.13
 
-### Management
-uv
-
-### type checker
-ty
-
-### linter & formatter
-ruff
-
-### logging
-loguru
+| type | name | version |
+| ---- | ---- | ------- |
+| language | python | 3.13 |
+| management | uv | lateset |
+| type checket | ty | latest |
+| linter & formatter | ruff | latest |
+| logging | loguru | latest |
 
 ### etc
 Always write `doc strings`
