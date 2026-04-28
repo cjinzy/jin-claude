@@ -1,6 +1,6 @@
 {
   "name": "jin-claude",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "Multi-agent orchestration for Claude Code: 15 agents, 16 skills, orchestrator, parallel execution, hooks, statusline, CTI pipeline",
   "author": {
     "name": "jin",
@@ -11,6 +11,6 @@
   "keywords": [
     "orchestration", "multi-agent", "agents", "skills",
     "workflow", "tdd", "code-review", "hooks", "statusline", "cti", "swe",
-    "parallel", "maxwork", "fsd", "ralph", "gcc", "cleanser", "deepinit", "suggest"
+    "parallel", "maxwork", "fsd", "ralph", "gcc", "cleanser", "deepinit", "suggest", "guidelines"
   ]
 }
