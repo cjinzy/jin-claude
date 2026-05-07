@@ -55,7 +55,8 @@ EXPECTED_PLUGINS = [
 HOOK_TYPES = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "SessionStart"]
 
 # context-mode는 Step 2의 플러그인이 자동 제공 (plugin:context-mode:context-mode)
-MCP_SERVERS = ["context7", "serena"]
+# 현재는 standalone으로 설치할 추가 MCP 서버가 없다.
+MCP_SERVERS: list[str] = []
 
 
 def _load_settings() -> dict:

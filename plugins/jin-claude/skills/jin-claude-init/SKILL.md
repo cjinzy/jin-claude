@@ -105,17 +105,15 @@ python3 "SKILL_DIR/scripts/merge_settings.py"
 
 ## Step 4.5 — MCP + Teams 설정
 
-플러그인이 자동 제공하지 않는 MCP 서버를 설치한다. 이미 설치된 서버는 자동 스킵한다.
+플러그인이 자동 제공하지 않는 standalone MCP 서버를 설치한다. 이미 설치된 서버는 자동 스킵한다.
 
 ```bash
 python3 "SKILL_DIR/scripts/setup_mcp_and_teams.py"
 ```
 
-이 스크립트가 설치하는 MCP 서버:
-- **context7**: 라이브러리 문서 조회 (`@anthropic-ai/context7-mcp@latest`)
-- **serena**: 시맨틱 코드 검색/편집 (`oraios/serena`, `--context=claude-code --project-from-cwd`)
+현재는 standalone 으로 자동 설치하는 MCP 서버가 없다 (`MCP_SERVERS = []`). 필요한 MCP는 사용자가 직접 `claude mcp add` 또는 플러그인을 통해 추가한다.
 
-> **참고:** context-mode MCP는 Step 2의 `context-mode@context-mode` 플러그인이 자동 제공하므로 여기서 설치하지 않는다.
+> **참고:** context-mode MCP는 Step 2의 `context-mode@context-mode` 플러그인이 자동 제공한다.
 
 > **팀 설정**: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 환경변수가 Step 4에서 설정되므로, 별도 팀 제한 설정은 불필요하다.
 

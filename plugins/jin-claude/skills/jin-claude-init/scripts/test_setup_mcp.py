@@ -46,12 +46,12 @@ class TestGetInstalledMcps:
     def test_parses_mcp_list(self, mock_run: MagicMock) -> None:
         """claude mcp list 출력에서 서버 이름을 추출한다."""
         mock_run.return_value = _make_result(
-            stdout="context7  local  npx -y @anthropic-ai/context7-mcp@latest\n"
-                   "serena  local  uvx --from git+https://github.com/oraios/serena\n"
+            stdout="foo  local  npx -y @example/foo-mcp\n"
+                   "bar  local  uvx --from git+https://example.com/bar\n"
         )
         result = get_installed_mcps()
-        assert "context7" in result
-        assert "serena" in result
+        assert "foo" in result
+        assert "bar" in result
 
     @patch("setup_mcp_and_teams.subprocess.run")
     def test_empty_on_failure(self, mock_run: MagicMock) -> None:
@@ -100,37 +100,52 @@ class TestSetupMcpServers:
         assert count == 0
         assert mock_run.call_count == 1  # mcp list만 호출
 
+    @patch("setup_mcp_and_teams.MCP_SERVERS", [
+        {"name": "alpha", "args": ["echo", "alpha"]},
+        {"name": "beta", "args": ["echo", "beta"]},
+        {"name": "gamma", "args": ["echo", "gamma"]},
+    ])
     @patch("setup_mcp_and_teams.subprocess.run")
     def test_partial_install(self, mock_run: MagicMock) -> None:
         """일부만 설치된 경우 나머지만 설치한다."""
         mock_run.side_effect = [
-            _make_result(stdout="context7  local  npx\n"),  # mcp list
-            _make_result(0),  # context-mode
-            _make_result(0),  # serena
+            _make_result(stdout="alpha  local  npx\n"),  # mcp list
+            _make_result(0),  # beta
+            _make_result(0),  # gamma
         ]
         count = setup_mcp_servers()
         assert count == 2
 
+    @patch("setup_mcp_and_teams.MCP_SERVERS", [
+        {"name": "alpha", "args": ["echo", "alpha"]},
+        {"name": "beta", "args": ["echo", "beta"]},
+        {"name": "gamma", "args": ["echo", "gamma"]},
+    ])
     @patch("setup_mcp_and_teams.subprocess.run")
     def test_install_failure_continues(self, mock_run: MagicMock) -> None:
         """설치 실패해도 나머지 서버를 계속 시도한다."""
         mock_run.side_effect = [
             _make_result(stdout=""),  # mcp list
-            _make_result(1, stderr="fail"),  # context7 실패
-            _make_result(0),  # context-mode 성공
-            _make_result(0),  # serena 성공
+            _make_result(1, stderr="fail"),  # alpha 실패
+            _make_result(0),  # beta 성공
+            _make_result(0),  # gamma 성공
         ]
         count = setup_mcp_servers()
         assert count == 2
 
+    @patch("setup_mcp_and_teams.MCP_SERVERS", [
+        {"name": "alpha", "args": ["echo", "alpha"]},
+        {"name": "beta", "args": ["echo", "beta"]},
+        {"name": "gamma", "args": ["echo", "gamma"]},
+    ])
     @patch("setup_mcp_and_teams.subprocess.run")
     def test_timeout_continues(self, mock_run: MagicMock) -> None:
         """타임아웃이 발생해도 나머지 서버를 계속 시도한다."""
         mock_run.side_effect = [
             _make_result(stdout=""),  # mcp list
-            subprocess.TimeoutExpired(cmd="claude", timeout=60),  # context7 타임아웃
-            _make_result(0),  # context-mode 성공
-            _make_result(0),  # serena 성공
+            subprocess.TimeoutExpired(cmd="claude", timeout=60),  # alpha 타임아웃
+            _make_result(0),  # beta 성공
+            _make_result(0),  # gamma 성공
         ]
         count = setup_mcp_servers()
         assert count == 2

@@ -1,7 +1,10 @@
 """MCP 서버 설치 스크립트.
 
-Context7, context-mode, Serena MCP 서버를 설치한다.
+플러그인이 자동 제공하지 않는 standalone MCP 서버를 설치한다.
 이미 설치된 서버는 건너뛴다 (멱등성 보장).
+
+현재는 추가로 설치할 standalone MCP가 없다.
+context-mode는 Step 2의 context-mode 플러그인이 자동 제공한다.
 """
 
 import subprocess
@@ -9,25 +12,7 @@ import sys
 import traceback
 from pathlib import Path
 
-MCP_SERVERS = [
-    {
-        "name": "context7",
-        "args": ["npx", "-y", "@anthropic-ai/context7-mcp@latest"],
-    },
-    {
-        "name": "serena",
-        "args": [
-            "uvx",
-            "--from",
-            "git+https://github.com/oraios/serena",
-            "serena",
-            "start-mcp-server",
-            "--context=claude-code",
-            "--project-from-cwd",
-        ],
-    },
-]
-# context-mode는 Step 2의 context-mode 플러그인이 자동 제공 (plugin:context-mode:context-mode)
+MCP_SERVERS: list[dict] = []
 
 
 def get_installed_mcps() -> set[str]:

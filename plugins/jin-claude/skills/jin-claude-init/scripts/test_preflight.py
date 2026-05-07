@@ -210,9 +210,7 @@ class TestDetermineRecommendation:
             "settings": {"complete": True},
             "venv": True,
             "timer": True,
-            "context7": True,
             "context-mode": True,
-            "serena": True,
             "hooks": {"installed": 4, "total": 4},
         }
         assert determine_recommendation(report) == "none"
@@ -226,9 +224,7 @@ class TestDetermineRecommendation:
             "settings": {"complete": False},
             "venv": False,
             "timer": False,
-            "context7": False,
             "context-mode": False,
-            "serena": False,
             "hooks": {"installed": 0, "total": 4},
         }
         assert determine_recommendation(report) == "full"
@@ -242,9 +238,7 @@ class TestDetermineRecommendation:
             "settings": {"complete": True},
             "venv": True,
             "timer": False,
-            "context7": True,
             "context-mode": False,
-            "serena": False,
             "hooks": {"installed": 1, "total": 4},
         }
         assert determine_recommendation(report) == "partial"
