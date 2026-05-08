@@ -10,6 +10,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from preflight import (
+    EXPECTED_MARKETPLACES,
+    EXPECTED_PLUGINS,
     check_hooks,
     check_marketplaces,
     check_plugins,
@@ -26,33 +28,28 @@ class TestCheckMarketplaces:
 
     def test_all_present(self) -> None:
         """모든 marketplace가 존재하면 missing이 비어야 한다."""
-        settings = {
-            "extraKnownMarketplaces": [
-                "obsidian-skills",
-                "ui-ux-pro-max-skill",
-                "superpowers-marketplace",
-                "context-mode",
-                "superclaude",
-            ]
-        }
+        settings = {"extraKnownMarketplaces": list(EXPECTED_MARKETPLACES)}
         result = check_marketplaces(settings)
-        assert result["ok"] == 5
-        assert result["total"] == 5
+        total = len(EXPECTED_MARKETPLACES)
+        assert result["ok"] == total
+        assert result["total"] == total
         assert result["missing"] == []
 
     def test_none_present(self) -> None:
         """marketplace 키가 없으면 모두 missing이어야 한다."""
         result = check_marketplaces({})
+        total = len(EXPECTED_MARKETPLACES)
         assert result["ok"] == 0
-        assert result["total"] == 5
-        assert len(result["missing"]) == 5
+        assert result["total"] == total
+        assert len(result["missing"]) == total
 
     def test_partial(self) -> None:
         """일부만 있으면 나머지가 missing이어야 한다."""
-        settings = {"extraKnownMarketplaces": ["obsidian-skills", "superclaude"]}
+        present = EXPECTED_MARKETPLACES[:2]
+        settings = {"extraKnownMarketplaces": list(present)}
         result = check_marketplaces(settings)
-        assert result["ok"] == 2
-        assert len(result["missing"]) == 3
+        assert result["ok"] == len(present)
+        assert len(result["missing"]) == len(EXPECTED_MARKETPLACES) - len(present)
 
 
 class TestCheckPlugins:
@@ -60,24 +57,16 @@ class TestCheckPlugins:
 
     def test_all_present_dict(self) -> None:
         """dict 형태의 enabledPlugins에서 모든 플러그인이 존재하는 경우."""
-        settings = {
-            "enabledPlugins": {
-                "obsidian": True,
-                "ui-ux-pro-max": True,
-                "superpowers": True,
-                "context-mode": True,
-                "sc": True,
-            }
-        }
+        settings = {"enabledPlugins": {name: True for name in EXPECTED_PLUGINS}}
         result = check_plugins(settings)
-        assert result["ok"] == 5
+        assert result["ok"] == len(EXPECTED_PLUGINS)
         assert result["missing"] == []
 
     def test_empty(self) -> None:
         """enabledPlugins가 없으면 모두 missing이어야 한다."""
         result = check_plugins({})
         assert result["ok"] == 0
-        assert len(result["missing"]) == 5
+        assert len(result["missing"]) == len(EXPECTED_PLUGINS)
 
 
 class TestCheckSettings:

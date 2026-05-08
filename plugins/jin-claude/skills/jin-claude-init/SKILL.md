@@ -30,7 +30,7 @@ python3 "SKILL_DIR/scripts/preflight.py"
 ```bash
 claude plugin marketplace add kepano/obsidian-skills
 claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
-claude plugin marketplace add obra/superpowers-marketplace
+claude plugin marketplace add anthropics/claude-plugins-official
 claude plugin marketplace add mksglu/claude-context-mode
 claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
 claude plugin marketplace add revfactory/harness
@@ -46,7 +46,13 @@ claude plugin marketplace add uditgoenka/autoresearch
 ```bash
 claude plugin install obsidian@obsidian-skills
 claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
-claude plugin install superpowers@superpowers-marketplace
+claude plugin install superpowers@claude-plugins-official
+claude plugin install context7@claude-plugins-official
+claude plugin install code-simplifier@claude-plugins-official
+claude plugin install claude-md-management@claude-plugins-official
+claude plugin install serena@claude-plugins-official
+claude plugin install pyright-lsp@claude-plugins-official
+claude plugin install agent-sdk-dev@claude-plugins-official
 claude plugin install context-mode@context-mode
 claude plugin install sc@superclaude
 claude plugin install harness@harness-marketplace
@@ -56,6 +62,7 @@ claude plugin install autoresearch@autoresearch
 이미 설치된 플러그인은 건너뛴다.
 
 > **SuperClaude:** Step 2의 `claude plugin install sc@superclaude`으로 설치된다.
+> **anthropics/claude-plugins-official:** superpowers, context7, code-simplifier, claude-md-management, serena, pyright-lsp, agent-sdk-dev 7개 플러그인을 공식 마켓플레이스에서 일괄 설치한다.
 
 ## Step 3 — Git Repo에서 Statusline·설정 동기화 + 캐시 정리
 
