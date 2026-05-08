@@ -2,6 +2,8 @@
 
 Claude Code용 멀티 에이전트 오케스트레이션 시스템. 15개 에이전트, 16개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
 
+> **현재 버전**: `3.0.9` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+
 ## 빠른 시작
 
 ### 마켓플레이스 설치
@@ -16,7 +18,30 @@ claude plugin install jin-claude@jin-claudecode-mp
 
 ### 팀원 환경 초기화 (jin-claude-init)
 
-Claude Code 내에서 `/jin-claude-init`을 실행하면 플러그인, 설정, 에이전트, 스킬을 자동으로 구성합니다.
+Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플러그인, 설정, 에이전트, 스킬, 통계 타이머를 자동으로 구성합니다.
+
+**Step 1 — 마켓플레이스 7개 등록**
+
+| Marketplace | 출처 |
+|-------------|------|
+| `obsidian-skills` | `kepano/obsidian-skills` |
+| `ui-ux-pro-max-skill` | `nextlevelbuilder/ui-ux-pro-max-skill` |
+| `claude-plugins-official` | `anthropics/claude-plugins-official` |
+| `context-mode` | `mksglu/claude-context-mode` |
+| `superclaude` | `SuperClaude-Org/SuperClaude_Plugin` |
+| `harness` | `revfactory/harness` |
+| `autoresearch` | `uditgoenka/autoresearch` |
+
+**Step 2 — 플러그인 13개 일괄 설치**
+
+`anthropics/claude-plugins-official`에서 `superpowers`, `context7`, `code-simplifier`, `claude-md-management`, `serena`, `pyright-lsp`, `agent-sdk-dev` 7개를 설치하고, 나머지 마켓플레이스에서 `obsidian`, `ui-ux-pro-max`, `context-mode`, `sc`, `harness`, `autoresearch`를 설치합니다.
+
+**그 외 자동화 단계**
+
+- `Step 3` — jin-claude 저장소에서 statusline · 설정 · venv 동기화 + 사용량 타이머 (macOS launchd / Linux systemd) 설치
+- `Step 4` — `~/.claude/settings.json` deep merge (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, statusLine, outputStyle, language 등)
+- `Step 4.5` — standalone MCP 추가 설치 (현재는 비어 있음 — `serena`/`context7`은 plugin 형태로 이전됨)
+- `Step 5` — `.claude-plugin/hooks/hooks.json` 4 hooks 적용 검증
 
 ---
 
@@ -184,10 +209,15 @@ Claude Code가 stdin으로 전달하는 JSON을 파싱하여 2줄의 ANSI 컬러
 
 ## 요구사항
 
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/)
-- `jq` (statusline JSON 파싱용)
-- Claude Pro/Max/Team/Enterprise 구독
+| 구분 | 도구 | 버전 |
+|------|------|------|
+| Language | Python | 3.13 |
+| Package manager | [uv](https://docs.astral.sh/uv/) | latest |
+| Type checker | ty | latest |
+| Linter / formatter | ruff | latest |
+| Logging | loguru | latest |
+| Shell util | `jq` (statusline JSON 파싱용) | — |
+| 구독 | Claude Pro/Max/Team/Enterprise | — |
 
 ---
 
