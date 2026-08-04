@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT="$SCRIPT_DIR/.claude/script/statusline-command.sh"
+SCRIPT="$SCRIPT_DIR/plugins/jin-claude/scripts/statusline-command.sh"
 
 passed=0
 failed=0
@@ -71,7 +71,10 @@ else
 fi
 
 # Test 7: Output should contain model name
-output=$(echo '{"current_dir":"/test","model":{"display_name":"Opus"},"version":"1.0","context_window":{"used_percentage":50,"current_usage":{"cache_read_input_tokens":1000}}}' | bash "$SCRIPT" 2>/dev/null)
+# Fake HOME → config/usage-cache 없음 → 기본값 + '--%' fallback 경로가 결정적으로 실행됨
+TEST_HOME=$(mktemp -d)
+output=$(echo '{"current_dir":"/test","model":{"display_name":"Opus"},"version":"1.0","context_window":{"used_percentage":50,"current_usage":{"cache_read_input_tokens":1000}}}' | HOME="$TEST_HOME" bash "$SCRIPT" 2>/dev/null)
+rm -rf "$TEST_HOME"
 
 if echo "$output" | grep -q "Opus"; then
   pass "Model name 'Opus' present in output"
@@ -100,7 +103,7 @@ _test_parse_iso_to_epoch() {
   if date --version >/dev/null 2>&1; then
     date -d "${raw}" "+%s" 2>/dev/null
   else
-    local clean=$(echo "$raw" | sed 's/\.[0-9]*//')
+    local clean=$(echo "$raw" | sed 's/\.[0-9]*//; s/\([+-][0-9][0-9]\):\([0-9][0-9]\)$/\1\2/')
     date -ju -f "%Y-%m-%dT%H:%M:%S%z" "$clean" "+%s" 2>/dev/null || \
     date -ju -f "%Y-%m-%dT%H:%M:%SZ" "$clean" "+%s" 2>/dev/null || \
     date -ju -f "%Y-%m-%dT%H:%M:%S" "$clean" "+%s" 2>/dev/null
@@ -116,7 +119,11 @@ else
 fi
 
 # Test 11: KST system should display 24-hour local time correctly
-kst_display=$(TZ=Asia/Seoul date -d "@$epoch_utc" "+%H:%M" 2>/dev/null)
+if date --version >/dev/null 2>&1; then
+  kst_display=$(TZ=Asia/Seoul date -d "@$epoch_utc" "+%H:%M" 2>/dev/null || true)
+else
+  kst_display=$(TZ=Asia/Seoul date -r "$epoch_utc" "+%H:%M" 2>/dev/null || true)
+fi
 if [ "$kst_display" = "15:30" ]; then
   pass "24-hour display: UTC 06:30Z shows as 15:30 in KST"
 else
@@ -129,6 +136,22 @@ if grep -q 'iso_time=.*sed.*resets' "$SCRIPT" 2>/dev/null; then
   fail "Found timezone-stripping sed before parse_iso_to_epoch"
 else
   pass "No timezone-stripping sed before parse_iso_to_epoch"
+fi
+
+# Test 13: Line 1 should NOT contain usage (moved to line 2)
+line1=$(echo "$output" | sed -n 1p)
+line2=$(echo "$output" | sed -n 2p)
+if echo "$line1" | grep -q "5H:"; then
+  fail "Line 1 still contains usage (5H:)"
+else
+  pass "Line 1 has no usage info"
+fi
+
+# Test 14: Line 2 order is ctx → cache → 5H → 7D
+if echo "$line2" | grep -q "ctx:.*cache:.*5H:.*7D:"; then
+  pass "Line 2 order is ctx | cache | 5H | 7D"
+else
+  fail "Line 2 order wrong (expected ctx | cache | 5H | 7D): $line2"
 fi
 
 echo ""

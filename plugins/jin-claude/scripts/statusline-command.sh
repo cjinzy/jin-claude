@@ -18,8 +18,8 @@ parse_iso_to_epoch() {
     # GNU date handles full ISO 8601 with timezone natively
     date -d "${raw}" "+%s" 2>/dev/null
   else
-    # BSD (macOS) — strip fractional seconds only, try with timezone then without
-    local clean=$(echo "$raw" | sed 's/\.[0-9]*//')
+    # BSD (macOS) — strip fractional seconds; strptime %z가 콜론 오프셋(+09:00)을 못 읽으므로 +0900으로 정규화
+    local clean=$(echo "$raw" | sed 's/\.[0-9]*//; s/\([+-][0-9][0-9]\):\([0-9][0-9]\)$/\1\2/')
     date -ju -f "%Y-%m-%dT%H:%M:%S%z" "$clean" "+%s" 2>/dev/null || \
     date -ju -f "%Y-%m-%dT%H:%M:%SZ" "$clean" "+%s" 2>/dev/null || \
     date -ju -f "%Y-%m-%dT%H:%M:%S" "$clean" "+%s" 2>/dev/null
@@ -197,7 +197,7 @@ if [ "$show_usage" = "1" ]; then
       stale_mark=""
       [ "$is_stale" = "1" ] && stale_mark=" ${GRAY}STALE${RESET}"
 
-      usage_text="${AMBER}5h:${RESET} ${usage_color}${util_int}%${reset_5h_display}${RESET}${pacing_5h_icon}${stale_mark}"
+      usage_text="${AMBER}5H:${RESET} ${usage_color}${util_int}%${reset_5h_display}${RESET}${pacing_5h_icon}${stale_mark}"
     fi
 
     # 7d 표시
@@ -244,12 +244,12 @@ if [ "$show_usage" = "1" ]; then
       stale_mark_7d=""
       [ "$is_stale" = "1" ] && stale_mark_7d=" ${GRAY}STALE${RESET}"
 
-      usage_7d_text="${VIOLET}7d:${RESET} ${usage_7d_color}${util_7d_int}%${reset_7d_display}${RESET}${pacing_7d_icon}${stale_mark_7d}"
+      usage_7d_text="${VIOLET}7D:${RESET} ${usage_7d_color}${util_7d_int}%${reset_7d_display}${RESET}${pacing_7d_icon}${stale_mark_7d}"
     fi
   else
     # 캐시 파일 없음
-    usage_text="${AMBER}5h:${RESET} ${GRAY}--%${RESET}"
-    usage_7d_text="${VIOLET}7d:${RESET} ${GRAY}--%${RESET}"
+    usage_text="${AMBER}5H:${RESET} ${GRAY}--%${RESET}"
+    usage_7d_text="${VIOLET}7D:${RESET} ${GRAY}--%${RESET}"
   fi
 
   token_warn_text=""
@@ -277,7 +277,7 @@ if [ "$show_usage" = "1" ]; then
         lg_util=$(jq -r '.five_hour.utilization // empty' "$last_good" 2>/dev/null)
         if [ -n "$lg_util" ]; then
           lg_int=$(printf "%.0f" "$lg_util" 2>/dev/null || echo 0)
-          usage_text="${AMBER}5h:${RESET} ${GRAY}${lg_int}% STALE${RESET}"
+          usage_text="${AMBER}5H:${RESET} ${GRAY}${lg_int}% STALE${RESET}"
         fi
       fi
     fi
@@ -287,7 +287,7 @@ fi
 
 separator="${GRAY} │ ${RESET}"
 
-# Line 1: dir │ branch │ model │ version │ usage
+# Line 1: dir │ branch │ model │ version
 line1=""
 [ -n "$dir_text" ] && line1="${dir_text}"
 
@@ -306,30 +306,28 @@ if [ -n "$version_text" ]; then
   line1="${line1}${version_text}"
 fi
 
-if [ -n "$usage_text" ]; then
-  [ -n "$line1" ] && line1="${line1}${separator}"
-  line1="${line1}${usage_text}"
-fi
-
-if [ -n "$usage_7d_text" ]; then
-  [ -n "$line1" ] && line1="${line1}${separator}"
-  line1="${line1}${usage_7d_text}"
-fi
-
-if [ -n "$token_warn_text" ]; then
-  [ -n "$line1" ] && line1="${line1}${separator}"
-  line1="${line1}${token_warn_text}"
-fi
-
-# Line 2: ctx │ cache
+# Line 2: ctx │ cache │ 5H │ 7D │ warning
 line2=""
-if [ -n "$context_text" ]; then
-  line2="${context_text}"
-fi
+[ -n "$context_text" ] && line2="${context_text}"
 
 if [ -n "$cached_text" ]; then
   [ -n "$line2" ] && line2="${line2}${separator}"
   line2="${line2}${cached_text}"
+fi
+
+if [ -n "$usage_text" ]; then
+  [ -n "$line2" ] && line2="${line2}${separator}"
+  line2="${line2}${usage_text}"
+fi
+
+if [ -n "$usage_7d_text" ]; then
+  [ -n "$line2" ] && line2="${line2}${separator}"
+  line2="${line2}${usage_7d_text}"
+fi
+
+if [ -n "$token_warn_text" ]; then
+  [ -n "$line2" ] && line2="${line2}${separator}"
+  line2="${line2}${token_warn_text}"
 fi
 
 printf "%s\n" "$line1"

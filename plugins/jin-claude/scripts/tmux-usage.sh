@@ -12,8 +12,8 @@ parse_iso_to_epoch() {
     # GNU date handles full ISO 8601 with timezone natively
     date -d "${raw}" "+%s" 2>/dev/null
   else
-    # BSD (macOS) — strip fractional seconds only, try with timezone then without
-    local clean=$(echo "$raw" | sed 's/\.[0-9]*//')
+    # BSD (macOS) — strip fractional seconds; strptime %z가 콜론 오프셋(+09:00)을 못 읽으므로 +0900으로 정규화
+    local clean=$(echo "$raw" | sed 's/\.[0-9]*//; s/\([+-][0-9][0-9]\):\([0-9][0-9]\)$/\1\2/')
     date -ju -f "%Y-%m-%dT%H:%M:%S%z" "$clean" "+%s" 2>/dev/null || \
     date -ju -f "%Y-%m-%dT%H:%M:%SZ" "$clean" "+%s" 2>/dev/null || \
     date -ju -f "%Y-%m-%dT%H:%M:%S" "$clean" "+%s" 2>/dev/null

@@ -2,7 +2,7 @@
 
 Claude Code용 멀티 에이전트 오케스트레이션 시스템. 15개 에이전트, 16개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
 
-> **현재 버전**: `3.0.9` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `3.0.10` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -131,22 +131,22 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 Claude Code 상태 표시줄에 세션 정보, 컨텍스트, API 사용량을 실시간 표시합니다.
 
 ```
-claude │ ⎇ master │ Opus │ v1.0 │ 5h: 8% →02:00 │ 7d: 11% →03/06(Fri)
-ctx: 50% │ cache: 1.0K
+claude │ ⎇ master │ Opus │ v1.0
+ctx: 50% │ cache: 1.0K │ 5H: 8% →2:00 PACE │ 7D: 11% →3D/4H
 ```
 
 ### 구성 요소
 
-| 요소 | 설명 |
-|------|------|
-| 디렉토리 | 현재 작업 디렉토리명 |
-| 브랜치 | 현재 git 브랜치 |
-| 모델 | 사용 중인 Claude 모델 |
-| 버전 | Claude Code 버전 |
-| 5h 사용량 | 5시간 세션 사용률 (%) + 리셋 시간 |
-| 7d 사용량 | 7일 주간 사용률 (%) + 리셋 날짜 |
-| ctx | 컨텍스트 윈도우 사용률 (%) |
-| cache | 캐시 읽기 토큰 수 |
+| 줄 | 요소 | 설명 |
+|----|------|------|
+| 1 | 디렉토리 | 현재 작업 디렉토리명 |
+| 1 | 브랜치 | 현재 git 브랜치 |
+| 1 | 모델 | 사용 중인 Claude 모델 |
+| 1 | 버전 | Claude Code 버전 |
+| 2 | ctx | 컨텍스트 윈도우 사용률 (%) |
+| 2 | cache | 캐시 읽기 토큰 수 |
+| 2 | 5H 사용량 | 5시간 세션 사용률 (%) + 리셋 시간 + pacing |
+| 2 | 7D 사용량 | 7일 주간 사용률 (%) + 리셋 시간 + pacing |
 
 사용률에 따라 dark green(0%) → deep red(100%)로 10단계 gradient 색상이 자동 적용됩니다.
 
@@ -158,7 +158,7 @@ ctx: 50% │ cache: 1.0K
 {
   "statusLine": {
     "type": "command",
-    "command": "bash {$HOME}/.claude/statusline-command.sh"
+    "command": "bash ~/.claude/statusline-command.sh"
   }
 }
 ```
