@@ -1,7 +1,7 @@
 # jin-claude
 
 > Multi-agent orchestration for Claude Code — **15 agents · 16 skills · 4 hooks**
-> Version: **3.0.7** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Version: **3.0.10** · License: MIT · Marketplace: `jin-claudecode-mp`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 오케스트레이션, 병렬 실행, SWE 워크플로우, CTI 파이프라인, 자동 키워드 라우팅, 커밋/인터뷰/초기화 자동화를 한 곳에서 제공합니다.
 
