@@ -11,6 +11,6 @@
   "keywords": [
     "orchestration", "multi-agent", "agents", "skills",
     "workflow", "tdd", "code-review", "hooks", "statusline", "cti", "swe",
-    "parallel", "maxwork", "fsd", "ralph", "gcc", "cleanser", "deepinit", "suggest", "guidelines"
+    "parallel", "maxwork", "fsd", "ralph", "gcc", "cleanser", "deepinit", "suggest", "guidelines", "sot"
   ]
 }

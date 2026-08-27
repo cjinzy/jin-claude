@@ -62,6 +62,10 @@ KEYWORDS = {
     "chub": "jin-chub",
     "context-hub": "jin-chub",
     "api 문서": "jin-chub",
+    # Phase 6: SoT (substring 충돌 방지 — bare "sot" 미등록)
+    "jin sot": "jin-sot-create",
+    "sot create": "jin-sot-create",
+    "sot 생성": "jin-sot-create",
 }
 
 
