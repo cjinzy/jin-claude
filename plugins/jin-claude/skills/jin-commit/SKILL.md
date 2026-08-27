@@ -10,6 +10,21 @@ argument-hint: "[message]"
 
 # jin-commit: Gitmoji 기반 커밋 메시지 자동 추천
 
+## 7 Commit Message Rules
+
+Follow these rules when writing commit messages:
+
+1. Separate the subject from the body with a single blank line.
+2. Limit the subject to 50 characters. 72 is the absolute maximum.
+3. Capitalize the first letter of the subject.
+4. Do not end the subject line with a period.
+5. Use imperative mood in the subject line. (Test: "If applied, this commit will [subject]")
+   For Korean: Use noun-verb structure like "버그 수정", "기능 추가", "문서 업데이트".
+6. Wrap the body text manually at 72 characters.
+7. Use the body to explain what and why, not how. Assume the code explains the how; the message must explain the context and reasoning.
+
+These rules complement the gitmoji format below. Emoji indicates the type of change, while the 7 rules define the message structure.
+
 ## Gitmoji 레지스트리 (gitmoji.dev 기반, 프로젝트 맞춤 선별)
 
 ### 핵심 (자주 사용)

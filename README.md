@@ -18,30 +18,103 @@ claude plugin install jin-claude@jin-claudecode-mp
 
 ### 팀원 환경 초기화 (jin-claude-init)
 
-Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플러그인, 설정, 에이전트, 스킬, 통계 타이머를 자동으로 구성합니다.
+Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플러그인, 설정, MCP, hooks, 동기화, 통계 타이머를 자동으로 구성합니다. 실측 결과는 `plugins/jin-claude/skills/jin-claude-init/SKILL.md`을 참조하세요.
 
-**Step 1 — 마켓플레이스 7개 등록**
+#### Step 0 — Pre-flight Check
 
-| Marketplace | 출처 |
-|-------------|------|
-| `obsidian-skills` | `kepano/obsidian-skills` |
-| `ui-ux-pro-max-skill` | `nextlevelbuilder/ui-ux-pro-max-skill` |
-| `claude-plugins-official` | `anthropics/claude-plugins-official` |
-| `context-mode` | `mksglu/claude-context-mode` |
-| `superclaude` | `SuperClaude-Org/SuperClaude_Plugin` |
-| `harness` | `revfactory/harness` |
-| `autoresearch` | `uditgoenka/autoresearch` |
+`scripts/preflight.py`가 Claude Code 설치 여부, Python 3.13, `git`, `jq` 등의 필수 도구를 확인합니다.
 
-**Step 2 — 플러그인 13개 일괄 설치**
+#### Step 1 — Plugin Marketplace 7개 등록
 
-`anthropics/claude-plugins-official`에서 `superpowers`, `context7`, `code-simplifier`, `claude-md-management`, `serena`, `pyright-lsp`, `agent-sdk-dev` 7개를 설치하고, 나머지 마켓플레이스에서 `obsidian`, `ui-ux-pro-max`, `context-mode`, `sc`, `harness`, `autoresearch`를 설치합니다.
+| # | Marketplace ID | 출처 |
+|---|----------------|------|
+| 1 | `obsidian-skills` | `kepano/obsidian-skills` |
+| 2 | `ui-ux-pro-max-skill` | `nextlevelbuilder/ui-ux-pro-max-skill` |
+| 3 | `claude-plugins-official` | `anthropics/claude-plugins-official` |
+| 4 | `context-mode` | `mksglu/claude-context-mode` |
+| 5 | `superclaude` | `SuperClaude-Org/SuperClaude_Plugin` |
+| 6 | `harness-marketplace` | `revfactory/harness` |
+| 7 | `autoresearch` | `uditgoenka/autoresearch` |
 
-**그 외 자동화 단계**
+```bash
+claude plugin marketplace add kepano/obsidian-skills
+claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
+claude plugin marketplace add anthropics/claude-plugins-official
+claude plugin marketplace add mksglu/claude-context-mode
+claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
+claude plugin marketplace add revfactory/harness
+claude plugin marketplace add uditgoenka/autoresearch
+```
 
-- `Step 3` — jin-claude 저장소에서 statusline · 설정 · venv 동기화 + 사용량 타이머 (macOS launchd / Linux systemd) 설치
-- `Step 4` — `~/.claude/settings.json` deep merge (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, statusLine, outputStyle, language 등)
-- `Step 4.5` — standalone MCP 추가 설치 (현재는 비어 있음 — `serena`/`context7`은 plugin 형태로 이전됨)
-- `Step 5` — `.claude-plugin/hooks/hooks.json` 4 hooks 적용 검증
+#### Step 2 — Plugin 13개 일괄 설치
+
+`anthropics/claude-plugins-official` 단일 마켓에서 7개, 나머지 6개 마켓에서 각 1개씩 — 총 13개를 설치합니다.
+
+| # | Plugin | Marketplace | 용도 |
+|---|--------|-------------|------|
+| 1 | `obsidian` | `obsidian-skills` | Obsidian vault 연동 (defuddle, markdown, CLI, canvas, bases) |
+| 2 | `ui-ux-pro-max` | `ui-ux-pro-max-skill` | UI/UX 디자인 인텔리전스 (50+ 스타일, 161 팔레트) |
+| 3 | `superpowers` | `claude-plugins-official` | TDD · 디버깅 · 코드 리뷰 등 핵심 워크플로우 |
+| 4 | `context7` | `claude-plugins-official` | 라이브러리 문서 조회 (MCP 경유) |
+| 5 | `code-simplifier` | `claude-plugins-official` | 코드 단순화 워크플로우 |
+| 6 | `claude-md-management` | `claude-plugins-official` | CLAUDE.md 관리 |
+| 7 | `serena` | `claude-plugins-official` | 시맨틱 코드 검색·편집 (MCP 경유) |
+| 8 | `pyright-lsp` | `claude-plugins-official` | Python LSP 통합 |
+| 9 | `agent-sdk-dev` | `claude-plugins-official` | Claude Agent SDK 개발 도구 |
+| 10 | `context-mode` | `context-mode` | 컨텍스트 윈도우 보호 (대용량 출력 라우팅) |
+| 11 | `sc` | `superclaude` | SuperClaude 슬래시 명령 디스패처 |
+| 12 | `harness` | `harness-marketplace` | 하네스 구성 메타 스킬 |
+| 13 | `autoresearch` | `autoresearch` | 자율 목표지향 반복 루프 |
+
+```bash
+claude plugin install obsidian@obsidian-skills
+claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
+claude plugin install superpowers@claude-plugins-official
+claude plugin install context7@claude-plugins-official
+claude plugin install code-simplifier@claude-plugins-official
+claude plugin install claude-md-management@claude-plugins-official
+claude plugin install serena@claude-plugins-official
+claude plugin install pyright-lsp@claude-plugins-official
+claude plugin install agent-sdk-dev@claude-plugins-official
+claude plugin install context-mode@context-mode
+claude plugin install sc@superclaude
+claude plugin install harness@harness-marketplace
+claude plugin install autoresearch@autoresearch
+```
+
+#### Step 3 — Repo 동기화 (`scripts/sync_repo.py`)
+
+`https://github.com/cjinzy/jin-claude.git`에서 다음을 사용자 홈으로 복사·갱신합니다.
+
+| 대상 | 위치 |
+|------|------|
+| statusline 렌더러 | `~/.claude/statusline-command.sh`, `statusline-config.txt` |
+| Hooks 스크립트 | `~/.claude/jin-hooks/{keyword_detector.py, pre_tool_enforcer.sh, post_tool_verifier.sh, session_init.py}` |
+| 사용량 CLI venv | `~/.claude/.venv/` (uv 기반) |
+| 통계 타이머 | macOS: launchd plist · Linux: systemd timer |
+
+#### Step 4 — Settings 병합 (`scripts/merge_settings.py`)
+
+`~/.claude/settings.json`을 deep merge로 갱신합니다. 주요 키: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`, `statusLine`, `outputStyle`, `language`, `permissions`.
+
+#### Step 4.5 — Standalone MCP 설치 (`scripts/setup_mcp_and_teams.py`)
+
+현재 `MCP_SERVERS = []` — **추가 standalone MCP 서버는 0개**입니다. 과거 standalone으로 설치하던 `serena`·`context7`은 Step 2의 `claude-plugins-official` 플러그인이, `context-mode`는 동명 플러그인이 MCP 기능을 자동 제공합니다. 향후 플러그인이 커버하지 않는 MCP가 필요하면 `MCP_SERVERS`에 항목을 추가하는 방식으로 확장합니다.
+
+#### Step 5 — Hooks 4개 검증
+
+`plugins/jin-claude/.claude-plugin/hooks/hooks.json`에 정의된 hooks가 등록되었는지 확인합니다. 실제 실행 파일은 Step 3에서 복사된 `~/.claude/jin-hooks/`를 가리킵니다.
+
+| Hook Event | 실행 명령 | 역할 |
+|------------|-----------|------|
+| `UserPromptSubmit` | `python3 $HOME/.claude/jin-hooks/keyword_detector.py` | 매직 키워드 감지 → 스킬 자동 호출 |
+| `PreToolUse` | `bash $HOME/.claude/jin-hooks/pre_tool_enforcer.sh` | 도구 사용 전 정책 검사 |
+| `PostToolUse` | `bash $HOME/.claude/jin-hooks/post_tool_verifier.sh` | 도구 실행 결과 검증 |
+| `SessionStart` | `python3 $HOME/.claude/jin-hooks/session_init.py` | 세션 시작 시 자동 업데이트 |
+
+#### Step 6 — 검증 및 완료 보고
+
+`claude plugin list`, `claude mcp list`, `cat ~/.claude/settings.json`을 통해 등록 상태를 확인하고 결과를 사용자에게 출력합니다.
 
 ---
 
