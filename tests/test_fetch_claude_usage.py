@@ -424,6 +424,28 @@ class TestTokenRefresh:
         ):
             assert get_token() == "fresh-token"
 
+    def test_get_token_falls_back_to_keychain_when_refresh_fails(self, tmp_path: Path) -> None:
+        """stale .credentials.json + refresh 실패 → keychain 토큰으로 폴백 (2026-09-15 TOKEN? 고착)."""
+        creds_file = tmp_path / ".credentials.json"
+        creds = {
+            "claudeAiOauth": {
+                "accessToken": "expired-token",
+                "refreshToken": "rotated-refresh",
+                "expiresAt": 1000,
+            }
+        }
+        creds_file.write_text(json.dumps(creds))
+
+        with (
+            patch("jin_claude.fetch_claude_usage.CREDENTIALS_PATH", creds_file),
+            patch("jin_claude.fetch_claude_usage.refresh_access_token", return_value=None),
+            patch(
+                "jin_claude.fetch_claude_usage.read_token_from_keychain",
+                return_value="keychain-token",
+            ),
+        ):
+            assert get_token() == "keychain-token"
+
 
 class TestStaleCacheFallback:
     """Stale cache fallback 및 에러 캐싱 테스트."""

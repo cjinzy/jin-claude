@@ -263,7 +263,8 @@ def get_token() -> str | None:
                     logger.info("Token refreshed successfully")
                     return refreshed["access_token"]
                 logger.error("Token refresh failed")
-            return None
+            # stale .credentials.json 이 살아있는 keychain 토큰을 가리지 않도록 폴백
+            return read_token_from_keychain()
         token = creds_data.get("claudeAiOauth", {}).get("accessToken")
         if token:
             return token
