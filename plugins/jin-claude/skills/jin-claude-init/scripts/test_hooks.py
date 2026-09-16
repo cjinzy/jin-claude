@@ -56,15 +56,15 @@ class TestKeywordDetector:
             assert output["result"] == "block"
             assert "jin-interview" in output["reason"]
 
-    def test_jin_swe_detected(self) -> None:
-        """'jin swe' 키워드를 감지한다."""
-        event = json.dumps({"prompt": "jin swe로 수정해줘"})
+    def test_jin_gcc_detected(self) -> None:
+        """'jin gcc' 키워드를 감지한다."""
+        event = json.dumps({"prompt": "jin gcc로 검토해줘"})
         with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
             mock_stdin.read.return_value = event
             keyword_main()
             output = json.loads(mock_print.call_args[0][0])
             assert output["result"] == "block"
-            assert "jin-swe-fix" in output["reason"]
+            assert "jin-gcc" in output["reason"]
 
     def test_jin_korean_keyword(self) -> None:
         """'jin 초기화' 한글 키워드를 감지한다."""

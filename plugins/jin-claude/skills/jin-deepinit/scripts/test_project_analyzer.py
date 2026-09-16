@@ -1,6 +1,6 @@
 """project_analyzer 모듈 테스트 스위트.
 
-프로젝트 구조 분석, 프레임워크 감지, 에이전트 추천 기능을
+프로젝트 구조 분석, 프레임워크 감지, AGENTS.md 생성 기능을
 임시 디렉토리를 활용하여 검증한다.
 """
 
@@ -9,14 +9,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from project_analyzer import (
     detect_frameworks,
     detect_languages,
     detect_structure,
     generate_agents_md,
-    recommend_agents,
 )
 
 
@@ -204,113 +201,21 @@ class TestDetectStructure:
         assert structure == "flat"
 
 
-class TestRecommendAgents:
-    """에이전트 추천 기능 테스트."""
-
-    def test_python_project_recommends_python_expert(self) -> None:
-        """Python 프로젝트에서 python-expert를 추천한다."""
-        agents = recommend_agents(
-            languages=["Python"],
-            frameworks={"fastapi": "FastAPI"},
-            structure="standard",
-        )
-        agent_names = [a["agent"] for a in agents]
-
-        assert "python-expert" in agent_names
-        assert "swe-agent" in agent_names
-
-    def test_complex_project_recommends_orchestrator(self) -> None:
-        """복잡한 프로젝트(monorepo)에서 orchestrator를 추천한다."""
-        agents = recommend_agents(
-            languages=["Python", "TypeScript", "JavaScript"],
-            frameworks={"react": "React", "fastapi": "FastAPI"},
-            structure="monorepo",
-        )
-        agent_names = [a["agent"] for a in agents]
-
-        assert "jin-orchestrator" in agent_names
-        assert "jin-maxwork" in agent_names
-
-    def test_always_recommends_base_agents(self) -> None:
-        """모든 프로젝트에서 기본 에이전트(온보딩, 인터뷰, 분석)를 추천한다."""
-        agents = recommend_agents(
-            languages=[],
-            frameworks={},
-            structure="flat",
-        )
-        agent_names = [a["agent"] for a in agents]
-
-        assert "jin-claude-init" in agent_names
-        assert "jin-interview-agent" in agent_names
-        assert "swe-analyst" in agent_names
-
-    def test_no_duplicate_agents(self) -> None:
-        """동일 에이전트가 중복 추천되지 않는다."""
-        agents = recommend_agents(
-            languages=["Python", "TypeScript", "JavaScript", "Go"],
-            frameworks={"fastapi": "FastAPI", "react": "React"},
-            structure="monorepo",
-        )
-        agent_names = [a["agent"] for a in agents]
-
-        assert len(agent_names) == len(set(agent_names))
-
-
 class TestGenerateAgentsMd:
     """AGENTS.md 생성 기능 테스트."""
 
     def test_valid_markdown_output(self, tmp_path: Path) -> None:
         """유효한 마크다운 형식의 출력을 생성한다."""
-        agents = [
-            {
-                "agent": "python-expert",
-                "model": "sonnet",
-                "reason": "Python 전문 코딩",
-                "example": '"이 함수를 리팩토링해줘"',
-            },
-        ]
-
         md = generate_agents_md(
             project_dir=tmp_path,
             languages=["Python"],
             frameworks={"fastapi": "FastAPI"},
             structure="standard",
-            agents=agents,
         )
 
         assert md.startswith("# AGENTS.md")
         assert "## 프로젝트 개요" in md
-        assert "## 추천 에이전트" in md
         assert "## 사용 가능한 스킬" in md
-
-    def test_contains_agent_table(self, tmp_path: Path) -> None:
-        """에이전트 테이블에 추천 에이전트가 포함된다."""
-        agents = [
-            {
-                "agent": "python-expert",
-                "model": "sonnet",
-                "reason": "Python 전문 코딩",
-                "example": '"이 함수를 리팩토링해줘"',
-            },
-            {
-                "agent": "swe-agent",
-                "model": "sonnet",
-                "reason": "버그 수정",
-                "example": '"jin swe [이슈 설명]"',
-            },
-        ]
-
-        md = generate_agents_md(
-            project_dir=tmp_path,
-            languages=["Python"],
-            frameworks={},
-            structure="standard",
-            agents=agents,
-        )
-
-        assert "python-expert" in md
-        assert "swe-agent" in md
-        assert "| 에이전트 | 모델 | 추천 이유 | 사용 예시 |" in md
 
     def test_contains_project_info(self, tmp_path: Path) -> None:
         """프로젝트 개요에 언어, 프레임워크, 구조 정보가 포함된다."""
@@ -319,7 +224,6 @@ class TestGenerateAgentsMd:
             languages=["Python", "TypeScript"],
             frameworks={"fastapi": "FastAPI", "react": "React"},
             structure="monorepo",
-            agents=[],
         )
 
         assert "Python, TypeScript" in md
@@ -334,7 +238,6 @@ class TestGenerateAgentsMd:
             languages=[],
             frameworks={},
             structure="flat",
-            agents=[],
         )
 
         assert "감지되지 않음" in md

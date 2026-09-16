@@ -25,23 +25,6 @@ KEYWORDS = {
     "commit": "jin-commit",
     "jin interview": "jin-interview",
     "interview": "jin-interview",
-    "jin swe": "jin-swe-fix",
-    "swe": "jin-swe-fix",
-    # Phase 1: Orchestrator
-    "jin orchestrate": "jin-orchestrator",
-    "orchestrate": "jin-orchestrator",
-    "오케스트레이션": "jin-orchestrator",
-    # Phase 2A: Maxwork
-    "jin maxwork": "jin-maxwork",
-    "maxwork": "jin-maxwork",
-    "병렬": "jin-maxwork",
-    # Phase 2B: FSD
-    "jin fsd": "jin-fsd",
-    "fsd": "jin-fsd",
-    "자율실행": "jin-fsd",
-    # Phase 2C: Ralph
-    "jin ralph": "jin-ralph",
-    "ralph": "jin-ralph",
     # Phase 3A: GCC
     "jin gcc": "jin-gcc",
     "gcc": "jin-gcc",

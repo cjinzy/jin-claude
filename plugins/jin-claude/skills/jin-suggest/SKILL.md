@@ -1,6 +1,6 @@
 ---
 name: jin-suggest
-description: 사용자 요청에 가장 적합한 jin-claude 스킬과 에이전트를 추천합니다. "jin suggest", "추천", "뭐 써야", "어떤 스킬" 시 사용.
+description: 사용자 요청에 가장 적합한 jin-claude 스킬을 추천합니다. "jin suggest", "추천", "뭐 써야", "어떤 스킬" 시 사용.
 triggers:
   - jin suggest
   - 추천
@@ -9,28 +9,29 @@ triggers:
 argument-hint: "[요청 내용]"
 ---
 
-# jin-suggest: 스킬/에이전트 추천 엔진
+# jin-suggest: 스킬 추천 엔진
 
 ## 목적
 
-사용자 요청을 분석하여 jin-claude 플러그인의 스킬과 에이전트 중 가장 적합한 조합을 추천합니다.
+사용자 요청을 분석하여 jin-claude 플러그인의 스킬 중 가장 적합한 조합을 추천합니다.
 명확한 요청은 즉시 추천(Quick Mode)하고, 모호한 요청은 1회 질문 후 추천(Interactive Mode)합니다.
-jin-claude 전용 스킬/에이전트만 추천하며, 외부 플러그인(sc, superpowers 등)은 대상에서 제외합니다.
+jin-claude 전용 스킬만 추천하며, 외부 플러그인(sc, superpowers 등)은 대상에서 제외합니다.
+구현·버그 수정 자체는 Claude Code 내장 기능(Agent/Workflow 도구)이 담당하므로 스킬을 추천하지 않습니다.
 
 ---
 
 ## 의도 카테고리 매핑 테이블
 
-| 의도 카테고리 | 키워드 (한/영) | 추천 스킬 | 추천 에이전트 |
-|--------------|---------------|----------|-------------|
-| 환경설정 | 초기화, 설정, 셋업, init, setup | `jin-claude-init`, `jin-deepinit` | — |
-| 계획/설계 | 설계, 계획, 인터뷰, 요구사항, plan, spec | `jin-interview` | `jin-interview-agent` |
-| 구현/개발 | 구현, 개발, 만들어, implement, build, feature | `jin-orchestrator`, `jin-fsd`, `jin-maxwork` | `python-expert`, `swe-agent` |
-| 버그수정 | 버그, 수정, 에러, fix, bug, error, issue | `jin-swe-fix`, `jin-ralph` | `swe-agent`, `swe-agent-high` |
-| 코드리뷰/분석 | 리뷰, 분석, 검토, review, analyze, check | `jin-gcc`, `jin-cleanser`, `verify-implementation` | `swe-analyst` |
-| 커밋/배포 | 커밋, 배포, commit, deploy | `jin-commit` | — |
-| API 문서 | API 문서, 라이브러리 문서, chub, context-hub | `jin-chub` | — |
-| CTI/보안 | 위협, 보안, CTI, threat, malware, 다크웹 | — | `mole-review-agent` (파이프라인) |
+| 의도 카테고리 | 키워드 (한/영) | 추천 스킬 |
+|--------------|---------------|----------|
+| 환경설정 | 초기화, 설정, 셋업, init, setup | `jin-claude-init`, `jin-deepinit` |
+| 계획/설계 | 설계, 계획, 인터뷰, 요구사항, plan, spec | `jin-interview` |
+| 구현/개발 | 구현, 개발, 만들어, implement, build, feature | `jin-interview` (사전 요구사항) → 내장 Agent/Workflow |
+| 버그수정 | 버그, 수정, 에러, fix, bug, error, issue | 내장 Agent → `verify-implementation` |
+| 코드리뷰/분석 | 리뷰, 분석, 검토, review, analyze, check | `jin-gcc`, `jin-cleanser`, `verify-implementation` |
+| 커밋/배포 | 커밋, 배포, commit, deploy | `jin-commit` |
+| API 문서 | API 문서, 라이브러리 문서, chub, context-hub | `jin-chub` |
+| SoT 문서 | sot, source of truth, 프로젝트 문서 | `jin-sot-create` |
 
 ---
 
@@ -40,10 +41,9 @@ jin-claude 전용 스킬/에이전트만 추천하며, 외부 플러그인(sc, s
 
 | 파일/디렉토리 | 감지 결과 | 추가 추천 |
 |--------------|----------|----------|
-| `pyproject.toml` | Python 프로젝트 | `python-expert` 에이전트 우선 |
-| `package.json` | Node.js/React 프로젝트 | 프론트엔드 관련 안내 |
 | `.git` | Git 저장소 | `jin-commit` 활성화 |
 | `AGENTS.md` | 이미 초기화됨 | `jin-deepinit` 불필요로 표시 |
+| `sot/` | SoT 존재 | `jin-sot-create` 불필요로 표시 |
 | `tests/` 또는 `test/` | 테스트 존재 | 검증 스킬 우선 추천 |
 
 ---
@@ -92,18 +92,13 @@ jin-claude 전용 스킬/에이전트만 추천하며, 외부 플러그인(sc, s
 ### 추천 스킬
 | 우선순위 | 스킬 | 트리거 | 추천 이유 |
 |---------|------|--------|----------|
-| 1 | `jin-orchestrator` | `jin orchestrate` | [이유] |
-| 2 | `jin-interview` | `jin interview` | [이유] |
+| 1 | `jin-interview` | `jin interview` | [이유] |
+| 2 | `jin-commit` | `jin commit` | [이유] |
 
 ### 추천 워크플로우
 > 1. `jin interview` → 요구사항 정리
-> 2. `jin orchestrate` → 멀티 에이전트 구현
+> 2. 구현 (내장 Agent/Workflow)
 > 3. `jin commit` → 커밋
-
-### 관련 에이전트
-| 에이전트 | 모델 | 역할 |
-|----------|------|------|
-| `python-expert` | sonnet | Python 전문 개발 |
 ```
 
 ---
@@ -114,29 +109,11 @@ jin-claude 전용 스킬/에이전트만 추천하며, 외부 플러그인(sc, s
 
 | 시나리오 | 워크플로우 |
 |---------|-----------|
-| 신규 기능 개발 | `jin-interview` → `jin-orchestrator` / `jin-fsd` → `jin-cleanser` → `jin-commit` |
-| 버그 수정 | `jin-swe-fix` → (실패 시 `jin-ralph`) → `jin-commit` |
-| 프로젝트 시작 | `jin-claude-init` → `jin-deepinit` → `jin-interview` |
+| 신규 기능 개발 | `jin-interview` → 구현 → `jin-cleanser` → `jin-commit` |
+| 버그 수정 | 수정 → `verify-implementation` → `jin-commit` |
+| 프로젝트 시작 | `jin-claude-init` → `jin-deepinit` → `jin-sot-create` |
 | 코드 품질 개선 | `jin-cleanser` → `jin-gcc` → `verify-implementation` → `jin-commit` |
-| 대규모 리팩토링 | `jin-interview` → `jin-maxwork` → `verify-implementation` → `jin-commit` |
-| CTI 조사 | `mole-review-agent` (파이프라인 오케스트레이션) |
-
----
-
-## 복잡도별 에이전트 선택 가이드
-
-작업 복잡도에 따라 적절한 에이전트를 선택합니다.
-
-| 복잡도 | 기준 | 추천 에이전트 | 모델 |
-|--------|------|-------------|------|
-| LOW | 1 파일, 단순 변경 | `swe-agent` | sonnet |
-| MEDIUM | 1-2 파일, 로직 변경 | `swe-agent` | sonnet |
-| HIGH | 3+ 파일, 교차 모듈 | `swe-agent-high` | opus |
-
-복잡도 판단 기준:
-- **LOW**: 오타 수정, 설정값 변경, 단순 추가
-- **MEDIUM**: 함수/메서드 수정, 단일 모듈 로직 변경
-- **HIGH**: 다중 모듈 수정, 아키텍처 변경, 교차 의존성 수정
+| 대규모 리팩토링 | `jin-interview` → 구현 → `verify-implementation` → `jin-commit` |
 
 ---
 
@@ -146,4 +123,4 @@ jin-claude 전용 스킬/에이전트만 추천하며, 외부 플러그인(sc, s
 2. **인자 없는 호출**: 인자 없이 `jin suggest`만 호출하면 Interactive Mode로 진입합니다.
 3. **복수 추천**: 하나의 요청에 여러 스킬이 해당될 수 있습니다. 우선순위를 매겨 모두 표시합니다.
 4. **워크플로우 우선**: 단일 스킬보다 다단계 워크플로우를 우선 추천하여 전체 작업 흐름을 안내합니다.
-5. **컨텍스트 보정**: 프로젝트 감지 결과에 따라 추천을 자동 보정합니다 (예: Python 프로젝트에서 `python-expert` 에이전트 우선 추천).
+5. **컨텍스트 보정**: 프로젝트 감지 결과에 따라 추천을 자동 보정합니다.

@@ -1,8 +1,8 @@
 # jin-claude
 
-Claude Code용 멀티 에이전트 오케스트레이션 시스템. 15개 에이전트, 16개 스킬, statusline 유틸리티, CTI 파이프라인을 단일 플러그인으로 제공합니다.
+Claude Code 팀 표준 환경 플러그인. 12개 스킬, 4개 hooks, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `3.0.10` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `4.0.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -118,48 +118,7 @@ claude plugin install autoresearch@autoresearch
 
 ---
 
-## 에이전트 (15개)
-
-> v3.0.4+ 부터 **모든 에이전트가 호출자 모델을 상속**합니다. 모델을 고정하지 않으므로 Opus 세션에서 호출하면 Opus로, Sonnet 세션에서 호출하면 Sonnet으로 실행됩니다. 필요 시 `Agent({model: ...})`로 명시 오버라이드 가능.
-
-### Interview & Planning (3)
-
-| 에이전트 | 설명 |
-|----------|------|
-| `jin-interview-agent` | 구조적 요구사항 인터뷰 → 구체적 spec 문서 생성 |
-| `orchestrator-agent` | 멀티 에이전트 파이프라인 관리 · 태스크 분배 · 상태 전이 |
-| `task-planner-agent` | 사용자 요청을 원자적 태스크로 분해 + 의존성 그래프 생성 |
-
-### SWE Engineering (4)
-
-| 에이전트 | 설명 |
-|----------|------|
-| `swe-agent` | Live-SWE-agent 6단계 워크플로우 이슈 해결 실행자 |
-| `swe-agent-high` | 복잡한 교차 모듈 · 레이스 컨디션 · 아키텍처 결함 대응 |
-| `swe-analyst` | 읽기 전용 근본 원인 진단 + 수정 계획 생성 |
-| `swe-verifier` | 수정 후 독립 검증 (버그 재현 + 엣지케이스) |
-
-### MOLE / CTI (7)
-
-| 에이전트 | 설명 |
-|----------|------|
-| `mole-review-agent` | CTI 프로파일링 파이프라인 오케스트레이터 |
-| `mole-interview-agent` | CTI 조사 전 인터뷰로 조사 방향 확정 |
-| `mole-research-agent` | StealthMole MCP 기반 위협 인텔리전스 수집 |
-| `mole-intel-organizer-agent` | 위협 인텔리전스 분류 · 평가 · 구조화 |
-| `mole-user-identifier-agent` | 사용자 신원 상관관계 분석 |
-| `mole-graph-generator-agent` | 조사 결과를 Mermaid 그래프로 통합 시각화 |
-| `mole-report-presenter-agent` | 위협 인텔리전스 발표자료/보고서 생성 |
-
-### Language Expert (1)
-
-| 에이전트 | 설명 |
-|----------|------|
-| `python-expert` | Production-ready Python (SOLID + modern best practices) |
-
----
-
-## 스킬 (16개)
+## 스킬 (12개)
 
 ### 핵심 워크플로우
 
@@ -168,17 +127,8 @@ claude plugin install autoresearch@autoresearch
 | `jin-claude-init` | 팀원 환경 초기화 자동화 |
 | `jin-commit` | gitmoji 기반 커밋 메시지 추천 |
 | `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
-| `jin-suggest` | 적합한 스킬/에이전트 추천 |
-| `jin-swe-fix` | Live-SWE-agent 워크플로우 기반 이슈 수정 |
-
-### 오케스트레이션 & 자동화
-
-| 스킬 | 설명 |
-|------|------|
-| `jin-orchestrator` | 멀티 에이전트 오케스트레이션 파이프라인 |
-| `jin-fsd` | Full Self-Driving 모드 (단계별 승인 기반 자율 실행) |
-| `jin-maxwork` | 병렬 에이전트 실행 엔진 |
-| `jin-ralph` | 자기참조 반복 루프 (검증 통과까지 반복) |
+| `jin-suggest` | 적합한 스킬 추천 |
+| `jin-sot-create` | SoT(Source of Truth) 디렉토리 구조 생성 |
 
 ### 코드 품질 & 분석
 
@@ -322,23 +272,17 @@ jin-claude/
 │   └── jin-claude/                      # 단일 플러그인
 │       ├── .claude-plugin/
 │       │   └── plugin.json              # 플러그인 매니페스트
-│       ├── agents/                      # 15 에이전트
-│       │   └── templates/               # 에이전트 템플릿
-│       ├── skills/                      # 16 스킬
+│       ├── skills/                      # 12 스킬
 │       │   ├── guidelines/
 │       │   ├── jin-chub/
 │       │   ├── jin-claude-init/
 │       │   ├── jin-cleanser/
 │       │   ├── jin-commit/
 │       │   ├── jin-deepinit/
-│       │   ├── jin-fsd/
 │       │   ├── jin-gcc/
 │       │   ├── jin-interview/
-│       │   ├── jin-maxwork/
-│       │   ├── jin-orchestrator/
-│       │   ├── jin-ralph/
+│       │   ├── jin-sot-create/
 │       │   ├── jin-suggest/
-│       │   ├── jin-swe-fix/
 │       │   ├── manage-skills/
 │       │   └── verify-implementation/
 │       ├── scripts/                     # statusline + timer

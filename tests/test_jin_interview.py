@@ -1,9 +1,8 @@
-"""Tests for jin-interview skill and jin-interview-agent.
+"""Tests for jin-interview skill.
 
 Validates:
 - Skill YAML frontmatter parsing
 - Required interview phases exist
-- Agent file structure and frontmatter
 - Spec output format template
 - File synchronization between ~/.claude and project repo
 """
@@ -23,16 +22,6 @@ HOME_CLAUDE = Path.home() / ".claude"
 SKILL_PATHS = [
     PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md",
     HOME_CLAUDE / "skills" / "jin-interview" / "SKILL.md",
-]
-
-AGENT_PATHS = [
-    PROJECT_ROOT / ".claude" / "agents" / "jin-interview-agent.md",
-    HOME_CLAUDE / "agents" / "jin-interview-agent.md",
-]
-
-AGENTS_MD_PATHS = [
-    PROJECT_ROOT / ".claude" / "agents" / "AGENTS.md",
-    HOME_CLAUDE / "agents" / "AGENTS.md",
 ]
 
 
@@ -203,73 +192,6 @@ class TestInterviewPhases:
         assert "조기 종료" in skill_content or "충분하다" in skill_content
 
 
-# --- Agent File Structure Tests ---
-
-
-class TestAgentStructure:
-    """Tests for jin-interview-agent file structure and frontmatter."""
-
-    @pytest.fixture(params=AGENT_PATHS, ids=["project", "home"])
-    def agent_path(self, request: pytest.FixtureRequest) -> Path:
-        """Parametrized fixture for agent file paths."""
-        path = request.param
-        if not path.exists():
-            pytest.skip(f"Agent file not found: {path}")
-        return path
-
-    def test_agent_file_exists(self, agent_path: Path) -> None:
-        """Agent .md file should exist."""
-        assert agent_path.exists(), f"Missing: {agent_path}"
-
-    def test_frontmatter_is_valid_yaml(self, agent_path: Path) -> None:
-        """YAML frontmatter should parse without errors."""
-        content = agent_path.read_text(encoding="utf-8")
-        frontmatter = _parse_frontmatter(content)
-        assert isinstance(frontmatter, dict)
-
-    def test_agent_name(self, agent_path: Path) -> None:
-        """Agent name must be 'jin-interview-agent'."""
-        content = agent_path.read_text(encoding="utf-8")
-        frontmatter = _parse_frontmatter(content)
-        assert frontmatter["name"] == "jin-interview-agent"
-
-    def test_model_is_sonnet(self, agent_path: Path) -> None:
-        """Agent model should be sonnet for speed/quality balance."""
-        content = agent_path.read_text(encoding="utf-8")
-        frontmatter = _parse_frontmatter(content)
-        assert frontmatter["model"] == "sonnet"
-
-    def test_has_required_tools(self, agent_path: Path) -> None:
-        """Agent must declare required tools."""
-        content = agent_path.read_text(encoding="utf-8")
-        frontmatter = _parse_frontmatter(content)
-        tools = frontmatter["tools"]
-        required = {"AskUserQuestion", "Read", "Glob", "Grep", "Write"}
-        assert required.issubset(set(tools)), f"Missing tools: {required - set(tools)}"
-
-    def test_has_role_section(self, agent_path: Path) -> None:
-        """Agent must have a Role section."""
-        content = agent_path.read_text(encoding="utf-8")
-        assert "## Role" in content or "# jin-interview-agent" in content
-
-    def test_has_constraints_section(self, agent_path: Path) -> None:
-        """Agent must have a Constraints section."""
-        content = agent_path.read_text(encoding="utf-8")
-        assert "## Constraints" in content
-
-    def test_no_code_modification_constraint(self, agent_path: Path) -> None:
-        """Agent must explicitly forbid code writing/modification."""
-        content = agent_path.read_text(encoding="utf-8")
-        assert "코드 작성" in content or "코드" in content
-        assert "금지" in content
-
-    def test_pipeline_position(self, agent_path: Path) -> None:
-        """Agent must describe its pipeline position."""
-        content = agent_path.read_text(encoding="utf-8")
-        assert "Pipeline" in content or "pipeline" in content
-        assert ".jin/specs/" in content
-
-
 # --- Spec Output Format Tests ---
 
 
@@ -306,29 +228,6 @@ class TestSpecOutputFormat:
         assert "-spec.md" in skill_content
 
 
-# --- AGENTS.md Registry Tests ---
-
-
-class TestAgentsRegistry:
-    """Tests for AGENTS.md containing jin-interview-agent entry."""
-
-    @pytest.fixture(params=AGENTS_MD_PATHS, ids=["project", "home"])
-    def agents_md_content(self, request: pytest.FixtureRequest) -> str:
-        """Read AGENTS.md content."""
-        path = request.param
-        if not path.exists():
-            pytest.skip(f"AGENTS.md not found: {path}")
-        return path.read_text(encoding="utf-8")
-
-    def test_agent_listed_in_key_files(self, agents_md_content: str) -> None:
-        """jin-interview-agent must appear in AGENTS.md."""
-        assert "jin-interview-agent" in agents_md_content
-
-    def test_interview_category_exists(self, agents_md_content: str) -> None:
-        """Interview category must exist in Agent Categories."""
-        assert "Interview" in agents_md_content
-
-
 # --- File Synchronization Tests ---
 
 
@@ -341,12 +240,4 @@ class TestFileSynchronization:
         home = HOME_CLAUDE / "skills" / "jin-interview" / "SKILL.md"
         if not project.exists() or not home.exists():
             pytest.skip("One or both skill files not found")
-        assert project.read_text(encoding="utf-8") == home.read_text(encoding="utf-8")
-
-    def test_agent_files_match(self) -> None:
-        """Agent .md should be identical in both locations."""
-        project = PROJECT_ROOT / ".claude" / "agents" / "jin-interview-agent.md"
-        home = HOME_CLAUDE / "agents" / "jin-interview-agent.md"
-        if not project.exists() or not home.exists():
-            pytest.skip("One or both agent files not found")
         assert project.read_text(encoding="utf-8") == home.read_text(encoding="utf-8")

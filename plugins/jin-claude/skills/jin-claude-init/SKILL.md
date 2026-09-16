@@ -1,11 +1,11 @@
 ---
 name: jin-claude-init
-description: 팀원 Claude Code 환경 초기화. plugin 설치, settings 구성, MCP/hooks 설정, agents/skills 동기화를 자동화. "jin init", "jin 초기화", "Claude Code 초기 설정", "환경 세팅" 등의 요청 시 사용.
+description: 팀원 Claude Code 환경 초기화. plugin 설치, settings 구성, MCP/hooks 설정, skills 동기화를 자동화. "jin init", "jin 초기화", "Claude Code 초기 설정", "환경 세팅" 등의 요청 시 사용.
 ---
 
 # Jin Claude Init
 
-팀원이 새 머신에서 Claude Code를 설치한 뒤, 동일한 플러그인·설정·에이전트·스킬 환경을 한 번에 구성하는 자동화 스킬.
+팀원이 새 머신에서 Claude Code를 설치한 뒤, 동일한 플러그인·설정·스킬 환경을 한 번에 구성하는 자동화 스킬.
 
 ## Step 0 — Pre-flight Check
 
@@ -68,7 +68,7 @@ claude plugin install autoresearch@autoresearch
 
 jin-claude 저장소에서 statusline, 설정 파일, venv를 동기화한다. 동기화 직후 구버전 플러그인 캐시를 자동으로 정리한다.
 
-> **참고:** Agents와 Skills는 Step 2의 `claude plugin install`이 자동으로 설치하므로, 이 단계에서는 동기화하지 않는다.
+> **참고:** Skills는 Step 2의 `claude plugin install`이 자동으로 설치하므로, 이 단계에서는 동기화하지 않는다.
 
 **먼저 사용자에게 사용량 수집 주기를 물어본다:**
 
@@ -153,15 +153,13 @@ print('Hooks:', list(d['hooks'].keys()))
 
 1. `claude plugin list`로 플러그인 설치 상태 확인
 2. `~/.claude/settings.json` 내용 읽어서 설정 반영 확인
-3. `~/.claude/agents/` 디렉토리에 에이전트 파일 존재 확인
-4. `claude mcp list`로 MCP 서버 설치 확인
-5. `SKILL_DIR/welcome.md`를 읽어 사용자에게 사용법 안내를 표시한다.
+3. `claude mcp list`로 MCP 서버 설치 확인
+4. `SKILL_DIR/welcome.md`를 읽어 사용자에게 사용법 안내를 표시한다.
 
 ```
 [DONE] jin-claude-init: 환경 초기화 완료
 - Marketplace: N개 추가
 - Plugins: N개 설치
-- Agents: N개 동기화
 - Skills: N개 동기화
 - Settings: 병합 완료 (effortLevel: high)
 - MCP: N개 서버 설치

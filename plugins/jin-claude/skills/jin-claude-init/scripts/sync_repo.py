@@ -1,7 +1,7 @@
-"""jin-claude git repo에서 agents와 skills를 동기화하는 스크립트.
+"""jin-claude git repo에서 statusline·설정·venv를 동기화하는 스크립트.
 
-repo를 clone/pull 한 후, agents와 skills 디렉토리의 파일을
-~/.claude/ 하위에 복사한다.
+repo를 clone/pull 한 후, 개별 파일을 ~/.claude/ 하위에 복사하고
+가상환경과 사용량 타이머를 설치한다.
 """
 
 import shutil

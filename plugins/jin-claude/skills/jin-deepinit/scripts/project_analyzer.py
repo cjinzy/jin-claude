@@ -1,7 +1,7 @@
 """프로젝트 구조 분석 및 프레임워크 감지 모듈.
 
 프로젝트 디렉토리를 스캔하여 사용 언어, 프레임워크, 구조를 감지하고
-적합한 jin-claude 에이전트를 추천한다.
+사용 가능한 jin-claude 스킬을 안내하는 AGENTS.md 를 생성한다.
 """
 
 from __future__ import annotations
@@ -162,70 +162,6 @@ FRAMEWORK_INDICATORS: dict[str, dict] = {
     "composer.json": {
         "type": "indicator",
         "framework": "PHP (Composer)",
-    },
-}
-
-# 프로젝트 특성 → 에이전트 추천 매핑
-AGENT_RECOMMENDATIONS: dict[str, dict] = {
-    "python": {
-        "agent": "python-expert",
-        "model": "sonnet",
-        "reason": "Python 전문 코딩 및 리팩토링",
-        "example": '"이 함수를 리팩토링해줘"',
-    },
-    "python-swe": {
-        "agent": "swe-agent",
-        "model": "sonnet",
-        "reason": "Python 버그 수정 및 이슈 해결",
-        "example": '"jin swe [이슈 설명]"',
-    },
-    "python-swe-high": {
-        "agent": "swe-agent-high",
-        "model": "opus",
-        "reason": "복잡한 버그 심층 디버깅",
-        "example": '"jin swe-high [복잡한 이슈]"',
-    },
-    "multi-module": {
-        "agent": "jin-orchestrator",
-        "model": "sonnet",
-        "reason": "멀티 에이전트 오케스트레이션",
-        "example": '"jin orchestrate [작업 설명]"',
-    },
-    "large-scale": {
-        "agent": "jin-maxwork",
-        "model": "sonnet",
-        "reason": "대규모 병렬 작업 처리",
-        "example": '"jin maxwork [대규모 작업]"',
-    },
-    "security": {
-        "agent": "jin-gcc",
-        "model": "sonnet",
-        "reason": "보안 관점 코드 리뷰",
-        "example": '"jin gcc [보안 검토 대상]"',
-    },
-    "cti": {
-        "agent": "mole-research-agent",
-        "model": "sonnet",
-        "reason": "CTI/위협 인텔리전스 분석",
-        "example": '"mole research [위협 정보]"',
-    },
-    "onboarding": {
-        "agent": "jin-claude-init",
-        "model": "sonnet",
-        "reason": "프로젝트 초기 설정 및 온보딩",
-        "example": '"jin init"',
-    },
-    "interview": {
-        "agent": "jin-interview-agent",
-        "model": "sonnet",
-        "reason": "작업 전 요구사항 인터뷰",
-        "example": '"jin interview"',
-    },
-    "analysis": {
-        "agent": "swe-analyst",
-        "model": "sonnet",
-        "reason": "코드베이스 분석 및 이해",
-        "example": '"이 코드 구조를 분석해줘"',
     },
 }
 
@@ -422,65 +358,11 @@ def detect_structure(project_dir: Path) -> str:
     return "flat"
 
 
-def recommend_agents(
-    languages: list[str],
-    frameworks: dict[str, str],
-    structure: str,
-) -> list[dict]:
-    """프로젝트 특성에 기반하여 jin-claude 에이전트를 추천한다.
-
-    Args:
-        languages: 감지된 언어 목록.
-        frameworks: 감지된 프레임워크 딕셔너리.
-        structure: 프로젝트 구조 유형.
-
-    Returns:
-        추천 에이전트 목록 (각각 agent, model, reason, example 키 포함).
-    """
-    recommendations: list[dict] = []
-    added_agents: set[str] = set()
-
-    def _add(key: str) -> None:
-        """중복 없이 에이전트를 추천 목록에 추가한다."""
-        if key in AGENT_RECOMMENDATIONS and AGENT_RECOMMENDATIONS[key]["agent"] not in added_agents:
-            rec = AGENT_RECOMMENDATIONS[key].copy()
-            recommendations.append(rec)
-            added_agents.add(rec["agent"])
-
-    # 항상 추천: 온보딩, 인터뷰, 분석
-    _add("onboarding")
-    _add("interview")
-    _add("analysis")
-
-    # 언어 기반 추천
-    if "Python" in languages:
-        _add("python")
-        _add("python-swe")
-        _add("python-swe-high")
-
-    # 구조 기반 추천
-    if structure == "monorepo" or len(languages) >= 3:
-        _add("multi-module")
-        _add("large-scale")
-
-    # 보안 관련은 항상 추천
-    _add("security")
-
-    # CTI 관련 키워드 확인
-    framework_values = {v.lower() for v in frameworks.values()}
-    cti_keywords = {"threat", "intel", "security", "mole", "cti"}
-    if cti_keywords & framework_values:
-        _add("cti")
-
-    return recommendations
-
-
 def generate_agents_md(
     project_dir: Path,
     languages: list[str],
     frameworks: dict[str, str],
     structure: str,
-    agents: list[dict],
 ) -> str:
     """AGENTS.md 마크다운 콘텐츠를 생성한다.
 
@@ -489,7 +371,6 @@ def generate_agents_md(
         languages: 감지된 언어 목록.
         frameworks: 감지된 프레임워크 딕셔너리.
         structure: 프로젝트 구조 유형.
-        agents: 추천 에이전트 목록.
 
     Returns:
         AGENTS.md 마크다운 문자열.
@@ -515,14 +396,6 @@ def generate_agents_md(
     # 디렉토리 구조 요약
     dir_summary = _generate_dir_summary(project_dir)
 
-    # 에이전트 테이블
-    agent_rows = ""
-    for agent in agents:
-        agent_rows += (
-            f"| {agent['agent']} | {agent['model']} "
-            f"| {agent['reason']} | {agent['example']} |\n"
-        )
-
     # 스킬 테이블
     skills_table = _generate_skills_table()
 
@@ -540,18 +413,12 @@ def generate_agents_md(
 {dir_summary}
 ```
 
-## 추천 에이전트
-
-| 에이전트 | 모델 | 추천 이유 | 사용 예시 |
-|----------|------|-----------|-----------|
-{agent_rows}
 ## 사용 가능한 스킬
 
 {skills_table}
 
 ## 관련 파일
 
-- `agents/` — jin-claude 에이전트 정의 파일
 - `skills/` — jin-claude 스킬 정의 파일
 - `CLAUDE.md` — 프로젝트 지침 파일
 """
@@ -604,15 +471,10 @@ def _generate_skills_table() -> str:
         마크다운 테이블 문자열.
     """
     skills = [
-        ("jin-orchestrator", '"jin orchestrate"', "멀티 에이전트 오케스트레이션"),
-        ("jin-maxwork", '"jin maxwork"', "대규모 병렬 작업 처리"),
         ("jin-commit", '"commit"', "Gitmoji 기반 커밋 메시지 생성"),
         ("jin-deepinit", '"jin deepinit"', "프로젝트 분석 및 AGENTS.md 생성"),
         ("jin-interview", '"jin interview"', "작업 전 요구사항 인터뷰"),
-        ("jin-ralph", '"ralph"', "반복 실행 모드"),
         ("jin-gcc", '"jin gcc"', "보안 관점 코드 리뷰"),
-        ("jin-swe-fix", '"jin swe"', "SWE 에이전트 버그 수정"),
-        ("jin-fsd", '"jin fsd"', "풀스택 개발"),
         ("jin-cleanser", '"jin cleanser"', "코드 정리 및 리팩토링"),
         ("verify-implementation", '"verify"', "구현 검증"),
     ]
@@ -639,7 +501,6 @@ def analyze(project_dir: Path) -> dict:
     languages = detect_languages(project_dir)
     frameworks = detect_frameworks(project_dir)
     structure = detect_structure(project_dir)
-    agents = recommend_agents(languages, frameworks, structure)
 
     return {
         "project_dir": str(project_dir.resolve()),
@@ -647,7 +508,6 @@ def analyze(project_dir: Path) -> dict:
         "languages": languages,
         "frameworks": frameworks,
         "structure": structure,
-        "recommended_agents": agents,
     }
 
 
