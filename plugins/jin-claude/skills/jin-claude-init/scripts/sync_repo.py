@@ -22,10 +22,30 @@ SYNC_TARGETS: list[tuple[str, Path]] = []
 # hooks는 ${CLAUDE_PLUGIN_ROOT}가 치환되지 않으므로 고정 경로에 복사.
 HOOKS_DIR = CLAUDE_DIR / "jin-hooks"
 
+# CLAUDE.md 가 @include 하는 보조 문서. 함께 복사하지 않으면 참조가 깨진다.
+CLAUDE_INCLUDES = (
+    "mcp-servers.md",
+    "mcp-semble.md",
+    "mcp-serena.md",
+    "mcp-context7.md",
+    "mcp-linear.md",
+    "mcp-hindsight.md",
+    "memory-routing.md",
+    "mcp-tavily.md",
+    "mcp-playwright.md",
+    "mcp-gbrain.md",
+    "mcp-context-mode.md",
+    "mcp-headroom.md",
+    "mcp-sequential-thinking.md",
+    "backend-spec.md",
+    "frontend-spec.md",
+)
+
 # (소스 상대경로, 대상 경로, 백업 여부)
 SYNC_FILES = [
     ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh", False),
     (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md", True),
+    *[(f".claude/{name}", CLAUDE_DIR / name, False) for name in CLAUDE_INCLUDES],
     ("plugins/jin-claude/hooks/keyword_detector.py", HOOKS_DIR / "keyword_detector.py", False),
     ("plugins/jin-claude/hooks/pre_tool_enforcer.sh", HOOKS_DIR / "pre_tool_enforcer.sh", False),
     ("plugins/jin-claude/hooks/post_tool_verifier.sh", HOOKS_DIR / "post_tool_verifier.sh", False),

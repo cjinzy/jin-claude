@@ -1,58 +1,56 @@
-# GENERAL
+# jin-AGENT.md
 
-skills/guidelines 를 먼저 참고하고 작업을 시작합니다.
+## GUIDELINES
+- Source Of Truth(sot) is project
+- Give me the cold hard truth.
+- When writing something intended for human consumption, (comment, commit message, reply to prompt) use as few words as possible. Pick every word meticulously to reduce the volume to a strict minimum. Be down to the point. Less is more.
+- Avoid magic numbers and strings by extracting recurring or meaningful values into descriptive constants (const) or enums. Keep self-explanatory, one-off values inline to avoid clutter. If a value comes from a spec (e.g. HTTP 200 OK), use a constant regardless.
+- Document the what and why with to-the-point comments, docstrings, and ASCII drawings for full systems. Minimise code duplication. Always include a traceback for error tracking.
+- If the prompt indicates that a bug is being fixed, don't write the fix right away. First write the test. Observe it failing. Then write the fix. And observe the test passing. Always create test cases and add them to .gitignore (do not git commit).
+- Make full use of agents or teams
+- Split files to prevent them becoming excessively large
+- Always save plans as files with searchable names.
 
-## Tool Priority (Serena vs context-mode)
-- 코드 탐색/심볼 검색/리팩터링: Serena 심볼릭 도구 우선 사용 (find_symbol, get_symbols_overview, find_referencing_symbols, replace_symbol_body)
-- 외부 URL 수집, 대용량 명령 출력(빌드/테스트), 데이터 분석: context-mode 도구 사용 (ctx_execute, ctx_batch_execute, ctx_fetch_and_index)
-- Read: 편집할 파일을 읽을 때만 사용. 코드 구조 파악은 Serena의 get_symbols_overview → find_symbol(include_body=True) 순서로 진행
-- Grep/search_for_pattern: 심볼 이름을 모를 때는 Serena의 search_for_pattern 우선, 비코드 파일 검색은 Grep 사용
 
-## work method
-Make full use of agent or Claude Code team members
-Split files to prevent them becoming excessively large.
-Before beginning the task, I utilise jin-interview skills.
+## MCP Servers
+@mcp-servers.md
 
-## MCP
-Actively use MCP servers for efficient work:
-- **Serena**: Use symbolic tools (find_symbol, get_symbols_overview) for code exploration instead of reading entire files
-- **Context7**: Query library docs before implementing unfamiliar APIs
-- **context-mode**: Route large outputs (>20 lines) through ctx_execute to protect context window
-- **Context-Hub (chub)**: Use `chub search/get` for community-curated agent-optimized docs when Context7 lacks coverage
+## Completion
+Complete tasks in this order: deploy(execute) → verify → jin-commit.
 
-## write plan
-Always save plans as files named Header1.
+## Commit Report
+[DONE] Recommend commit messages using jin-commit skill (loaded from plugin).
 
-## completion report
-```
-[DONE] Recommend commit messages using jin-commit skills
-```
+## Project Specs
+- Backend: @backend-spec.md
+- Frontend: @frontend-spec.md
 
-## test case
-always create teset case (do not git commit)
+## Memory routing
+@memory-routing.md
 
-## Backend
-python 3.13
+## SoT (Source of Truth)
+SoT is managed locally and excluded from Git via .gitignore.
 
-| type | name | version |
-| ---- | ---- | ------- |
-| language | python | 3.13 |
-| management | uv | lateset |
-| type checket | ty | latest |
-| linter & formatter | ruff | latest |
-| logging | loguru | latest |
+Structure:
+- Root: sot/ directory
+- Index: sot/Index.md (links to all entries)
+- Content: Split by category into subdirectories with individual .md files.
 
-### etc
-Always write `doc strings`
-Always include a traceback for error tracking.
-Minimise code duplication.
+Categories:
+1. Project Overview — What this project is, purpose, goals
+2. Tech Stack — Backend (@backend-spec.md), Frontend (@frontend-spec.md), Database, Infrastructure
+3. Database Schema — Table definitions, column specs, ER diagrams
+4. Architecture — Components, layers, data flow, API contracts
+5. Workflow — How components interact, business logic flow, user journey, system behavior
+6. Rules — Coding standards, naming conventions, commit rules (see jin-commit skill)
 
-## Frontend
-React + TypeScript + vite
+Create subdirectories under sot/ for each category (e.g., sot/architecture/). Store details in separate .md files. List all files in sot/Index.md.
 
-### icon bundle
-https://github.com/microsoft/fluentui-system-icons
-
-### management
-npm
-
+## Issue Management
+- Use Linear for tracking.
+- Check for existing issues. Create one if none exists.
+- When creating, fill in project, priority, assign, and label.
+- When planning, set status to plan and write the plan.
+- When working, set status to in progress.
+- When done, write a summary, set status to done, and set a due date.
+- If no project exists, ask the user whether to create one or which project to use.
