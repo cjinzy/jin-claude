@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Team-standard skills & hooks for Claude Code: 12 skills, lifecycle hooks, keyword routing, statusline",
-    "version": "4.0.0"
+    "version": "4.0.1"
   },
   "plugins": [
     {
       "name": "jin-claude",
       "source": "./plugins/jin-claude",
       "description": "Team-standard skills & hooks for Claude Code: 12 skills, lifecycle hooks, keyword routing, statusline",
-      "version": "4.0.0",
+      "version": "4.0.1",
       "author": {
         "name": "jin",
         "email": "jin@stealthmole.com"

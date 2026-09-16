@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 12개 스킬, 4개 hooks, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `4.0.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `4.0.1` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
