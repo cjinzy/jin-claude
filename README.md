@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 12개 스킬, 4개 hooks, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `4.0.1` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `4.0.2` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -128,7 +128,7 @@ claude plugin install autoresearch@autoresearch
 | `jin-commit` | gitmoji 기반 커밋 메시지 추천 |
 | `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
 | `jin-suggest` | 적합한 스킬 추천 |
-| `jin-sot-create` | SoT(Source of Truth) 디렉토리 구조 생성 |
+| `jin-sot-create` | SoT 문서셋 생성 — 세부항목별 파일 + fact ID 인용 + Index 생성기 + drift 검증 |
 
 ### 코드 품질 & 분석
 
