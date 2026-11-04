@@ -42,10 +42,11 @@ EXPECTED_MARKETPLACES = [
     "autoresearch",
 ]
 
+    "superlite-dev",
 EXPECTED_PLUGINS = [
     "obsidian",
     "ui-ux-pro-max",
-    "superpowers",
+    "superlite",
     "context7",
     "code-simplifier",
     "claude-md-management",

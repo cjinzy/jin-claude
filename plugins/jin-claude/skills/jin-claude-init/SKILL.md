@@ -35,6 +35,7 @@ claude plugin marketplace add mksglu/claude-context-mode
 claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
 claude plugin marketplace add revfactory/harness
 claude plugin marketplace add uditgoenka/autoresearch
+claude plugin marketplace add iha2/superlite
 ```
 
 각 명령어 실행 결과를 확인하고, 이미 추가된 marketplace는 건너뛴다.
@@ -46,7 +47,7 @@ claude plugin marketplace add uditgoenka/autoresearch
 ```bash
 claude plugin install obsidian@obsidian-skills
 claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
-claude plugin install superpowers@claude-plugins-official
+claude plugin install superlite@superlite-dev
 claude plugin install context7@claude-plugins-official
 claude plugin install code-simplifier@claude-plugins-official
 claude plugin install claude-md-management@claude-plugins-official
@@ -62,7 +63,7 @@ claude plugin install autoresearch@autoresearch
 이미 설치된 플러그인은 건너뛴다.
 
 > **SuperClaude:** Step 2의 `claude plugin install sc@superclaude`으로 설치된다.
-> **anthropics/claude-plugins-official:** superpowers, context7, code-simplifier, claude-md-management, serena, pyright-lsp, agent-sdk-dev 7개 플러그인을 공식 마켓플레이스에서 일괄 설치한다.
+> **anthropics/claude-plugins-official:** context7, code-simplifier, claude-md-management, serena, pyright-lsp, agent-sdk-dev 6개 플러그인을 공식 마켓플레이스에서 일괄 설치한다.
 
 ## Step 3 — Git Repo에서 Statusline·설정 동기화 + 캐시 정리
 

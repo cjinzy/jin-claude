@@ -24,7 +24,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 
 `scripts/preflight.py`가 Claude Code 설치 여부, Python 3.13, `git`, `jq` 등의 필수 도구를 확인합니다.
 
-#### Step 1 — Plugin Marketplace 7개 등록
+#### Step 1 — Plugin Marketplace 8개 등록
 
 | # | Marketplace ID | 출처 |
 |---|----------------|------|
@@ -35,6 +35,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 | 5 | `superclaude` | `SuperClaude-Org/SuperClaude_Plugin` |
 | 6 | `harness-marketplace` | `revfactory/harness` |
 | 7 | `autoresearch` | `uditgoenka/autoresearch` |
+| 8 | `superlite-dev` | `iha2/superlite` |
 
 ```bash
 claude plugin marketplace add kepano/obsidian-skills
@@ -44,6 +45,7 @@ claude plugin marketplace add mksglu/claude-context-mode
 claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
 claude plugin marketplace add revfactory/harness
 claude plugin marketplace add uditgoenka/autoresearch
+claude plugin marketplace add iha2/superlite
 ```
 
 #### Step 2 — Plugin 13개 일괄 설치
@@ -54,7 +56,7 @@ claude plugin marketplace add uditgoenka/autoresearch
 |---|--------|-------------|------|
 | 1 | `obsidian` | `obsidian-skills` | Obsidian vault 연동 (defuddle, markdown, CLI, canvas, bases) |
 | 2 | `ui-ux-pro-max` | `ui-ux-pro-max-skill` | UI/UX 디자인 인텔리전스 (50+ 스타일, 161 팔레트) |
-| 3 | `superpowers` | `claude-plugins-official` | TDD · 디버깅 · 코드 리뷰 등 핵심 워크플로우 |
+| 3 | `superlite` | `superlite-dev` | 경량 빌드 라이프사이클 (승인 1회 · 병렬 웨이브 · 짧은 보고) |
 | 4 | `context7` | `claude-plugins-official` | 라이브러리 문서 조회 (MCP 경유) |
 | 5 | `code-simplifier` | `claude-plugins-official` | 코드 단순화 워크플로우 |
 | 6 | `claude-md-management` | `claude-plugins-official` | CLAUDE.md 관리 |
@@ -69,7 +71,7 @@ claude plugin marketplace add uditgoenka/autoresearch
 ```bash
 claude plugin install obsidian@obsidian-skills
 claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
-claude plugin install superpowers@claude-plugins-official
+claude plugin install superlite@superlite-dev
 claude plugin install context7@claude-plugins-official
 claude plugin install code-simplifier@claude-plugins-official
 claude plugin install claude-md-management@claude-plugins-official
