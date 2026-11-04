@@ -24,6 +24,8 @@ REQUIRED_SETTINGS: dict = {
     "language": "korean",
     "skipDangerousModePermissionPrompt": True,
     "effortLevel": "high",
+    "model": "opus",
+    "advisorModel": "fable",
 }
 
 

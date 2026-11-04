@@ -30,6 +30,8 @@ except ImportError:
         "language": "korean",
         "skipDangerousModePermissionPrompt": True,
         "effortLevel": "high",
+        "model": "opus",
+        "advisorModel": "fable",
     }
 
 EXPECTED_MARKETPLACES = [
@@ -40,9 +42,9 @@ EXPECTED_MARKETPLACES = [
     "superclaude",
     "harness",
     "autoresearch",
+    "superlite-dev",
 ]
 
-    "superlite-dev",
 EXPECTED_PLUGINS = [
     "obsidian",
     "ui-ux-pro-max",

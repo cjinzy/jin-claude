@@ -108,6 +108,8 @@ python3 "SKILL_DIR/scripts/merge_settings.py"
 - `language`: `"korean"`
 - `skipDangerousModePermissionPrompt`: `true`
 - `effortLevel`: `"high"`
+- `model`: `"opus"`
+- `advisorModel`: `"fable"` (advisor 활성화)
 
 `enabledPlugins`는 Step 2의 `claude plugin install`이 자동으로 추가하므로 병합 대상에서 제외한다.
 
@@ -162,7 +164,7 @@ print('Hooks:', list(d['hooks'].keys()))
 - Marketplace: N개 추가
 - Plugins: N개 설치
 - Skills: N개 동기화
-- Settings: 병합 완료 (effortLevel: high)
+- Settings: 병합 완료 (model: opus, effortLevel: high, advisorModel: fable)
 - MCP: N개 서버 설치
 - Hooks: 4개 설치
 ```

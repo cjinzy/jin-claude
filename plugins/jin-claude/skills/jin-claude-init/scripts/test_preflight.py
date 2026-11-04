@@ -83,6 +83,8 @@ class TestCheckSettings:
             "language": "korean",
             "skipDangerousModePermissionPrompt": True,
             "effortLevel": "high",
+            "model": "opus",
+            "advisorModel": "fable",
         }
         result = check_settings(settings)
         assert result["complete"] is True
