@@ -149,7 +149,6 @@ class TestCache:
     def test_write_and_read_cache(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         api_response = {
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
 
@@ -158,17 +157,15 @@ class TestCache:
             result = read_cache()
 
         assert result is not None
-        assert result.five_hour.utilization == 42.0
-        assert result.five_hour.resets_at == "2026-03-02T18:00:00Z"
-        assert result.seven_day is not None
         assert result.seven_day.utilization == 20.0
         assert result.seven_day.resets_at == "2026-03-06T00:00:00Z"
+        assert result.model is None
 
     def test_expired_cache_returns_none(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         cache_data = {
             "fetched_at": time.time() - CACHE_TTL_SECONDS - 1,
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 42.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(cache_data))
 
@@ -179,15 +176,15 @@ class TestCache:
         cache_file = tmp_path / ".usage-cache.json"
         cache_data = {
             "fetched_at": time.time(),
-            "five_hour": {"utilization": 15.0, "resets_at": None},
+            "seven_day": {"utilization": 15.0, "resets_at": None},
         }
         cache_file.write_text(json.dumps(cache_data))
 
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             result = read_cache()
             assert result is not None
-            assert result.five_hour.utilization == 15.0
-            assert result.seven_day is None
+            assert result.seven_day.utilization == 15.0
+            assert result.model is None
 
     def test_corrupted_cache_returns_none(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
@@ -196,26 +193,24 @@ class TestCache:
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             assert read_cache() is None
 
-    def test_missing_five_hour_in_cache(self, tmp_path: Path) -> None:
+    def test_missing_seven_day_in_cache(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
-        cache_data = {"fetched_at": time.time(), "five_hour": None}
+        cache_data = {"fetched_at": time.time(), "seven_day": None}
         cache_file.write_text(json.dumps(cache_data))
 
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             assert read_cache() is None
 
-    def test_cache_without_seven_day(self, tmp_path: Path) -> None:
+    def test_cache_without_seven_day_returns_none(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         cache_data = {
             "fetched_at": time.time(),
-            "five_hour": {"utilization": 10.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day_model": {"label": "Fable", "utilization": 10.0, "resets_at": None},
         }
         cache_file.write_text(json.dumps(cache_data))
 
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
-            result = read_cache()
-            assert result is not None
-            assert result.seven_day is None
+            assert read_cache() is None
 
 
 # --- Integration tests ---
@@ -228,7 +223,6 @@ class TestGetUsage:
         cache_file = tmp_path / ".usage-cache.json"
         cache_data = {
             "fetched_at": time.time(),
-            "five_hour": {"utilization": 55.0, "resets_at": "2026-03-02T20:00:00Z"},
             "seven_day": {"utilization": 30.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(cache_data))
@@ -236,8 +230,6 @@ class TestGetUsage:
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
             result = get_usage()
             assert result is not None
-            assert result.five_hour.utilization == 55.0
-            assert result.seven_day is not None
             assert result.seven_day.utilization == 30.0
 
     def test_returns_none_when_no_token(self, tmp_path: Path) -> None:
@@ -251,7 +243,6 @@ class TestGetUsage:
     def test_fetches_from_api_when_cache_expired(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         api_response = {
-            "five_hour": {"utilization": 30.0, "resets_at": "2026-03-02T19:00:00Z"},
             "seven_day": {"utilization": 15.0, "resets_at": "2026-03-06T03:00:00Z"},
         }
 
@@ -262,8 +253,7 @@ class TestGetUsage:
         ):
             result = get_usage()
             assert result is not None
-            assert result.five_hour.utilization == 30.0
-            assert result.seven_day is not None
+            assert result.seven_day.utilization == 15.0
             assert result.seven_day.resets_at == "2026-03-06T03:00:00Z"
 
     def test_returns_none_on_api_error(self, tmp_path: Path) -> None:
@@ -286,14 +276,18 @@ class TestGetUsage:
 class TestMainOutput:
     """Tests for CLI output format."""
 
-    def test_output_format_with_7d(
+    def test_output_format_with_model(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         cache_data = {
             "fetched_at": time.time(),
-            "five_hour": {"utilization": 35.0, "resets_at": "2026-03-02T18:30:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
+            "seven_day_model": {
+                "label": "Fable",
+                "utilization": 7.0,
+                "resets_at": "2026-03-07T00:00:00Z",
+            },
         }
         cache_file.write_text(json.dumps(cache_data))
 
@@ -304,19 +298,15 @@ class TestMainOutput:
 
         captured = capsys.readouterr()
         parts = captured.out.strip().split("|")
-        assert len(parts) == 4
-        assert parts[0] == "35"
-        assert parts[1] == "2026-03-02T18:30:00Z"
-        assert parts[2] == "20"
-        assert parts[3] == "2026-03-06T00:00:00Z"
+        assert parts == ["20", "2026-03-06T00:00:00Z", "Fable", "7", "2026-03-07T00:00:00Z"]
 
-    def test_output_format_without_7d(
+    def test_output_format_without_model(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         cache_data = {
             "fetched_at": time.time(),
-            "five_hour": {"utilization": 10.0, "resets_at": "2026-03-02T18:30:00Z"},
+            "seven_day": {"utilization": 10.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(cache_data))
 
@@ -327,10 +317,7 @@ class TestMainOutput:
 
         captured = capsys.readouterr()
         parts = captured.out.strip().split("|")
-        assert len(parts) == 4
-        assert parts[0] == "10"
-        assert parts[2] == ""  # no 7d utilization
-        assert parts[3] == ""  # no 7d resets_at
+        assert parts == ["10", "2026-03-06T00:00:00Z", "", "", ""]
 
     def test_output_exits_1_on_failure(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
@@ -455,7 +442,6 @@ class TestStaleCacheFallback:
         # 만료된 캐시 (정상 데이터)
         cache_data = {
             "fetched_at": time.time() - CACHE_TTL_SECONDS - 100,
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(cache_data))
@@ -470,13 +456,13 @@ class TestStaleCacheFallback:
         ):
             result = get_usage()
             assert result is not None
-            assert result.five_hour.utilization == 42.0
+            assert result.seven_day.utilization == 20.0
 
     def test_returns_stale_cache_when_no_token(self, tmp_path: Path) -> None:
         cache_file = tmp_path / ".usage-cache.json"
         cache_data = {
             "fetched_at": time.time() - CACHE_TTL_SECONDS - 100,
-            "five_hour": {"utilization": 30.0, "resets_at": None},
+            "seven_day": {"utilization": 30.0, "resets_at": None},
         }
         cache_file.write_text(json.dumps(cache_data))
 
@@ -486,7 +472,7 @@ class TestStaleCacheFallback:
         ):
             result = get_usage()
             assert result is not None
-            assert result.five_hour.utilization == 30.0
+            assert result.seven_day.utilization == 30.0
 
     def test_consecutive_errors_preserve_data(self, tmp_path: Path) -> None:
         """연속 API 에러 시에도 최초 정상 데이터가 보존되어 반환된다."""
@@ -494,7 +480,6 @@ class TestStaleCacheFallback:
         # 만료된 정상 캐시
         cache_data = {
             "fetched_at": time.time() - CACHE_TTL_SECONDS - 100,
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(cache_data))
@@ -510,7 +495,7 @@ class TestStaleCacheFallback:
             # 첫 번째 에러: stale 정상 캐시에서 데이터 반환
             result1 = get_usage()
             assert result1 is not None
-            assert result1.five_hour.utilization == 42.0
+            assert result1.seven_day.utilization == 20.0
 
         # 에러 캐시 TTL을 만료시킴
         data = json.loads(cache_file.read_text())
@@ -528,7 +513,7 @@ class TestStaleCacheFallback:
             # 두 번째 에러: 에러 캐시에 보존된 데이터에서 반환
             result2 = get_usage()
             assert result2 is not None
-            assert result2.five_hour.utilization == 42.0
+            assert result2.seven_day.utilization == 20.0
 
     def test_returns_none_when_no_cache_and_api_fails(self, tmp_path: Path) -> None:
         cache_file = tmp_path / "nonexistent-cache.json"
@@ -581,15 +566,14 @@ class TestErrorCache:
 
         data = json.loads(cache_file.read_text())
         assert data["error"] is True
-        assert "five_hour" not in data
+        assert "seven_day" not in data
 
     def test_write_error_cache_preserves_prior_data(self, tmp_path: Path) -> None:
-        """에러 시 기존 캐시의 정상 데이터(five_hour/seven_day)를 보존한다."""
+        """에러 시 기존 캐시의 정상 데이터(seven_day)를 보존한다."""
         cache_file = tmp_path / ".usage-cache.json"
         # 기존 정상 캐시
         old_cache = {
             "fetched_at": time.time() - 100,
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(old_cache))
@@ -599,7 +583,6 @@ class TestErrorCache:
 
         data = json.loads(cache_file.read_text())
         assert data["error"] is True
-        assert data["five_hour"]["utilization"] == 42.0
         assert data["seven_day"]["utilization"] == 20.0
 
     def test_write_error_cache_does_not_preserve_prior_error(self, tmp_path: Path) -> None:
@@ -616,7 +599,7 @@ class TestErrorCache:
 
         data = json.loads(cache_file.read_text())
         assert data["error"] is True
-        assert "five_hour" not in data
+        assert "seven_day" not in data
 
     def test_read_error_cache_with_preserved_data_stale(self, tmp_path: Path) -> None:
         """에러 캐시에 보존된 정상 데이터가 있으면 allow_stale=True 시 반환한다."""
@@ -624,7 +607,6 @@ class TestErrorCache:
         cache_data = {
             "fetched_at": time.time(),
             "error": True,
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(cache_data))
@@ -635,8 +617,6 @@ class TestErrorCache:
             # allow_stale=True → 보존된 데이터 반환
             result = read_cache(allow_stale=True)
             assert result is not None
-            assert result.five_hour.utilization == 42.0
-            assert result.seven_day is not None
             assert result.seven_day.utilization == 20.0
 
     def test_read_error_cache_without_data_stale(self, tmp_path: Path) -> None:
@@ -663,7 +643,6 @@ class TestLastGoodCache:
         cache_file = tmp_path / ".usage-cache.json"
         last_good_file = tmp_path / ".usage-last-good.json"
         api_response = {
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
 
@@ -675,7 +654,6 @@ class TestLastGoodCache:
 
         assert last_good_file.exists()
         data = json.loads(last_good_file.read_text())
-        assert data["five_hour"]["utilization"] == 42.0
         assert data["seven_day"]["utilization"] == 20.0
 
     def test_cascade_error_preserves_last_good(self, tmp_path: Path) -> None:
@@ -686,12 +664,11 @@ class TestLastGoodCache:
         # last-good 파일에 이전 성공 데이터 존재
         last_good_data = {
             "fetched_at": time.time() - 3600,
-            "five_hour": {"utilization": 35.0, "resets_at": "2026-03-02T17:00:00Z"},
             "seven_day": {"utilization": 15.0, "resets_at": "2026-03-05T00:00:00Z"},
         }
         last_good_file.write_text(json.dumps(last_good_data))
 
-        # 에러 캐시: five_hour 없음 (cascade failure 상태)
+        # 에러 캐시: seven_day 없음 (cascade failure 상태)
         error_cache = {
             "fetched_at": time.time() - 400,
             "error": True,
@@ -708,7 +685,7 @@ class TestLastGoodCache:
 
         data = json.loads(cache_file.read_text())
         assert data["error"] is True
-        assert data["five_hour"]["utilization"] == 35.0  # last-good에서 복원됨
+        assert data["seven_day"]["utilization"] == 15.0  # last-good에서 복원됨
         assert data["consecutive_errors"] == 6
 
     def test_get_usage_falls_back_to_last_good(self, tmp_path: Path) -> None:
@@ -718,7 +695,7 @@ class TestLastGoodCache:
 
         last_good_data = {
             "fetched_at": time.time() - 7200,
-            "five_hour": {"utilization": 25.0, "resets_at": "2026-03-02T16:00:00Z"},
+            "seven_day": {"utilization": 25.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         last_good_file.write_text(json.dumps(last_good_data))
 
@@ -738,7 +715,7 @@ class TestLastGoodCache:
         ):
             result = get_usage()
             assert result is not None
-            assert result.five_hour.utilization == 25.0
+            assert result.seven_day.utilization == 25.0
 
 
 # --- Exponential backoff tests ---
@@ -785,12 +762,11 @@ class TestExponentialBackoff:
             "error": True,
             "consecutive_errors": 5,
             "first_error_at": time.time() - 1500,
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
+            "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(error_cache))
 
         api_response = {
-            "five_hour": {"utilization": 50.0, "resets_at": "2026-03-02T19:00:00Z"},
             "seven_day": {"utilization": 25.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
 
@@ -803,7 +779,7 @@ class TestExponentialBackoff:
         data = json.loads(cache_file.read_text())
         assert data["consecutive_errors"] == 0
         assert data.get("first_error_at") is None
-        assert data["five_hour"]["utilization"] == 50.0
+        assert data["seven_day"]["utilization"] == 25.0
 
     def test_backoff_skips_api_call(self, tmp_path: Path) -> None:
         """backoff window 내에서 API 호출을 건너뛴다."""
@@ -816,7 +792,6 @@ class TestExponentialBackoff:
             "error": True,
             "error_reason": "rate_limited",
             "consecutive_errors": 2,
-            "five_hour": {"utilization": 42.0, "resets_at": "2026-03-02T18:00:00Z"},
             "seven_day": {"utilization": 20.0, "resets_at": "2026-03-06T00:00:00Z"},
         }
         cache_file.write_text(json.dumps(error_cache))
@@ -834,4 +809,71 @@ class TestExponentialBackoff:
             mock_fetch.assert_not_called()
             # 보존된 stale 데이터 반환
             assert result is not None
-            assert result.five_hour.utilization == 42.0
+            assert result.seven_day.utilization == 20.0
+
+
+# --- 7D + model-scoped weekly limit (Fable) ---
+
+FABLE_API_RESPONSE = {
+    "five_hour": None,
+    "seven_day": {"utilization": 35.0, "resets_at": "2026-11-04T23:00:00+00:00"},
+    "limits": [
+        {"kind": "weekly_all", "percent": 35, "resets_at": "2026-11-04T23:00:00+00:00", "scope": None},
+        {
+            "kind": "weekly_scoped",
+            "percent": 20,
+            "resets_at": "2026-11-04T23:00:00+00:00",
+            "scope": {"model": {"id": None, "display_name": "Fable"}, "surface": None},
+        },
+    ],
+}
+
+
+class TestModelScopedLimit:
+    """five_hour가 null이어도 7D + 모델별 주간 한도를 반환한다."""
+
+    def test_get_usage_with_null_five_hour(self, tmp_path: Path) -> None:
+        cache_file = tmp_path / ".usage-cache.json"
+        with (
+            patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file),
+            patch("jin_claude.fetch_claude_usage.get_token", return_value="fake-token"),
+            patch("jin_claude.fetch_claude_usage.fetch_usage", return_value=FABLE_API_RESPONSE),
+        ):
+            result = get_usage()
+        assert result is not None
+        assert result.seven_day.utilization == 35.0
+        assert result.model is not None
+        assert result.model.label == "Fable"
+        assert result.model.utilization == 20
+        cached = json.loads(cache_file.read_text())
+        assert cached["seven_day_model"]["label"] == "Fable"
+
+    def test_fresh_cache_hit_without_five_hour(self, tmp_path: Path) -> None:
+        cache_file = tmp_path / ".usage-cache.json"
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            write_cache(FABLE_API_RESPONSE)
+            result = read_cache()
+        assert result is not None
+        assert result.model is not None and result.model.label == "Fable"
+
+    def test_no_scoped_limit(self, tmp_path: Path) -> None:
+        cache_file = tmp_path / ".usage-cache.json"
+        response = {**FABLE_API_RESPONSE, "limits": FABLE_API_RESPONSE["limits"][:1]}
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            write_cache(response)
+            result = read_cache()
+        assert result is not None
+        assert result.model is None
+
+    def test_main_output_format(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from jin_claude.fetch_claude_usage import main
+
+        cache_file = tmp_path / ".usage-cache.json"
+        with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_file):
+            write_cache(FABLE_API_RESPONSE)
+            main()
+        assert capsys.readouterr().out.strip() == (
+            "35|2026-11-04T23:00:00+00:00|Fable|20|2026-11-04T23:00:00+00:00"
+        )

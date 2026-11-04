@@ -94,15 +94,14 @@ class TestWriteCachePacing:
         """성공 응답 시 캐시에 pacing 포함."""
         cache_path = tmp_path / ".usage-cache.json"
         api_response = {
-            "five_hour": {"utilization": 40.0, "resets_at": "2026-03-05T20:00:00Z"},
             "seven_day": {"utilization": 15.0, "resets_at": "2026-03-10T00:00:00Z"},
         }
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_path):
             write_cache(api_response)
         data = json.loads(cache_path.read_text())
         assert "pacing" in data
-        assert "five_hour" in data["pacing"]
-        assert data["pacing"]["five_hour"]["zone"] in ("chill", "on_track", "hot")
+        assert "seven_day" in data["pacing"]
+        assert data["pacing"]["seven_day"]["zone"] in ("chill", "on_track", "hot")
 
     def test_pacing_preserved_on_error(self, tmp_path):
         """에러 시 기존 pacing 보존."""
@@ -110,12 +109,12 @@ class TestWriteCachePacing:
         old_cache = {
             "fetched_at": time.time() - 10,
             "error": False,
-            "five_hour": {"utilization": 30.0, "resets_at": None},
-            "pacing": {"five_hour": {"zone": "chill", "burn_rate": 0.5,
+            "seven_day": {"utilization": 30.0, "resets_at": None},
+            "pacing": {"seven_day": {"zone": "chill", "burn_rate": 0.5,
                                      "elapsed_pct": 60.0, "usage_pct": 30.0}},
         }
         cache_path.write_text(json.dumps(old_cache))
         with patch("jin_claude.fetch_claude_usage.CACHE_PATH", cache_path):
             write_cache(None, error=True)
         data = json.loads(cache_path.read_text())
-        assert data["pacing"]["five_hour"]["zone"] == "chill"
+        assert data["pacing"]["seven_day"]["zone"] == "chill"

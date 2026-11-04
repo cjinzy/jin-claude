@@ -1,8 +1,8 @@
-"""Fetch Claude API usage (5h session + 7d weekly) via undocumented OAuth endpoint.
+"""Fetch Claude API usage (7d weekly + model-scoped weekly) via undocumented OAuth endpoint.
 
 Reads OAuth token from macOS Keychain or ~/.claude/.credentials.json,
 calls the usage API, caches the result, and outputs
-`5h_utilization|5h_resets_at|7d_resets_at` for statusline consumption.
+`7d_util|7d_resets|model_label|model_util|model_resets` for statusline consumption.
 
 Cache: ~/.claude/.usage-cache.json (5m TTL, 300s for errors)
 Last-good cache: ~/.claude/.usage-last-good.json (마지막 성공 데이터 영구 보존)
@@ -86,8 +86,10 @@ def calculate_pacing(usage_pct: float, elapsed_pct: float) -> dict:
     }
 
 
-FIVE_HOUR_WINDOW = 5 * 3600
 SEVEN_DAY_WINDOW = 7 * 86400
+SCOPED_LIMIT_KIND = "weekly_scoped"
+# 캐시에 저장·보존되는 usage 필드. seven_day 가 "데이터 있음" 판정 기준.
+USAGE_KEYS = ("seven_day", "seven_day_model", "pacing")
 
 
 def _parse_resets_at(resets_at: str | None) -> float | None:
@@ -123,13 +125,6 @@ def compute_elapsed_pct(resets_at_epoch: float | None, window_seconds: int) -> f
 def _compute_pacing_for_cache(api_response: dict) -> dict | None:
     """API 응답으로부터 pacing 데이터를 계산한다."""
     pacing = {}
-
-    five_hour = api_response.get("five_hour")
-    if five_hour and five_hour.get("utilization") is not None:
-        resets_epoch = _parse_resets_at(five_hour.get("resets_at"))
-        elapsed = compute_elapsed_pct(resets_epoch, FIVE_HOUR_WINDOW)
-        pacing["five_hour"] = calculate_pacing(five_hour["utilization"], elapsed)
-
     seven_day = api_response.get("seven_day")
     if seven_day and seven_day.get("utilization") is not None:
         resets_epoch = _parse_resets_at(seven_day.get("resets_at"))
@@ -139,20 +134,65 @@ def _compute_pacing_for_cache(api_response: dict) -> dict | None:
     return pacing if pacing else None
 
 
+def _extract_model_limit(api_response: dict) -> dict | None:
+    """`limits` 에서 모델별 주간 한도(예: Fable)를 꺼낸다.
+
+    ponytail: 첫 모델 scoped 한도만 사용. 여러 모델이 동시에 오면 리스트로 확장.
+    """
+    for limit in api_response.get("limits") or []:
+        model = ((limit.get("scope") or {}).get("model")) or {}
+        if limit.get("kind") == SCOPED_LIMIT_KIND and model.get("display_name"):
+            return {
+                "label": model["display_name"],
+                "utilization": limit.get("percent"),
+                "resets_at": limit.get("resets_at"),
+            }
+    return None
+
+
+def _usage_fields(api_response: dict) -> dict:
+    """API 응답에서 캐시에 저장할 usage 필드(USAGE_KEYS)를 만든다."""
+    return {
+        "seven_day": api_response.get("seven_day"),
+        "seven_day_model": _extract_model_limit(api_response),
+        "pacing": _compute_pacing_for_cache(api_response),
+    }
+
+
 @dataclass
 class UsageBucket:
     """A single usage bucket from the API response."""
 
     utilization: float
     resets_at: str | None = None
+    label: str | None = None
 
 
 @dataclass
 class UsageResult:
     """Combined usage result for statusline output."""
 
-    five_hour: UsageBucket
-    seven_day: UsageBucket | None = None
+    seven_day: UsageBucket
+    model: UsageBucket | None = None
+
+
+def _bucket(raw: dict | None) -> UsageBucket | None:
+    """캐시/API dict → UsageBucket. utilization 없으면 None."""
+    if not raw or raw.get("utilization") is None:
+        return None
+    return UsageBucket(
+        utilization=raw["utilization"],
+        resets_at=raw.get("resets_at"),
+        label=raw.get("label"),
+    )
+
+
+def _result_from(data: dict) -> UsageResult | None:
+    """usage 필드 dict → UsageResult. seven_day 없으면 None."""
+    seven_day = _bucket(data.get("seven_day"))
+    if seven_day is None:
+        return None
+    return UsageResult(seven_day=seven_day, model=_bucket(data.get("seven_day_model")))
 
 
 def _read_credentials_data() -> dict | None:
@@ -288,27 +328,8 @@ def read_cache(allow_stale: bool = False) -> UsageResult | None:
             return None
         if is_error and not allow_stale:
             return None  # fresh 에러 캐시는 API 재시도 방지용
-        if is_error and allow_stale:
-            # 에러 캐시에 보존된 정상 데이터가 있으면 stale로 반환
-            if data.get("five_hour") is None:
-                return None
-
-        five_hour = data.get("five_hour")
-        if five_hour is None:
-            return None
-        seven_day = data.get("seven_day")
-        return UsageResult(
-            five_hour=UsageBucket(
-                utilization=five_hour["utilization"],
-                resets_at=five_hour.get("resets_at"),
-            ),
-            seven_day=UsageBucket(
-                utilization=seven_day["utilization"],
-                resets_at=seven_day.get("resets_at"),
-            )
-            if seven_day
-            else None,
-        )
+        # 에러 캐시라도 보존된 정상 데이터가 있으면 stale로 반환
+        return _result_from(data)
     except (FileNotFoundError, json.JSONDecodeError, KeyError, TypeError):
         return None
 
@@ -316,12 +337,7 @@ def read_cache(allow_stale: bool = False) -> UsageResult | None:
 def _write_last_good(api_response: dict) -> None:
     """성공한 API 응답을 last-known-good 캐시에 저장한다."""
     try:
-        data = {
-            "fetched_at": time.time(),
-            "five_hour": api_response.get("five_hour"),
-            "seven_day": api_response.get("seven_day"),
-            "pacing": _compute_pacing_for_cache(api_response),
-        }
+        data = {"fetched_at": time.time(), **_usage_fields(api_response)}
         LAST_GOOD_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         LAST_GOOD_CACHE_PATH.write_text(json.dumps(data))
     except OSError:
@@ -363,24 +379,9 @@ def _read_last_good_as_result() -> UsageResult | None:
     data = _read_last_good()
     if data is None:
         return None
-    five_hour = data.get("five_hour")
-    if five_hour is None:
-        return None
-    seven_day = data.get("seven_day")
     try:
-        return UsageResult(
-            five_hour=UsageBucket(
-                utilization=five_hour["utilization"],
-                resets_at=five_hour.get("resets_at"),
-            ),
-            seven_day=UsageBucket(
-                utilization=seven_day["utilization"],
-                resets_at=seven_day.get("resets_at"),
-            )
-            if seven_day
-            else None,
-        )
-    except (KeyError, TypeError):
+        return _result_from(data)
+    except (KeyError, TypeError, AttributeError):
         return None
 
 
@@ -391,7 +392,7 @@ def write_cache(
 ) -> None:
     """API 응답을 캐시 파일에 저장한다.
 
-    에러 시 기존 캐시의 정상 데이터(five_hour/seven_day)를 보존하여
+    에러 시 기존 캐시의 정상 데이터(USAGE_KEYS)를 보존하여
     stale fallback이 가능하도록 한다. 기존 캐시에도 데이터가 없으면
     last-known-good 캐시에서 복원을 시도한다.
 
@@ -408,9 +409,7 @@ def write_cache(
         "error_reason": error_reason,
     }
     if api_response is not None:
-        cache_data["five_hour"] = api_response.get("five_hour")
-        cache_data["seven_day"] = api_response.get("seven_day")
-        cache_data["pacing"] = _compute_pacing_for_cache(api_response)
+        cache_data.update(_usage_fields(api_response))
         cache_data["consecutive_errors"] = 0
         _write_last_good(api_response)
     elif error:
@@ -424,26 +423,14 @@ def write_cache(
                 cache_data["first_error_at"] = old["first_error_at"]
             else:
                 cache_data["first_error_at"] = time.time()
-            if old.get("five_hour") is not None:
-                cache_data["five_hour"] = old["five_hour"]
-                cache_data["seven_day"] = old.get("seven_day")
-                cache_data["pacing"] = old.get("pacing")
-            else:
-                # 기존 캐시에도 데이터 없으면 last-good에서 복원
-                last_good = _read_last_good()
-                if last_good is not None:
-                    cache_data["five_hour"] = last_good.get("five_hour")
-                    cache_data["seven_day"] = last_good.get("seven_day")
-                    cache_data["pacing"] = last_good.get("pacing")
+            # 기존 캐시에 데이터 없으면 last-good에서 복원
+            source = old if old.get("seven_day") is not None else _read_last_good()
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
             cache_data["consecutive_errors"] = 1
             cache_data["first_error_at"] = time.time()
-            # 기존 캐시 읽기 실패 시에도 last-good 시도
-            last_good = _read_last_good()
-            if last_good is not None:
-                cache_data["five_hour"] = last_good.get("five_hour")
-                cache_data["seven_day"] = last_good.get("seven_day")
-                cache_data["pacing"] = last_good.get("pacing")
+            source = _read_last_good()
+        if source is not None:
+            cache_data.update({k: source.get(k) for k in USAGE_KEYS})
     try:
         CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         CACHE_PATH.write_text(json.dumps(cache_data))
@@ -528,43 +515,30 @@ def get_usage() -> UsageResult | None:
 
     write_cache(data)
 
-    five_hour = data.get("five_hour")
-    if five_hour is None:
+    result = _result_from(_usage_fields(data))
+    if result is None:
+        logger.warning("Usage fetch: seven_day missing in API response")
         return None
-
-    util = five_hour.get("utilization", 0)
-    seven_day = data.get("seven_day")
-    util_7d = seven_day.get("utilization", 0) if seven_day else None
     logger.info(
-        f"Usage fetched: 5h={util}%"
-        + (f", 7d={util_7d}%" if util_7d is not None else "")
+        f"Usage fetched: 7d={result.seven_day.utilization}%"
+        + (f", {result.model.label}={result.model.utilization}%" if result.model else "")
     )
-
-    return UsageResult(
-        five_hour=UsageBucket(
-            utilization=five_hour["utilization"],
-            resets_at=five_hour.get("resets_at"),
-        ),
-        seven_day=UsageBucket(
-            utilization=seven_day["utilization"],
-            resets_at=seven_day.get("resets_at"),
-        )
-        if seven_day
-        else None,
-    )
+    return result
 
 
 def main() -> None:
-    """CLI entry point. Outputs `5h_util|5h_resets|7d_util|7d_resets` to stdout."""
+    """CLI entry point. Outputs `7d_util|7d_resets|model_label|model_util|model_resets`."""
     result = get_usage()
     if result is None:
         sys.exit(1)
-    five_hour_resets = result.five_hour.resets_at or ""
-    seven_day_util = f"{result.seven_day.utilization:.0f}" if result.seven_day else ""
-    seven_day_resets = result.seven_day.resets_at or "" if result.seven_day else ""
-    print(
-        f"{result.five_hour.utilization:.0f}|{five_hour_resets}|{seven_day_util}|{seven_day_resets}"
+    seven_day, model = result.seven_day, result.model
+    fields = [f"{seven_day.utilization:.0f}", seven_day.resets_at or ""]
+    fields += (
+        [model.label or "", f"{model.utilization:.0f}", model.resets_at or ""]
+        if model
+        else ["", "", ""]
     )
+    print("|".join(fields))
 
 
 if __name__ == "__main__":

@@ -157,7 +157,7 @@ Claude Code 상태 표시줄에 세션 정보, 컨텍스트, API 사용량을 �
 
 ```
 claude │ ⎇ master │ Opus │ v1.0
-ctx: 50% │ cache: 1.0K │ 5H: 8% →2:00 PACE │ 7D: 11% →3D/4H
+ctx: 50% │ cache: 1.0K │ 7D: 36% →1D/18H CHILL │ Fable: 20% →1D/18H
 ```
 
 ### 구성 요소
@@ -170,8 +170,8 @@ ctx: 50% │ cache: 1.0K │ 5H: 8% →2:00 PACE │ 7D: 11% →3D/4H
 | 1 | 버전 | Claude Code 버전 |
 | 2 | ctx | 컨텍스트 윈도우 사용률 (%) |
 | 2 | cache | 캐시 읽기 토큰 수 |
-| 2 | 5H 사용량 | 5시간 세션 사용률 (%) + 리셋 시간 + pacing |
 | 2 | 7D 사용량 | 7일 주간 사용률 (%) + 리셋 시간 + pacing |
+| 2 | 모델 사용량 | 모델별 주간 한도 (예: Fable) 사용률 (%) + 리셋 시간 |
 
 사용률에 따라 dark green(0%) → deep red(100%)로 10단계 gradient 색상이 자동 적용됩니다.
 
@@ -219,7 +219,7 @@ GET https://api.anthropic.com/api/oauth/usage
 ~/.claude/.usage-cache.json (30초 TTL 캐시)
     │
     ▼
-stdout: "5h_util|5h_resets|7d_util|7d_resets"
+stdout: "7d_util|7d_resets|model_label|model_util|model_resets"
 ```
 
 - **토큰 소스**: `~/.claude/.credentials.json` → macOS Keychain (fallback)

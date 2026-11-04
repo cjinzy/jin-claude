@@ -134,8 +134,39 @@ if [ "$show_branch" = "1" ]; then
   fi
 fi
 
-usage_text=""
+# 10단계 색상: pct(0-100) → LEVEL_n
+level_color() {
+  local pct=$1 n
+  n=$(( (pct + 9) / 10 ))
+  [ "$n" -lt 1 ] && n=1
+  [ "$n" -gt 10 ] && n=10
+  eval "echo \"\$LEVEL_${n}\""
+}
+
+# 주간 리셋 남은 시간: ≥1일 " →ND/NH", 미만 " →H:MM"
+weekly_reset_display() {
+  local epoch remain_sec
+  [ -z "$1" ] && return
+  epoch=$(parse_iso_to_epoch "$1")
+  [ -z "$epoch" ] && return
+  remain_sec=$((epoch - $(date +%s)))
+  [ "$remain_sec" -le 0 ] && return
+  if [ "$remain_sec" -ge 86400 ]; then
+    echo " →$((remain_sec / 86400))D/$(( (remain_sec % 86400) / 3600 ))H"
+  else
+    echo " →$((remain_sec / 3600)):$(printf '%02d' $(( (remain_sec % 3600) / 60 )))"
+  fi
+}
+
+# usage 세그먼트: label color pct resets_at [suffix]
+usage_segment() {
+  local pct_int
+  pct_int=$(printf "%.0f" "$3" 2>/dev/null || echo 0)
+  echo "${2}${1}:${RESET} $(level_color "$pct_int")${pct_int}%$(weekly_reset_display "$4")${RESET}${5}"
+}
+
 usage_7d_text=""
+model_usage_text=""
 if [ "$show_usage" = "1" ]; then
   cache_file="$HOME/.claude/.usage-cache.json"
   stale_threshold=1800  # 30분
@@ -144,111 +175,33 @@ if [ "$show_usage" = "1" ]; then
     fetched_at=$(jq -r '.fetched_at // 0' "$cache_file" 2>/dev/null)
     now=$(date +%s)
     cache_age=$((now - ${fetched_at%.*}))
-    is_stale=0
-    [ "$cache_age" -gt "$stale_threshold" ] && is_stale=1
+    stale_mark=""
+    [ "$cache_age" -gt "$stale_threshold" ] && stale_mark=" ${GRAY}STALE${RESET}"
 
-    utilization=$(jq -r '.five_hour.utilization // empty' "$cache_file" 2>/dev/null)
-    resets_5h=$(jq -r '.five_hour.resets_at // empty' "$cache_file" 2>/dev/null)
     util_7d=$(jq -r '.seven_day.utilization // empty' "$cache_file" 2>/dev/null)
     resets_7d=$(jq -r '.seven_day.resets_at // empty' "$cache_file" 2>/dev/null)
-    pacing_5h=$(jq -r '.pacing.five_hour.zone // empty' "$cache_file" 2>/dev/null)
     pacing_7d=$(jq -r '.pacing.seven_day.zone // empty' "$cache_file" 2>/dev/null)
+    model_label=$(jq -r '.seven_day_model.label // empty' "$cache_file" 2>/dev/null)
+    model_util=$(jq -r '.seven_day_model.utilization // empty' "$cache_file" 2>/dev/null)
+    model_resets=$(jq -r '.seven_day_model.resets_at // empty' "$cache_file" 2>/dev/null)
     error_reason=$(jq -r '.error_reason // empty' "$cache_file" 2>/dev/null)
 
-    if [ -n "$utilization" ]; then
-      util_int=$(printf "%.0f" "$utilization" 2>/dev/null || echo 0)
-
-      # 색상 그라데이션
-      if [ "$util_int" -le 10 ] 2>/dev/null; then usage_color="$LEVEL_1"
-      elif [ "$util_int" -le 20 ]; then usage_color="$LEVEL_2"
-      elif [ "$util_int" -le 30 ]; then usage_color="$LEVEL_3"
-      elif [ "$util_int" -le 40 ]; then usage_color="$LEVEL_4"
-      elif [ "$util_int" -le 50 ]; then usage_color="$LEVEL_5"
-      elif [ "$util_int" -le 60 ]; then usage_color="$LEVEL_6"
-      elif [ "$util_int" -le 70 ]; then usage_color="$LEVEL_7"
-      elif [ "$util_int" -le 80 ]; then usage_color="$LEVEL_8"
-      elif [ "$util_int" -le 90 ]; then usage_color="$LEVEL_9"
-      else usage_color="$LEVEL_10"
-      fi
-
-      # 5h 리셋 남은 시간 표시
-      reset_5h_display=""
-      if [ -n "$resets_5h" ]; then
-        epoch=$(parse_iso_to_epoch "$resets_5h")
-        if [ -n "$epoch" ]; then
-          remain_sec=$((epoch - $(date +%s)))
-          if [ "$remain_sec" -gt 0 ]; then
-            remain_h=$((remain_sec / 3600))
-            remain_m=$(( (remain_sec % 3600) / 60 ))
-            reset_5h_display=" →${remain_h}:$(printf '%02d' $remain_m)"
-          fi
-        fi
-      fi
-
-      # Pacing zone 라벨
-      pacing_5h_icon=""
-      case "$pacing_5h" in
-        chill)    pacing_5h_icon=" ${LEVEL_1}CHILL${RESET}" ;;
-        on_track) pacing_5h_icon=" ${LEVEL_5}PACE${RESET}" ;;
-        hot)      pacing_5h_icon=" ${LEVEL_10}HOT${RESET}" ;;
-      esac
-
-      # Stale 표시
-      stale_mark=""
-      [ "$is_stale" = "1" ] && stale_mark=" ${GRAY}STALE${RESET}"
-
-      usage_text="${AMBER}5H:${RESET} ${usage_color}${util_int}%${reset_5h_display}${RESET}${pacing_5h_icon}${stale_mark}"
-    fi
-
-    # 7d 표시
     if [ -n "$util_7d" ]; then
-      util_7d_int=$(printf "%.0f" "$util_7d" 2>/dev/null || echo 0)
-
-      if [ "$util_7d_int" -le 10 ] 2>/dev/null; then usage_7d_color="$LEVEL_1"
-      elif [ "$util_7d_int" -le 20 ]; then usage_7d_color="$LEVEL_2"
-      elif [ "$util_7d_int" -le 30 ]; then usage_7d_color="$LEVEL_3"
-      elif [ "$util_7d_int" -le 40 ]; then usage_7d_color="$LEVEL_4"
-      elif [ "$util_7d_int" -le 50 ]; then usage_7d_color="$LEVEL_5"
-      elif [ "$util_7d_int" -le 60 ]; then usage_7d_color="$LEVEL_6"
-      elif [ "$util_7d_int" -le 70 ]; then usage_7d_color="$LEVEL_7"
-      elif [ "$util_7d_int" -le 80 ]; then usage_7d_color="$LEVEL_8"
-      elif [ "$util_7d_int" -le 90 ]; then usage_7d_color="$LEVEL_9"
-      else usage_7d_color="$LEVEL_10"
-      fi
-
-      reset_7d_display=""
-      if [ -n "$resets_7d" ]; then
-        epoch=$(parse_iso_to_epoch "$resets_7d")
-        if [ -n "$epoch" ]; then
-          remain_sec=$((epoch - $(date +%s)))
-          if [ "$remain_sec" -gt 0 ]; then
-            remain_days=$((remain_sec / 86400))
-            remain_hours=$(( (remain_sec % 86400) / 3600 ))
-            remain_mins=$(( (remain_sec % 3600) / 60 ))
-            if [ "$remain_days" -ge 1 ]; then
-              reset_7d_display=" →${remain_days}D/${remain_hours}H"
-            else
-              reset_7d_display=" →${remain_hours}:$(printf '%02d' $remain_mins)"
-            fi
-          fi
-        fi
-      fi
-
       pacing_7d_icon=""
       case "$pacing_7d" in
         chill)    pacing_7d_icon=" ${LEVEL_1}CHILL${RESET}" ;;
         on_track) pacing_7d_icon=" ${LEVEL_5}PACE${RESET}" ;;
         hot)      pacing_7d_icon=" ${LEVEL_10}HOT${RESET}" ;;
       esac
+      usage_7d_text=$(usage_segment "7D" "$VIOLET" "$util_7d" "$resets_7d" "${pacing_7d_icon}${stale_mark}")
+    fi
 
-      stale_mark_7d=""
-      [ "$is_stale" = "1" ] && stale_mark_7d=" ${GRAY}STALE${RESET}"
-
-      usage_7d_text="${VIOLET}7D:${RESET} ${usage_7d_color}${util_7d_int}%${reset_7d_display}${RESET}${pacing_7d_icon}${stale_mark_7d}"
+    # 모델별 주간 한도 (예: Fable)
+    if [ -n "$model_label" ] && [ -n "$model_util" ]; then
+      model_usage_text=$(usage_segment "$model_label" "$AMBER" "$model_util" "$model_resets" "$stale_mark")
     fi
   else
     # 캐시 파일 없음
-    usage_text="${AMBER}5H:${RESET} ${GRAY}--%${RESET}"
     usage_7d_text="${VIOLET}7D:${RESET} ${GRAY}--%${RESET}"
   fi
 
@@ -263,21 +216,19 @@ if [ "$show_usage" = "1" ]; then
       now=$(date +%s)
       rate_secs=$((now - ${first_error_at%.*}))
       if [ "$rate_secs" -ge 3600 ]; then
-        rate_hours=$((rate_secs / 3600))
-        rate_duration=" ${rate_hours}h"
+        rate_duration=" $((rate_secs / 3600))h"
       elif [ "$rate_secs" -ge 60 ]; then
-        rate_mins=$((rate_secs / 60))
-        rate_duration=" ${rate_mins}m"
+        rate_duration=" $((rate_secs / 60))m"
       fi
     fi
-    # last-good fallback: 캐시에 usage 없으면 last-good에서 표시
-    if [ -z "$utilization" ]; then
+    # last-good fallback: 캐시에 7D 없으면 last-good에서 표시
+    if [ -z "$util_7d" ]; then
       last_good="$HOME/.claude/.usage-last-good.json"
       if [ -f "$last_good" ]; then
-        lg_util=$(jq -r '.five_hour.utilization // empty' "$last_good" 2>/dev/null)
+        lg_util=$(jq -r '.seven_day.utilization // empty' "$last_good" 2>/dev/null)
         if [ -n "$lg_util" ]; then
           lg_int=$(printf "%.0f" "$lg_util" 2>/dev/null || echo 0)
-          usage_text="${AMBER}5H:${RESET} ${GRAY}${lg_int}% STALE${RESET}"
+          usage_7d_text="${VIOLET}7D:${RESET} ${GRAY}${lg_int}% STALE${RESET}"
         fi
       fi
     fi
@@ -306,7 +257,7 @@ if [ -n "$version_text" ]; then
   line1="${line1}${version_text}"
 fi
 
-# Line 2: ctx │ cache │ 5H │ 7D │ warning
+# Line 2: ctx │ cache │ 7D │ model(Fable) │ warning
 line2=""
 [ -n "$context_text" ] && line2="${context_text}"
 
@@ -315,14 +266,14 @@ if [ -n "$cached_text" ]; then
   line2="${line2}${cached_text}"
 fi
 
-if [ -n "$usage_text" ]; then
-  [ -n "$line2" ] && line2="${line2}${separator}"
-  line2="${line2}${usage_text}"
-fi
-
 if [ -n "$usage_7d_text" ]; then
   [ -n "$line2" ] && line2="${line2}${separator}"
   line2="${line2}${usage_7d_text}"
+fi
+
+if [ -n "$model_usage_text" ]; then
+  [ -n "$line2" ] && line2="${line2}${separator}"
+  line2="${line2}${model_usage_text}"
 fi
 
 if [ -n "$token_warn_text" ]; then

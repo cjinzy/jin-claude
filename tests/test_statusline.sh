@@ -147,11 +147,27 @@ else
   pass "Line 1 has no usage info"
 fi
 
-# Test 14: Line 2 order is ctx → cache → 5H → 7D
-if echo "$line2" | grep -q "ctx:.*cache:.*5H:.*7D:"; then
-  pass "Line 2 order is ctx | cache | 5H | 7D"
+# Test 14: Line 2 order is ctx → cache → 7D (5H removed)
+if echo "$line2" | grep -q "ctx:.*cache:.*7D:" && ! echo "$line2" | grep -q "5H:"; then
+  pass "Line 2 order is ctx | cache | 7D, no 5H"
 else
-  fail "Line 2 order wrong (expected ctx | cache | 5H | 7D): $line2"
+  fail "Line 2 wrong (expected ctx | cache | 7D, no 5H): $line2"
+fi
+
+# Test 15: cache with seven_day + seven_day_model → 7D and Fable shown, 5H absent
+TEST_HOME=$(mktemp -d)
+mkdir -p "$TEST_HOME/.claude"
+cat > "$TEST_HOME/.claude/.usage-cache.json" <<EOF
+{"fetched_at": $(date +%s), "error": false, "five_hour": null,
+ "seven_day": {"utilization": 35.0, "resets_at": "2099-01-01T00:00:00+00:00"},
+ "seven_day_model": {"label": "Fable", "utilization": 20, "resets_at": "2099-01-01T00:00:00+00:00"}}
+EOF
+fable_line2=$(echo '{"current_dir":"/test","model":{"display_name":"Opus"}}' | HOME="$TEST_HOME" bash "$SCRIPT" 2>/dev/null | sed -n 2p)
+rm -rf "$TEST_HOME"
+if echo "$fable_line2" | grep -q "7D:.*35%.*Fable:.*20%" && ! echo "$fable_line2" | grep -q "5H:"; then
+  pass "Line 2 shows 7D 35% and Fable 20%, no 5H"
+else
+  fail "Line 2 missing 7D/Fable or has 5H: $fable_line2"
 fi
 
 echo ""
