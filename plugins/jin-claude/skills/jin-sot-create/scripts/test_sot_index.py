@@ -55,6 +55,15 @@ def test_render_links_every_doc(tmp_path):
     assert out.endswith("|\n")
 
 
+def test_design_md_pointer_only_when_present(tmp_path):
+    """Root DESIGN.md is part of the entry point when it exists; never a dead link."""
+    root = build(tmp_path / "sot")
+    rows, _ = collect(root)
+    assert "DESIGN.md" not in render(rows, root)
+    (tmp_path / "DESIGN.md").write_text("---\nname: x\n---\n", encoding="utf-8")
+    assert "[DESIGN.md](../DESIGN.md)" in render(rows, root)
+
+
 def test_incomplete_frontmatter_is_skipped_not_guessed(tmp_path):
     root = build(tmp_path / "sot")
     (root / "overview" / "draft.md").write_text(BROKEN, encoding="utf-8")

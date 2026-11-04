@@ -19,7 +19,13 @@ import argparse
 import sys
 from pathlib import Path
 
-from sot_validate import CATEGORY_PREFIXES, INDEX_FILENAME, REQUIRED_KEYS, parse_frontmatter
+from sot_validate import (
+    CATEGORY_PREFIXES,
+    DESIGN_FILENAME,
+    INDEX_FILENAME,
+    REQUIRED_KEYS,
+    parse_frontmatter,
+)
 
 # Read rules belong at the point a reader lands. The update protocol does not: it lives in
 # `rules/sot-maintenance.md` so this entry point stays short.
@@ -28,7 +34,9 @@ INDEX_HEADER = """# SoT Index
 > Start here, then load only the docs your task touches. Cite facts by id (`ARC-002`).
 > `draft` / `stale` is unverified input, not fact; doc vs. code conflict → report both.
 > Keeping this docset true: [RUL-sot-maintenance](rules/sot-maintenance.md).
-
+"""
+DESIGN_POINTER = f"> Design tokens: [{DESIGN_FILENAME}](../{DESIGN_FILENAME}) (cited by design/).\n"
+TABLE_HEADER = """
 | Doc | Category | Status | Updated | Summary |
 |---|---|---|---|---|
 """
@@ -59,13 +67,16 @@ def collect(root: Path) -> tuple[list[dict[str, str]], list[str]]:
     return sorted(rows, key=sort_key), skipped
 
 
-def render(rows: list[dict[str, str]]) -> str:
+def render(rows: list[dict[str, str]], root: Path | None = None) -> str:
+    """Index.md text. Links root DESIGN.md only when it exists next to `root`."""
     lines = [
         f"| [{row['id']}]({row['path']}) | {row['category']} | {row['status']} "
         f"| {row['updated']} | {row['title']} |"
         for row in rows
     ]
-    return INDEX_HEADER + "\n".join(lines) + "\n"
+    has_design = root is not None and (root.parent / DESIGN_FILENAME).is_file()
+    header = INDEX_HEADER + (DESIGN_POINTER if has_design else "") + TABLE_HEADER
+    return header + "\n".join(lines) + "\n"
 
 
 def main() -> int:
@@ -85,7 +96,7 @@ def main() -> int:
     for rel in skipped:
         print(f"skipped (frontmatter incomplete): {rel}", file=sys.stderr)
 
-    content = render(rows)
+    content = render(rows, root)
     index = root / INDEX_FILENAME
 
     if args.check:

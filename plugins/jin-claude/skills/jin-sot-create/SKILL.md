@@ -1,6 +1,6 @@
 ---
 name: jin-sot-create
-description: SoT(Source of Truth) 문서셋을 코딩 에이전트가 인용·검증할 수 있는 형태로 생성한다 — 세부항목별 파일, 머신리더블 frontmatter, fact ID, Index.md 생성기, drift 검증기. "jin sot", "sot create", "SoT 생성" 외에도 프로젝트 문서 체계를 처음 세우거나, 아키텍처·DB 스키마·워크플로를 문서로 정리해 달라는 요청, AGENTS.md/CLAUDE.md 가 담기엔 큰 프로젝트 지식을 남겨야 하는 상황이면 먼저 이 스킬을 사용한다.
+description: SoT(Source of Truth) 문서셋을 코딩 에이전트가 인용·검증할 수 있는 형태로 생성한다 — 세부항목별 파일, 머신리더블 frontmatter, fact ID, Index.md 생성기, drift 검증기. "jin sot", "sot create", "SoT 생성" 외에도 프로젝트 문서 체계를 처음 세우거나, 아키텍처·DB 스키마·워크플로·디자인 규칙(DESIGN.md)을 문서로 정리해 달라는 요청, AGENTS.md/CLAUDE.md 가 담기엔 큰 프로젝트 지식을 남겨야 하는 상황이면 먼저 이 스킬을 사용한다.
 triggers:
   - jin sot
   - sot create
@@ -44,10 +44,25 @@ Fixed set. Do not invent a top-level category — add a file inside an existing 
 | `database-schema/` | `DBS` | tables, columns, types, constraints, indexes, migrations |
 | `architecture/` | `ARC` | components, boundaries, data flow, API contracts |
 | `workflow/` | `WFL` | business logic flow, user journeys, state transitions |
+| `design/` | `DSN` | design rules: visual language, layout, components, a11y, output look |
 | `rules/` | `RUL` | coding standards, naming, commit/review rules, accepted shortcuts |
 
 `RUL-9xx` is reserved for docset governance (`rules/sot-maintenance.md`); project rules use
 `RUL-0xx`. `overview/` and `rules/` are intent-only — they need no `verified_paths`.
+
+### `DESIGN.md` — design tokens live outside `sot/`
+
+Root `DESIGN.md` (design.md format: YAML token frontmatter + prose) owns the design system's
+tokens — color, typography, spacing, radius. It stays at the repo root and tracked, because
+design tools (`/design-consultation`, Stitch) read it there. Invariant 1 applies:
+
+- `design/` docs state rules (*when* and *where* a token is used) and cite tokens as
+  `Evidence: DESIGN.md:<line>`. Never copy a token value into `sot/`.
+- Put `DESIGN.md` in `verified_paths` of every `design/` doc that cites it, so a token change
+  surfaces as `DRIFT`.
+- `sot_index.py` links `DESIGN.md` from `Index.md` automatically when it exists.
+- This skill never writes `DESIGN.md`. Absent → `TODO(sot): create DESIGN.md
+  (/design-consultation)` in a `draft` design doc.
 
 ## Layout
 
@@ -72,6 +87,9 @@ sot/
 ├── workflow/
 │   ├── signup.md                # WFL-* — one file per journey
 │   └── checkout.md
+├── design/
+│   ├── slides.md                # DSN-* — one file per surface or rule area
+│   └── charts.md
 └── rules/
     ├── sot-maintenance.md       # RUL-9xx — copied in at Step 2
     └── naming.md                # RUL-0xx
@@ -150,6 +168,7 @@ Collect ground truth before writing prose:
 ```bash
 python3 "../jin-deepinit/scripts/project_analyzer.py" .   # languages, frameworks, structure
 git log --oneline -1                                      # baseline for verified_commit
+ls DESIGN.md design-system.md 2>/dev/null                 # design token owner, if any
 ```
 
 Repo evidence outranks the interview when the two disagree. Report the conflict (invariant 4)
@@ -158,7 +177,7 @@ rather than picking a side.
 ### Step 2 — Scaffold or reconcile
 
 ```bash
-mkdir -p sot/{overview,tech-stack,database-schema,architecture,workflow,rules}
+mkdir -p sot/{overview,tech-stack,database-schema,architecture,workflow,design,rules}
 grep -qxF 'sot/' .gitignore || echo 'sot/' >> .gitignore   # SoT is local-only
 
 # The maintenance trigger has to live in the auto-loaded CLAUDE.md. An agent changing
@@ -202,6 +221,7 @@ file per sub-topic. One file per category that grows forever is the format this 
 | `database-schema/` | table, or tightly coupled table group | `users.md`, `orders.md` |
 | `architecture/` | component or contract | `components.md`, `api-contracts.md` |
 | `workflow/` | journey or flow | `signup.md`, `checkout.md` |
+| `design/` | surface or rule area | `slides.md`, `charts.md`, `accessibility.md` |
 | `rules/` | rule area | `naming.md`, `commits.md` |
 
 The sub-topic is the only split criterion. Splitting a long single-topic doc would give one
@@ -257,7 +277,8 @@ JSON on stdout, exit 1 on errors. Fix every `error` before reporting the SoT as 
 ## Guardrails
 
 - One doc = one sub-topic. Never one file per category, never one file for the whole SoT.
-- Do not invent categories; add sub-topic files inside the six.
+- Do not invent categories; add sub-topic files inside the seven.
+- Design tokens stay in root `DESIGN.md`; `design/` cites them, never copies.
 - Do not overwrite existing `sot/` files.
 - Do not state a fact you cannot evidence — `TODO(sot):` instead.
 - `sot/` stays `.gitignore`d (local-only, per project `CLAUDE.md`).

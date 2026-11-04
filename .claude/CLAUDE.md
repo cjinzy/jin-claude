@@ -42,7 +42,8 @@ Categories:
 3. Database Schema — Table definitions, column specs, ER diagrams
 4. Architecture — Components, layers, data flow, API contracts
 5. Workflow — How components interact, business logic flow, user journey, system behavior
-6. Rules — Coding standards, naming conventions, commit rules (see jin-commit skill)
+6. Design — Design rules: visual language, layout, components, accessibility. Tokens live in root DESIGN.md (tracked); sot/design/ cites it, never copies
+7. Rules — Coding standards, naming conventions, commit rules (see jin-commit skill)
 
 Create subdirectories under sot/ for each category (e.g., sot/architecture/). Store details in separate .md files. List all files in sot/Index.md.
 

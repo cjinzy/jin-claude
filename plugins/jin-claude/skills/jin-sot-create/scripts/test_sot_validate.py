@@ -103,6 +103,27 @@ def test_intent_only_category_needs_no_baseline(tmp_path):
     assert "UNVERIFIABLE_COMMIT" not in codes(result)
 
 
+def test_design_category_links_root_design_md(tmp_path):
+    """design/ owns DSN-* rules; root DESIGN.md owns tokens and is linked, never copied."""
+    (tmp_path / "DESIGN.md").write_text("---\nname: x\n---\n", encoding="utf-8")
+    root = tmp_path / "sot"
+    (root / "design").mkdir(parents=True)
+    (root / "design" / "slides.md").write_text(
+        "---\nid: DSN-slides\ncategory: design\ntitle: Slide layout\n"
+        "status: draft\nupdated: 2026-11-04\n---\n\n"
+        "## DSN-001 — Section headers use the DESIGN.md primary color\n\n"
+        "Evidence: `DESIGN.md:2`\n",
+        encoding="utf-8",
+    )
+    (root / "Index.md").write_text(
+        "# SoT Index\n\n[DESIGN.md](../DESIGN.md)\n\n| [DSN-slides](design/slides.md) |\n",
+        encoding="utf-8",
+    )
+    result = validate(root)
+    assert result["ok"], result["findings"]
+    assert result["facts"] == 1
+
+
 def test_verified_doc_with_changed_code_is_drift(tmp_path):
     """The headline check: code moved under a doc that claims to be verified."""
     repo = tmp_path

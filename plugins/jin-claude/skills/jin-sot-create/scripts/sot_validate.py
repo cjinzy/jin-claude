@@ -34,8 +34,13 @@ CATEGORY_PREFIXES = {
     "database-schema": "DBS",
     "architecture": "ARC",
     "workflow": "WFL",
+    "design": "DSN",
     "rules": "RUL",
 }
+
+# Root design system file (tokens: color, type, spacing). Owned outside `sot/` because design
+# tools read it at the repo root; `design/` docs cite it instead of copying tokens.
+DESIGN_FILENAME = "DESIGN.md"
 
 # Categories with no code counterpart: a `verified` doc here has nothing to drift against.
 INTENT_ONLY_CATEGORIES = ("overview", "rules")
