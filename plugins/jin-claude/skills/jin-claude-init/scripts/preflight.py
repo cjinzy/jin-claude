@@ -16,33 +16,33 @@ from merge_settings import DEFAULT_SETTINGS, REQUIRED_SETTINGS  # 설정 단일 
 CLAUDE_DIR = Path.home() / ".claude"
 SETTINGS_PATH = CLAUDE_DIR / "settings.json"
 
-EXPECTED_MARKETPLACES = [
-    "obsidian-skills",
-    "ui-ux-pro-max-skill",
-    "claude-plugins-official",
-    "context-mode",
-    "superclaude",
-    "harness",
-    "autoresearch",
-    "superlite-dev",
-]
-
+# Step 2 설치 대상 단일 출처 (install_plugins.py 가 사용). marketplace 이름 → GitHub 저장소.
+EXPECTED_MARKETPLACES: dict[str, str] = {
+    "obsidian-skills": "kepano/obsidian-skills",
+    "ui-ux-pro-max-skill": "nextlevelbuilder/ui-ux-pro-max-skill",
+    "claude-plugins-official": "anthropics/claude-plugins-official",
+    "context-mode": "mksglu/claude-context-mode",
+    "superclaude": "SuperClaude-Org/SuperClaude_Plugin",
+    "harness-marketplace": "revfactory/harness",
+    "autoresearch": "uditgoenka/autoresearch",
+    "superlite-dev": "iha2/superlite",
+}
+# enabledPlugins 키와 같은 형식 (plugin@marketplace)
 EXPECTED_PLUGINS = [
-    "obsidian",
-    "ui-ux-pro-max",
-    "superlite",
-    "context7",
-    "code-simplifier",
-    "claude-md-management",
-    "serena",
-    "pyright-lsp",
-    "agent-sdk-dev",
-    "context-mode",
-    "sc",
-    "harness",
-    "autoresearch",
+    "obsidian@obsidian-skills",
+    "ui-ux-pro-max@ui-ux-pro-max-skill",
+    "superlite@superlite-dev",
+    "context7@claude-plugins-official",
+    "code-simplifier@claude-plugins-official",
+    "claude-md-management@claude-plugins-official",
+    "serena@claude-plugins-official",
+    "pyright-lsp@claude-plugins-official",
+    "agent-sdk-dev@claude-plugins-official",
+    "context-mode@context-mode",
+    "sc@superclaude",
+    "harness@harness-marketplace",
+    "autoresearch@autoresearch",
 ]
-
 HOOK_TYPES = ["SessionStart"]
 
 # context-mode는 Step 2의 플러그인이 자동 제공 (plugin:context-mode:context-mode)
@@ -70,10 +70,9 @@ def check_marketplaces(settings: dict) -> dict:
     Returns:
         ok, total, missing 정보가 담긴 딕셔너리.
     """
-    marketplaces = settings.get("extraKnownMarketplaces", [])
-    mp_names = [mp if isinstance(mp, str) else mp.get("name", "") for mp in marketplaces]
-    mp_str = " ".join(mp_names).lower()
-    missing = [m for m in EXPECTED_MARKETPLACES if m.lower() not in mp_str]
+    marketplaces = settings.get("extraKnownMarketplaces", {})
+    names = {mp if isinstance(mp, str) else mp.get("name", "") for mp in marketplaces}  # dict → 키
+    missing = [m for m in EXPECTED_MARKETPLACES if m not in names]
     ok = len(EXPECTED_MARKETPLACES) - len(missing)
     return {"ok": ok, "total": len(EXPECTED_MARKETPLACES), "missing": missing}
 
@@ -94,8 +93,7 @@ def check_plugins(settings: dict) -> dict:
         plugin_keys = enabled
     else:
         plugin_keys = []
-    plugins_str = " ".join(str(k) for k in plugin_keys).lower()
-    missing = [p for p in EXPECTED_PLUGINS if p.lower() not in plugins_str]
+    missing = [p for p in EXPECTED_PLUGINS if p not in set(plugin_keys)]
     ok = len(EXPECTED_PLUGINS) - len(missing)
     return {"ok": ok, "total": len(EXPECTED_PLUGINS), "missing": missing}
 

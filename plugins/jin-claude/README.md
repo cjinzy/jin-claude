@@ -1,7 +1,7 @@
 # jin-claude
 
 > Team-standard skills & hooks for Claude Code — **9 skills · 1 hook**
-> Version: **5.0.1** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Version: **5.0.2** · License: MIT · Marketplace: `jin-claudecode-mp`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 

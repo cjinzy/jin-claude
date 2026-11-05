@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 9개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.0.1` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.0.2` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -24,7 +24,11 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 
 `scripts/preflight.py`가 marketplace, 플러그인, statusline, settings, venv, 타이머, MCP 서버, hooks 의 현재 설치 상태를 확인해 필요한 단계만 진행합니다.
 
-#### Step 1 — Plugin Marketplace 8개 등록
+#### Step 1·2 — Marketplace 8개 · Plugin 13개 (`scripts/install_plugins.py`)
+
+빠진 항목만 `claude plugin marketplace add` / `install` 로 설치합니다. 이 CLI 가 settings.json 을 다시 쓰며 지우는 키(hook group 의 `_gstack_source`, marketplace `autoUpdate`)는 실행 후 되살립니다. 목록 단일 출처: `preflight.py` 의 `EXPECTED_MARKETPLACES`·`EXPECTED_PLUGINS`.
+
+##### Marketplace
 
 | # | Marketplace ID | 출처 |
 |---|----------------|------|
@@ -37,18 +41,8 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 | 7 | `autoresearch` | `uditgoenka/autoresearch` |
 | 8 | `superlite-dev` | `iha2/superlite` |
 
-```bash
-claude plugin marketplace add kepano/obsidian-skills
-claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
-claude plugin marketplace add anthropics/claude-plugins-official
-claude plugin marketplace add mksglu/claude-context-mode
-claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
-claude plugin marketplace add revfactory/harness
-claude plugin marketplace add uditgoenka/autoresearch
-claude plugin marketplace add iha2/superlite
-```
 
-#### Step 2 — Plugin 13개 일괄 설치
+##### Plugin
 
 `anthropics/claude-plugins-official` 단일 마켓에서 7개, 나머지 6개 마켓에서 각 1개씩 — 총 13개를 설치합니다.
 
@@ -68,21 +62,6 @@ claude plugin marketplace add iha2/superlite
 | 12 | `harness` | `harness-marketplace` | 하네스 구성 메타 스킬 |
 | 13 | `autoresearch` | `autoresearch` | 자율 목표지향 반복 루프 |
 
-```bash
-claude plugin install obsidian@obsidian-skills
-claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
-claude plugin install superlite@superlite-dev
-claude plugin install context7@claude-plugins-official
-claude plugin install code-simplifier@claude-plugins-official
-claude plugin install claude-md-management@claude-plugins-official
-claude plugin install serena@claude-plugins-official
-claude plugin install pyright-lsp@claude-plugins-official
-claude plugin install agent-sdk-dev@claude-plugins-official
-claude plugin install context-mode@context-mode
-claude plugin install sc@superclaude
-claude plugin install harness@harness-marketplace
-claude plugin install autoresearch@autoresearch
-```
 
 #### Step 3 — Repo 동기화 (`scripts/sync_repo.py`)
 
@@ -96,7 +75,7 @@ claude plugin install autoresearch@autoresearch
 
 #### Step 4 — Settings 병합 (`scripts/merge_settings.py`)
 
-`~/.claude/settings.json`을 deep merge로 갱신합니다. 주요 키: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`, `statusLine`, `outputStyle`, `language`, `permissions`.
+`~/.claude/settings.json`을 deep merge로 갱신합니다. 팀 필수 키(`env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`, `enableAllProjectMcpServers`, `statusLine`, `skipDangerousModePermissionPrompt`)는 덮어쓰고, 개인 선호 키(`permissions.defaultMode`, `outputStyle`, `language`, `effortLevel`, `model`, `advisorModel`)는 없을 때만 넣습니다. 전역 `hooks` 는 구버전 `jin-hooks/` 항목만 제거합니다.
 
 #### Step 4.5 — Standalone MCP 설치 (`scripts/setup_mcp_and_teams.py`)
 

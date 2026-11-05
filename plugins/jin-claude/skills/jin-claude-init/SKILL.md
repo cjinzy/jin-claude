@@ -43,36 +43,15 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py" --snapshot ~/.claude/set
 
 ## Step 2 — Marketplace·Plugin 설치
 
-순서대로 실행한다. 이미 추가/설치된 항목은 건너뛴다.
-
 ```bash
-claude plugin marketplace add kepano/obsidian-skills
-claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill
-claude plugin marketplace add anthropics/claude-plugins-official
-claude plugin marketplace add mksglu/claude-context-mode
-claude plugin marketplace add SuperClaude-Org/SuperClaude_Plugin
-claude plugin marketplace add revfactory/harness
-claude plugin marketplace add uditgoenka/autoresearch
-claude plugin marketplace add iha2/superlite
+python3 "${CLAUDE_SKILL_DIR}/scripts/install_plugins.py"
 ```
 
-```bash
-claude plugin install obsidian@obsidian-skills
-claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill
-claude plugin install superlite@superlite-dev
-claude plugin install context7@claude-plugins-official
-claude plugin install code-simplifier@claude-plugins-official
-claude plugin install claude-md-management@claude-plugins-official
-claude plugin install serena@claude-plugins-official
-claude plugin install pyright-lsp@claude-plugins-official
-claude plugin install agent-sdk-dev@claude-plugins-official
-claude plugin install context-mode@context-mode
-claude plugin install sc@superclaude
-claude plugin install harness@harness-marketplace
-claude plugin install autoresearch@autoresearch
-```
+`claude plugin` 명령을 직접 실행하지 않는다. 이 CLI 는 settings.json 을 다시 쓰며 hook group 의 비표준 키(`_gstack_source` 등)를 지우고, 이미 있는 marketplace 를 다시 add 하면 `autoUpdate` 를 지운다. 스크립트는 빠진 항목만 실행하고 지워진 키를 되살린다. 대상 목록은 `preflight.py` 의 `EXPECTED_MARKETPLACES`·`EXPECTED_PLUGINS`.
 
-skills·agents·hooks·context-mode MCP 는 plugin 설치가 제공한다. `enabledPlugins` 도 이 단계가 기록한다.
+출력: `[install_plugins]` 항목별 완료/실패, 복구한 키, `N/M 완료` (모두 설치돼 있으면 `스킵`). 실패가 있으면 exit 1 — 실패 항목을 사용자에게 알린다.
+
+skills·agents·hooks·context-mode MCP 는 plugin 설치가 제공한다.
 
 ## Step 3 — 저장소 동기화
 

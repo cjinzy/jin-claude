@@ -42,7 +42,7 @@ class TestCheckMarketplaces:
 
     def test_partial(self) -> None:
         """일부만 있으면 나머지가 missing이어야 한다."""
-        present = EXPECTED_MARKETPLACES[:2]
+        present = list(EXPECTED_MARKETPLACES)[:2]
         settings = {"extraKnownMarketplaces": list(present)}
         result = check_marketplaces(settings)
         assert result["ok"] == len(present)
