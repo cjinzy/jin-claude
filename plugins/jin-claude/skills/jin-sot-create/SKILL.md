@@ -1,11 +1,6 @@
 ---
 name: jin-sot-create
-description: SoT(Source of Truth) 문서셋을 코딩 에이전트가 인용·검증할 수 있는 형태로 생성한다 — 세부항목별 파일, 머신리더블 frontmatter, fact ID, Index.md 생성기, drift 검증기. "jin sot", "sot create", "SoT 생성" 외에도 프로젝트 문서 체계를 처음 세우거나, 아키텍처·DB 스키마·워크플로·디자인 규칙(DESIGN.md)을 문서로 정리해 달라는 요청, AGENTS.md/CLAUDE.md 가 담기엔 큰 프로젝트 지식을 남겨야 하는 상황이면 먼저 이 스킬을 사용한다.
-triggers:
-  - jin sot
-  - sot create
-  - SoT 생성
-  - source of truth
+description: 코딩 에이전트가 인용·검증할 수 있는 SoT(Source of Truth, SSOT) 문서셋을 `sot/` 에 생성·갱신한다 — 세부항목별 파일, 머신리더블 frontmatter, fact ID, Index.md 생성기, drift 검증기. "jin sot", "sot create", "SoT 생성", "source of truth", "create a source of truth", "document this project" 요청이나, 프로젝트 문서 체계를 처음 세우거나, 아키텍처·DB 스키마·워크플로·디자인 규칙(DESIGN.md)을 문서로 정리하거나, AGENTS.md/CLAUDE.md 에 담기엔 큰 프로젝트 지식을 남겨야 할 때 사용한다.
 argument-hint: "[project path (default: cwd)]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
@@ -14,6 +9,9 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 
 Build `sot/` as a Single Source of Truth an agent can **query, cite, and keep honest** — not a
 folder of prose. Every rule below exists to make one of those three possible.
+
+Prerequisites: `git` (drift baseline) and `python3` (stdlib only). Bundled scripts are
+**executed**, never read.
 
 ## SSOT invariants
 
@@ -166,9 +164,9 @@ useful; a `verified`-looking doc full of guesses is the failure this skill exist
 Collect ground truth before writing prose:
 
 ```bash
-python3 "../jin-deepinit/scripts/project_analyzer.py" .   # languages, frameworks, structure
-git log --oneline -1                                      # baseline for verified_commit
-ls DESIGN.md design-system.md 2>/dev/null                 # design token owner, if any
+python3 "${CLAUDE_SKILL_DIR}/../jin-deepinit/scripts/project_analyzer.py" .  # JSON: languages, frameworks, structure
+git log --oneline -1                                                       # baseline for verified_commit
+ls DESIGN.md design-system.md 2>/dev/null                                  # design token owner, if any
 ```
 
 Repo evidence outranks the interview when the two disagree. Report the conflict (invariant 4)
@@ -176,22 +174,29 @@ rather than picking a side.
 
 ### Step 2 — Scaffold or reconcile
 
+Inside `sot/` — no confirmation needed:
+
 ```bash
 mkdir -p sot/{overview,tech-stack,database-schema,architecture,workflow,design,rules}
-grep -qxF 'sot/' .gitignore || echo 'sot/' >> .gitignore   # SoT is local-only
+# The update protocol ships as a RUL-9xx fact doc, not as prose in Index.md.
+[ -f sot/rules/sot-maintenance.md ] || cp "${CLAUDE_SKILL_DIR}/templates/sot-maintenance.md" sot/rules/
+```
 
-# The maintenance trigger has to live in the auto-loaded CLAUDE.md. An agent changing
-# unrelated code loads neither this skill nor sot/Index.md, so nothing else would make it look.
-grep -q 'sot_validate' CLAUDE.md 2>/dev/null || cat >> CLAUDE.md <<'TRIGGER'
+Outside `sot/` — the project's own files. **Gate:** for each edit whose guard is false, show the
+exact lines to append, ask with `AskUserQuestion`, and apply only what is approved. No
+interactive channel → apply neither; list each pending edit in the summary.
+
+| File | Guard (skip if true) | Append | Why |
+|---|---|---|---|
+| `.gitignore` | `grep -qxF 'sot/' .gitignore` | `sot/` | SoT is local-only |
+| `CLAUDE.md` | `grep -qxF '## SoT' CLAUDE.md` | block below | an agent changing unrelated code loads neither this skill nor `sot/Index.md`; only the auto-loaded `CLAUDE.md` makes it look |
+
+```markdown
 
 ## SoT
 `sot/` is the Source of Truth; `sot/Index.md` lists every doc. In the verify step, before
 jin-commit, run the jin-sot-create skill's `scripts/sot_validate.py --root sot` and fix every
 error. Update protocol: `sot/rules/sot-maintenance.md`.
-TRIGGER
-
-# The update protocol ships as a RUL-9xx fact doc, not as prose in Index.md.
-[ -f sot/rules/sot-maintenance.md ] || cp "SKILL_DIR/templates/sot-maintenance.md" sot/rules/
 ```
 
 `sot/` already exists → add only what is missing and regenerate `Index.md`, then run Step 5.
@@ -244,8 +249,8 @@ Anything unresolved becomes `TODO(sot):`, not a guess.
 ### Step 4 — Generate `Index.md`
 
 ```bash
-python3 "SKILL_DIR/scripts/sot_index.py" --root sot          # write
-python3 "SKILL_DIR/scripts/sot_index.py" --root sot --check   # exit 1 if out of date
+python3 "${CLAUDE_SKILL_DIR}/scripts/sot_index.py" --root sot          # write
+python3 "${CLAUDE_SKILL_DIR}/scripts/sot_index.py" --root sot --check   # exit 1 if out of date
 ```
 
 Rendered from each doc's frontmatter, ordered by the category table, with the read contract as a
@@ -256,7 +261,7 @@ stderr and left out — fix them rather than adding the row yourself.
 ### Step 5 — Validate
 
 ```bash
-python3 "SKILL_DIR/scripts/sot_validate.py" --root sot
+python3 "${CLAUDE_SKILL_DIR}/scripts/sot_validate.py" --root sot
 ```
 
 JSON on stdout, exit 1 on errors. Fix every `error` before reporting the SoT as done;
@@ -285,7 +290,8 @@ JSON on stdout, exit 1 on errors. Fix every `error` before reporting the SoT as 
 
 ## Files
 
-- `templates/sot-maintenance.md` — the `RUL-9xx` update protocol, copied in at Step 2
-- `scripts/sot_index.py` — renders `Index.md` from frontmatter (`--check` to verify only)
-- `scripts/sot_validate.py` — docset validator (structure, addressability, index, drift)
-- `scripts/test_sot_validate.py` — validator tests
+- `${CLAUDE_SKILL_DIR}/templates/sot-maintenance.md` — the `RUL-9xx` update protocol, copied in at Step 2
+- `${CLAUDE_SKILL_DIR}/scripts/sot_index.py` — renders `Index.md` from frontmatter (`--check` to verify only)
+- `${CLAUDE_SKILL_DIR}/scripts/sot_validate.py` — docset validator (structure, addressability, index, drift); JSON on stdout
+- `${CLAUDE_SKILL_DIR}/scripts/test_sot_index.py`, `test_sot_validate.py` — tests (`cd "${CLAUDE_SKILL_DIR}/scripts" && python3 -m pytest -q`)
+- `${CLAUDE_SKILL_DIR}/../jin-deepinit/scripts/project_analyzer.py` — repo probe used in Step 1

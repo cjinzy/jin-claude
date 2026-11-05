@@ -52,6 +52,8 @@ INDEX_FILENAME = "Index.md"
 # One doc = one sub-topic, whatever its length. Length is deliberately not checked: splitting a
 # long single-topic doc would give one sub-topic two owners. This is only a hint that a file may
 # have grown past its topic.
+# Why 8: a sub-topic doc should be readable in one pass; past ~8 addressable claims it usually
+# answers a second question. Tuned heuristic, not a spec — raise it if warnings are mostly noise.
 MANY_FACTS_HINT = 8
 
 FRONTMATTER_DELIMITER = "---"

@@ -1,11 +1,23 @@
 ---
 name: jin-interview
-argument-hint: [instructions]
-description: Interview user in-depth to create a detailed spec
-allowed-tools: AskUserQuestion, Write
+argument-hint: "[instructions]"
+description: 사용자를 깊이 인터뷰해 구현 전 상세 스펙 파일을 작성한다. "jin interview", "인터뷰", "스펙 작성", "요구사항 정리", "spec", "기능 설계 전 질문" 요청이나 모호한 기능을 구현하기 전에 결정 사항을 확정할 때 사용한다.
+allowed-tools: AskUserQuestion, Read, Write
 ---
 
-Follow the user instructions and interview me in detail using the AskUserQuestionTool about literally anything: technical implementation, UI & UX, concerns, tradeoffs, etc. but make sure the questions are not obvious. be very in-depth and continue interviewing me continually until it's complete. then, write the spec to a file. <instructions>$ARGUMENTS</instructions>
+Follow the user instructions and interview me in detail using AskUserQuestion about anything: technical implementation, UI & UX, concerns, tradeoffs. Skip obvious questions. Read relevant code first so questions are grounded. Keep interviewing until every decision is settled, then write the spec. <instructions>$ARGUMENTS</instructions>
+
+## Output
+
+Write the spec to `docs/specs/<topic>-spec.md` (`<topic>` = kebab-case from the instructions). If the file exists, ask before overwriting.
+
+Required sections:
+- `## Goal` — what and why
+- `## Scope` — in / out
+- `## Decisions` — each `D<N>`: chosen option + reason
+- `## Accepted shortcuts` — ceiling + upgrade trigger (or "none")
+- `## Open questions`
+- `## Success criteria` — verifiable checks
 
 ## Question format (decision brief)
 

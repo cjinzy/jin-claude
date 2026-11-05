@@ -1,122 +1,73 @@
 ---
 name: jin-cleanser
-description: AI 생성 코드 슬롭 리뷰어. git diff 또는 지정 파일에서 불필요한 코멘트, 과잉 에러 처리, 미사용 임포트 등을 탐지하여 리포트를 생성합니다. "jin cleanser", "jin deslop" 시 사용.
-triggers:
-  - jin cleanser
-  - jin deslop
-argument-hint: "[파일/디렉토리 경로 또는 공백=최근 git diff]"
+description: AI 가 생성한 코드의 슬롭(디버그 코드 잔재, 주석 처리된 코드, 자명한 주석, 과잉 에러 처리, 미사용 임포트, 불필요한 추상화)을 정적 스캔과 시맨틱 리뷰로 찾아 리포트한다. 코드는 수정하지 않는다. "jin cleanser", "jin deslop", "deslop", "slop", "슬롭 검사", "AI 코드 정리", "디버그 코드 남았는지", 커밋 전 diff 의 AI 흔적 점검을 요청할 때 사용한다.
+argument-hint: "[파일/디렉토리 경로 | 생략 시 git diff]"
 ---
 
-# jin-cleanser: AI 생성 코드 슬롭 리뷰어
+# jin-cleanser
 
-AI가 생성한 코드에서 흔히 발생하는 불필요한 패턴(슬롭)을 정적 분석 + 시맨틱 분석으로 탐지하여 리포트를 생성한다. **자동 삭제/수정은 하지 않는다.**
+AI 생성 코드의 슬롭을 찾아 리포트만 한다. **삭제/수정은 하지 않는다** — 판단과 수정은 사용자 몫.
 
-## 슬롭 카테고리
+전제: `python3`, `git`. `ruff` 는 선택 — 없으면 unused-import(F401) 검사를 건너뛰고 리포트에 그 사실을 적는다.
 
-| Category | Severity | Detection | 설명 |
-|----------|----------|-----------|------|
-| unnecessary-comment | warning | Semantic (agent) | 코드가 자명한데 붙은 불필요한 주석 |
-| excessive-error-handling | warning | Semantic (agent) | 발생 불가능한 예외를 잡는 과잉 에러 처리 |
-| unused-import | warning | Static (ruff F401) | 사용하지 않는 임포트 |
-| boilerplate-docstring | info | Semantic (agent) | 의미 없는 보일러플레이트 독스트링 |
-| over-abstraction | info | Semantic (agent) | 한 번만 사용되는 불필요한 추상화 |
-| redundant-type-annotation | info | Semantic (agent) | 타입 추론 가능한 곳의 중복 타입 명시 |
-| leftover-debug | critical | Static (grep) | 남겨진 디버그 코드 (print, console.log, debugger 등) |
-| dead-code | warning | Static (grep) | 주석 처리된 대량 코드 블록, 미사용 함수 |
+## 카테고리
+
+| Category | Severity | 탐지 |
+|----------|----------|------|
+| leftover-debug | critical | 스크립트: `print(`, `pdb`, `breakpoint(` (Python) / `console.log(`, `debugger` (JS/TS) |
+| dead-code | warning | 스크립트: `# def/class/if/for/while/return/import` 로 시작하는 주석 (Python). 그 외 언어·미사용 함수는 시맨틱 |
+| unused-import | warning | 스크립트: ruff F401 (Python, ruff 설치 시) |
+| unnecessary-comment | warning | 스크립트: TODO/FIXME/HACK/XXX/TEMP 주석. 자명한 주석(`# 리스트를 반복한다`)은 시맨틱 |
+| excessive-error-handling | warning | 시맨틱: 발생 불가능한 예외 처리, 빈 except |
+| boilerplate-docstring | info | 시맨틱: `"""This function does X."""` 류 |
+| over-abstraction | info | 시맨틱: 한 곳에서만 쓰는 단순 래퍼 |
+| redundant-type-annotation | info | 시맨틱: `x: int = 1` 처럼 리터럴로 자명한 타입 |
 
 ## 워크플로우
 
-### Step 1: Target Identification (대상 식별)
+### Step 1: 대상 식별
 
-분석 대상을 결정한다:
+1. 인자가 경로 → 그 경로 (diff 범위 제한 없음).
+2. 인자 없음 → 미커밋 변경 + untracked 파일:
+   ```bash
+   git diff HEAD --name-only --diff-filter=ACMR
+   git ls-files --others --exclude-standard
+   ```
+3. 둘 다 비면 → 최근 커밋: `git diff HEAD~1 --name-only --diff-filter=ACMR`
 
-1. **인자가 파일/디렉토리인 경우** → 해당 경로를 분석
-2. **인자가 없는 경우** → `git diff HEAD`로 미커밋 변경사항 분석
-3. **미커밋 변경이 없는 경우** → `git diff HEAD~1`로 최근 커밋 분석
+### Step 2: 정적 스캔 (스크립트 실행)
+
+정적 검사는 이 스크립트 하나로만 한다. 읽지 말고 **실행**한다:
 
 ```bash
-# 변경된 파일 목록 추출
-git diff HEAD --name-only --diff-filter=ACMR
-# 변경 없으면 최근 커밋 대상
-git diff HEAD~1 --name-only --diff-filter=ACMR
+python3 "${CLAUDE_SKILL_DIR}/scripts/slop_patterns.py" <파일|디렉토리> [...]
 ```
 
-### Step 2: Static Scan (정적 스캔)
+- 출력(stdout): 마크다운 리포트 — `### 요약`(심각도별 건수) + `### 이슈 목록` 테이블. ruff 가 없으면 끝에 `> ruff 미설치 — unused-import(F401) 검사 생략.` 한 줄.
+- 디렉토리는 `.py .js .jsx .ts .tsx .mjs .cjs` 를 재귀 스캔 (`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `dist`, `build` 제외). 파일 인자는 확장자와 무관하게 스캔.
+- 종료 코드: `0` 정상, `2` 인자 없음, `3` 없는 경로 (stderr 에 경로 출력, 스캔 안 함).
+- 라인 정규식이라 오탐 가능 (예: CLI 의 의도된 `print`). 리포트 전에 해당 라인을 확인해 걸러낸다.
 
-자동화 가능한 패턴을 정적 도구로 탐지한다.
+### Step 3: 시맨틱 리뷰
 
-#### unused-import (ruff F401)
+카테고리 표의 "시맨틱" 항목을 파일별로 읽고 판단한다. 파일이 여러 개면 파일 단위로 병렬 실행.
+
+diff 모드(Step 1 의 2·3)에서는 변경 라인만 본다:
 ```bash
-ruff check --select F401 --output-format json {target_files}
+git diff -U0 HEAD -- <file>   # 최근 커밋 모드는 HEAD~1
 ```
+hunk 헤더 `@@ -a,b +c,d @@` → 라인 `c` ~ `c+d-1` (d 생략 = 1, d=0 = 삭제만이라 제외). 정적 결과도 이 범위 밖이면 제외한다. untracked 파일은 전체가 대상.
 
-#### leftover-debug (grep)
-```bash
-grep -rn 'console\.log\|print(\|debugger\|pdb\.set_trace\|breakpoint()' {target_files}
-```
+### Step 4: 리포트
 
-#### dead-code (grep)
-```bash
-# 연속 3줄 이상 주석 처리된 코드 블록 탐지
-grep -rn -A2 '^[[:space:]]*#.*[=\(\)\[\]{};]' {target_files}
-```
-
-정적 스캔에는 `scripts/slop_patterns.py` 모듈을 활용할 수 있다.
-
-### Step 3: Semantic Review (시맨틱 리뷰)
-
-Claude 에이전트가 각 파일을 읽고 다음 항목을 분석한다:
-
-- **unnecessary-comment**: 코드가 자명한데 붙은 주석 (`# 리스트를 반복한다` 등)
-- **excessive-error-handling**: 발생 불가능한 예외를 잡는 try/except, 빈 except 블록
-- **boilerplate-docstring**: `"""This function does X."""` 같은 의미 없는 독스트링
-- **over-abstraction**: 한 곳에서만 호출되는 단순 래퍼 함수
-- **redundant-type-annotation**: `x: int = 1` 같이 리터럴에서 타입이 자명한 경우
-
-시맨틱 리뷰는 파일 단위로 병렬 실행한다.
-
-### Step 4: Report (리포트 생성)
-
-정적 스캔 + 시맨틱 리뷰 결과를 통합하여 마크다운 보고서를 생성한다.
-
-#### 리포트 형식
+스크립트 출력을 기반으로 시맨틱 결과를 같은 `이슈 목록` 테이블에 합친다 (심각도 내림차순 재번호, `요약` 건수 재집계). 끝에 카테고리별 상세를 붙인다:
 
 ```markdown
-## AI Slop 분석 리포트
-
-### 요약
-| 심각도 | 건수 |
-|--------|------|
-| critical | N |
-| warning | N |
-| info | N |
-
-### 이슈 목록
-| # | 파일 | 라인 | 카테고리 | 심각도 | 제안 |
-|---|------|------|----------|--------|------|
-| 1 | path/to/file.py | 42 | leftover-debug | critical | `print()` 호출 제거 |
-| 2 | path/to/file.py | 15 | unnecessary-comment | warning | 자명한 주석 제거 고려 |
-| 3 | path/to/file.py | 8 | unused-import | warning | `import os` 미사용 |
-
 ### 카테고리별 상세
 
 #### leftover-debug (critical)
 - `path/to/file.py:42` — `print(result)` 디버그 출력 잔존
 
 #### unnecessary-comment (warning)
-- `path/to/file.py:15` — `# 결과를 반환한다` (return 문 위의 자명한 주석)
-
-**주의: 이 도구는 리뷰만 수행합니다. 자동 삭제/수정은 하지 않습니다.**
+- `path/to/file.py:15` — `# 결과를 반환한다` (return 위의 자명한 주석)
 ```
-
-## 관련 파일
-
-- `skills/jin-cleanser/SKILL.md` — 본 스킬 정의
-- `skills/jin-cleanser/scripts/slop_patterns.py` — 정적 슬롭 패턴 감지 모듈
-- `skills/jin-cleanser/scripts/test_slop_patterns.py` — 패턴 감지 테스트
-
-## 주의사항
-
-- **리포트 전용**: 자동 삭제/수정은 절대 수행하지 않는다. 사용자가 직접 판단하여 수정한다.
-- 시맨틱 리뷰의 판단은 확률적이므로 오탐(false positive)이 있을 수 있다. confidence 레벨을 함께 표시한다.
-- 대규모 diff(파일 50개 이상)에서는 변경된 줄 근처만 분석하여 시간을 절약한다.

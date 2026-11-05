@@ -9,12 +9,20 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from project_analyzer import (
+    DEFAULT_SKILLS_DIR,
     detect_frameworks,
     detect_languages,
     detect_structure,
     generate_agents_md,
+    main,
 )
+
+
+def _write_skill(skills_dir: Path, name: str, frontmatter: str) -> None:
+    (skills_dir / name).mkdir(parents=True)
+    (skills_dir / name / "SKILL.md").write_text(f"---\n{frontmatter}\n---\n\n# body\n")
 
 
 class TestDetectLanguages:
@@ -241,3 +249,62 @@ class TestGenerateAgentsMd:
         )
 
         assert "감지되지 않음" in md
+
+
+class TestSkillsTable:
+    """스킬 테이블은 스킬 디렉토리의 SKILL.md frontmatter 에서 생성된다."""
+
+    def test_rows_come_from_skill_frontmatter(self, tmp_path: Path) -> None:
+        skills = tmp_path / "skills"
+        _write_skill(skills, "alpha", "name: alpha\ndescription: 알파를 한다. 쓸 때 사용한다.")
+        _write_skill(
+            skills, "beta", 'name: beta\ndescription: "a | b 를 한다."\nargument-hint: "[x]"'
+        )
+        (skills / "no-skill-file").mkdir()
+        project = tmp_path / "project"
+        project.mkdir()
+
+        md = generate_agents_md(project, [], {}, "flat", skills_dir=skills)
+
+        assert "| alpha | 알파를 한다. 쓸 때 사용한다. |" in md
+        assert "| beta | a \\| b 를 한다. |" in md
+        assert "no-skill-file" not in md
+        assert "jin-gcc" not in md
+
+    def test_folded_description(self, tmp_path: Path) -> None:
+        skills = tmp_path / "skills"
+        _write_skill(
+            skills, "gamma", "name: gamma\ndescription: >\n  첫 줄\n  둘째 줄\nmodel: opus"
+        )
+
+        md = generate_agents_md(tmp_path, [], {}, "flat", skills_dir=skills)
+
+        assert "| gamma | 첫 줄 둘째 줄 |" in md
+
+    def test_default_dir_is_plugin_skills(self) -> None:
+        assert (DEFAULT_SKILLS_DIR / "jin-deepinit" / "SKILL.md").is_file()
+        md = generate_agents_md(Path.cwd(), [], {}, "flat")
+        assert "| jin-deepinit |" in md
+
+
+class TestCli:
+    """CLI 출력 형식 테스트."""
+
+    def test_default_prints_json(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        (tmp_path / "main.py").write_text("")
+        main([str(tmp_path)])
+        assert json.loads(capsys.readouterr().out)["languages"] == ["Python"]
+
+    def test_markdown_flag_prints_agents_md(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        (tmp_path / "main.py").write_text("")
+        main(["--markdown", str(tmp_path)])
+        out = capsys.readouterr().out
+        assert out.startswith("# AGENTS.md")
+        assert "Python" in out
+
+    def test_missing_dir_exits_nonzero(self, tmp_path: Path) -> None:
+        with pytest.raises(SystemExit) as exc:
+            main([str(tmp_path / "nope")])
+        assert exc.value.code == 1

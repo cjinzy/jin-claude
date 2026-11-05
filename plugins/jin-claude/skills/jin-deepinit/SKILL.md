@@ -1,76 +1,47 @@
 ---
 name: jin-deepinit
-description: 프로젝트 구조를 분석하고 사용 가능한 jin-claude 스킬을 안내하는 AGENTS.md를 생성합니다. "jin deepinit", "프로젝트 분석" 시 사용.
-triggers:
-  - jin deepinit
-  - 프로젝트 분석
+description: 프로젝트의 언어·프레임워크·디렉토리 구조를 분석하고, 설치된 jin-claude 스킬 목록을 담은 AGENTS.md 를 프로젝트 루트에 생성한다. "jin deepinit", "프로젝트 분석", "AGENTS.md 생성", "AGENTS.md 만들어", "analyze project", "generate AGENTS.md" 요청이나 새 프로젝트에 에이전트용 안내 문서를 처음 만들 때 사용한다.
 argument-hint: "[프로젝트 경로 (기본: 현재 디렉토리)]"
 ---
 
 # jin-deepinit: 프로젝트 분석 및 AGENTS.md 생성
 
-프로젝트 구조를 분석하여 사용 언어, 프레임워크, 디렉토리 구조를 감지하고,
-사용 가능한 jin-claude 스킬을 안내하는 AGENTS.md 파일을 생성한다.
+사전 조건: `python3` (표준 라이브러리만 사용).
 
 ## 워크플로우
 
 ### Step 1: 스캔
 
-`project_analyzer.py`를 실행하여 프로젝트 기본 정보를 감지한다:
-
-- **언어 감지**: 파일 확장자 기반 (`.py` → Python, `.ts` → TypeScript 등)
-- **프레임워크 감지**: 설정 파일 파싱
-  - `package.json` → React, Vue, Svelte, Next.js 등 (dependencies 확인)
-  - `pyproject.toml` → FastAPI, Django, Flask 등 (dependencies 확인)
-  - `Cargo.toml` → Rust
-  - `go.mod` → Go
-  - `build.gradle` / `pom.xml` → Java/Kotlin
-- **구조 유형**: monorepo, standard, flat 판별
-- **주요 디렉토리**: src, tests, docs, scripts 등 식별
+번들 스크립트를 **실행한다** (소스를 읽지 않는다). 경로 기본값은 현재 디렉토리.
 
 ```bash
-python scripts/project_analyzer.py [프로젝트_경로]
+python3 "${CLAUDE_SKILL_DIR}/scripts/project_analyzer.py" <path>              # JSON
+python3 "${CLAUDE_SKILL_DIR}/scripts/project_analyzer.py" --markdown <path>   # AGENTS.md 초안
 ```
+
+| 출력 | 내용 |
+|------|------|
+| JSON (기본) | `project_dir`, `project_name`, `languages`(빈도순), `frameworks`, `structure`(`monorepo`/`standard`/`flat`) |
+| `--markdown` | AGENTS.md 초안: 프로젝트 개요, 디렉토리 구조, 사용 가능한 스킬 표 |
+
+스킬 표는 실행 시점에 플러그인 `skills/*/SKILL.md` 의 `name`·`description` 에서 생성된다. 손으로 고치지 않는다.
 
 ### Step 2: 심층 분석
 
-주요 파일을 읽어 프로젝트 아키텍처를 이해한다:
+초안을 보강하기 위해 `README.md`, 설정 파일(`pyproject.toml`, `package.json` 등), 엔트리 포인트를 읽고 아키텍처·개발 패턴·코딩 컨벤션을 파악한다. 근거 없는 내용은 쓰지 않는다.
 
-- `README.md` — 프로젝트 개요, 목적
-- 설정 파일 (`pyproject.toml`, `package.json` 등) — 의존성, 빌드 설정
-- 엔트리 포인트 (`main.py`, `app.py`, `index.ts` 등) — 애플리케이션 구조
-- 개발 패턴, 코딩 컨벤션 파악
+### Step 3: AGENTS.md 작성 (확인 게이트)
 
-### Step 3: AGENTS.md 생성
-
-`AskUserQuestion`으로 생성 여부를 확인한 후, 프로젝트 루트에 AGENTS.md를 생성한다.
-
-## 출력 형식
-
-```markdown
-# AGENTS.md
-
-## 프로젝트 개요
-- **언어**: Python 3.12
-- **프레임워크**: FastAPI, SQLAlchemy
-- **구조**: Standard (src/tests)
-
-## 사용 가능한 스킬
-
-| 스킬 | 트리거 | 설명 |
-|------|--------|------|
-| jin-interview | "jin interview" | 작업 전 요구사항 인터뷰 |
-| jin-commit | "commit" | Gitmoji 기반 커밋 메시지 생성 |
-| jin-deepinit | "jin deepinit" | 프로젝트 분석 및 AGENTS.md 생성 |
-```
+1. 프로젝트 루트에 `AGENTS.md` 가 있는지 확인한다.
+2. **있으면**: 기존 내용과 새 초안의 차이를 보여주고 `AskUserQuestion` 으로 덮어쓰기 / 병합 / 취소 중 선택받는다. 답 없이 덮어쓰지 않는다.
+3. **없으면**: 생성할 내용을 보여주고 `AskUserQuestion` 으로 생성 여부를 확인한다.
+4. 승인된 내용만 쓴다.
 
 ## 관련 파일
 
-- `skills/` — jin-claude 스킬 정의 파일
-- `scripts/project_analyzer.py` — 프로젝트 구조 분석 모듈
+- `${CLAUDE_SKILL_DIR}/scripts/project_analyzer.py` — 분석 스크립트 (실행 전용)
+- `${CLAUDE_SKILL_DIR}/scripts/test_project_analyzer.py` — 테스트 (`cd "${CLAUDE_SKILL_DIR}/scripts" && python3 -m pytest -q`)
 
 ## 주의사항
 
-- 숨김 디렉토리 (`.git`, `.venv`, `node_modules`, `__pycache__`)는 스캔에서 제외한다
-- 기존 AGENTS.md가 있을 경우 덮어쓰기 전 확인을 요청한다
-- 분석 결과는 JSON 형식으로도 출력 가능하다
+- `.git`, `.venv`, `node_modules`, `__pycache__` 등 숨김·빌드 디렉토리는 스캔에서 제외된다.

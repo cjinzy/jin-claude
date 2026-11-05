@@ -12,7 +12,9 @@ from slop_patterns import (
     SlopCategory,
     SlopIssue,
     detect_static_patterns,
+    RUFF_SKIPPED_NOTICE,
     format_report,
+    main,
     parse_ruff_output,
 )
 
@@ -186,6 +188,14 @@ class TestParseRuffOutput:
 
         assert issues == []
 
+    def test_concise_fixable_마커_제거(self) -> None:
+        """ruff concise 출력의 `[*]` 마커를 메시지에서 뺀다."""
+        output = "a.py:1:8: F401 [*] `os` imported but unused\n"
+
+        issues = parse_ruff_output(output)
+
+        assert issues[0].code_snippet == "`os` imported but unused"
+
 
 class TestFormatReport:
     """format_report 함수 테스트."""
@@ -230,18 +240,28 @@ class TestFormatReport:
         assert critical_pos < warning_pos
 
 
-class TestSlopIssue:
-    """SlopIssue 데이터 클래스 테스트."""
+class TestMain:
+    """CLI 진입점 테스트."""
 
-    def test_confidence_범위_초과_예외(self) -> None:
-        """confidence가 0.0~1.0 범위를 초과하면 ValueError를 발생시키는지 확인한다."""
-        with pytest.raises(ValueError, match="confidence"):
-            SlopIssue(
-                file="test.py",
-                line=1,
-                category=SlopCategory.LEFTOVER_DEBUG,
-                severity=Severity.CRITICAL,
-                code_snippet="print('x')",
-                suggestion="제거하세요.",
-                confidence=1.5,
-            )
+    def test_없는_경로_비정상_종료(self, tmp_path, capsys) -> None:
+        """없는 경로면 0 이 아닌 코드로 종료하고 stderr 에 경로를 알린다."""
+        missing = tmp_path / "nope"
+
+        assert main([str(missing)]) != 0
+        assert str(missing) in capsys.readouterr().err
+
+    def test_디렉토리_JS_파일_스캔(self, tmp_path, capsys, monkeypatch) -> None:
+        """디렉토리 모드에서 .js 파일의 디버그 출력도 감지한다."""
+        monkeypatch.setattr("slop_patterns.shutil.which", lambda _: None)
+        (tmp_path / "app.js").write_text("debugger;\n", encoding="utf-8")
+
+        assert main([str(tmp_path)]) == 0
+        assert "app.js" in capsys.readouterr().out
+
+    def test_ruff_없으면_F401_생략_안내(self, tmp_path, capsys, monkeypatch) -> None:
+        """ruff 미설치 시 F401 검사 생략을 리포트에 적는다."""
+        monkeypatch.setattr("slop_patterns.shutil.which", lambda _: None)
+        (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+
+        assert main([str(tmp_path)]) == 0
+        assert RUFF_SKIPPED_NOTICE in capsys.readouterr().out

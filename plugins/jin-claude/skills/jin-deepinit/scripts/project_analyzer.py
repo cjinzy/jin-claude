@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from collections import Counter
@@ -29,6 +30,14 @@ IGNORE_DIRS: set[str] = {
     ".nuxt",
     "target",
 }
+
+# 플러그인 skills/ 디렉토리 (이 파일: skills/jin-deepinit/scripts/).
+# 스킬 테이블을 런타임에 생성해 drift 방지.
+DEFAULT_SKILLS_DIR: Path = Path(__file__).resolve().parents[2]
+SKILL_FILE = "SKILL.md"
+FRONTMATTER_DELIMITER = "---"
+# YAML block scalar 표시자 (`description: >` / `|`)
+BLOCK_SCALAR_MARKERS = (">", "|", ">-", "|-")
 
 # 파일 확장자 → 언어 매핑
 LANGUAGE_EXTENSIONS: dict[str, str] = {
@@ -363,6 +372,7 @@ def generate_agents_md(
     languages: list[str],
     frameworks: dict[str, str],
     structure: str,
+    skills_dir: Path = DEFAULT_SKILLS_DIR,
 ) -> str:
     """AGENTS.md 마크다운 콘텐츠를 생성한다.
 
@@ -371,6 +381,7 @@ def generate_agents_md(
         languages: 감지된 언어 목록.
         frameworks: 감지된 프레임워크 딕셔너리.
         structure: 프로젝트 구조 유형.
+        skills_dir: 스킬 테이블을 만들 SKILL.md 들의 상위 디렉토리.
 
     Returns:
         AGENTS.md 마크다운 문자열.
@@ -397,7 +408,7 @@ def generate_agents_md(
     dir_summary = _generate_dir_summary(project_dir)
 
     # 스킬 테이블
-    skills_table = _generate_skills_table()
+    skills_table = _generate_skills_table(skills_dir)
 
     md = f"""# AGENTS.md — {project_name}
 
@@ -416,11 +427,6 @@ def generate_agents_md(
 ## 사용 가능한 스킬
 
 {skills_table}
-
-## 관련 파일
-
-- `skills/` — jin-claude 스킬 정의 파일
-- `CLAUDE.md` — 프로젝트 지침 파일
 """
     return md
 
@@ -464,27 +470,51 @@ def _generate_dir_summary(project_dir: Path) -> str:
     return "\n".join(lines)
 
 
-def _generate_skills_table() -> str:
-    """사용 가능한 jin-claude 스킬 테이블을 생성한다.
+def _read_frontmatter(skill_md: Path) -> dict[str, str]:
+    """SKILL.md frontmatter 의 최상위 `key: value` 를 읽는다.
+
+    ponytail: PyYAML 없이 평면 스칼라 + `>`/`|` block scalar 만 지원. 중첩 필드는 무시.
+    """
+    lines = skill_md.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != FRONTMATTER_DELIMITER:
+        return {}
+
+    fields: dict[str, str] = {}
+    key = ""
+    for line in lines[1:]:
+        if line.strip() == FRONTMATTER_DELIMITER:
+            break
+        if line[:1].isspace():
+            # 직전 block scalar 키의 연속 줄
+            if key:
+                fields[key] = f"{fields[key]} {line.strip()}".strip()
+            continue
+        name, sep, value = line.partition(":")
+        if not sep:
+            continue
+        value = value.strip()
+        key = name.strip() if value in BLOCK_SCALAR_MARKERS else ""
+        fields[name.strip()] = "" if key else value.strip("\"'")
+    return fields
+
+
+def _generate_skills_table(skills_dir: Path) -> str:
+    """skills_dir 아래 각 SKILL.md 의 name/description 으로 스킬 테이블을 생성한다.
 
     Returns:
         마크다운 테이블 문자열.
     """
-    skills = [
-        ("jin-commit", '"commit"', "Gitmoji 기반 커밋 메시지 생성"),
-        ("jin-deepinit", '"jin deepinit"', "프로젝트 분석 및 AGENTS.md 생성"),
-        ("jin-interview", '"jin interview"', "작업 전 요구사항 인터뷰"),
-        ("jin-gcc", '"jin gcc"', "보안 관점 코드 리뷰"),
-        ("jin-cleanser", '"jin cleanser"', "코드 정리 및 리팩토링"),
-        ("verify-implementation", '"verify"', "구현 검증"),
-    ]
-
     lines = [
-        "| 스킬 | 트리거 | 설명 |",
-        "|------|--------|------|",
+        "| 스킬 | 설명 |",
+        "|------|------|",
     ]
-    for name, trigger, desc in skills:
-        lines.append(f"| {name} | {trigger} | {desc} |")
+    for skill_md in sorted(skills_dir.glob(f"*/{SKILL_FILE}")):
+        fields = _read_frontmatter(skill_md)
+        name = fields.get("name")
+        if not name:
+            continue
+        desc = fields.get("description", "").replace("|", "\\|")
+        lines.append(f"| {name} | {desc} |")
 
     return "\n".join(lines)
 
@@ -511,12 +541,13 @@ def analyze(project_dir: Path) -> dict:
     }
 
 
-def main() -> None:
-    """CLI 엔트리 포인트. 프로젝트를 분석하고 JSON 결과를 출력한다."""
-    if len(sys.argv) > 1:
-        project_dir = Path(sys.argv[1])
-    else:
-        project_dir = Path.cwd()
+def main(argv: list[str] | None = None) -> None:
+    """CLI 엔트리 포인트. 분석 결과를 JSON(기본) 또는 AGENTS.md(--markdown)로 출력한다."""
+    parser = argparse.ArgumentParser(description="프로젝트 구조 분석")
+    parser.add_argument("project_dir", nargs="?", type=Path, default=Path.cwd())
+    parser.add_argument("--markdown", action="store_true", help="AGENTS.md 마크다운 출력")
+    args = parser.parse_args(argv)
+    project_dir: Path = args.project_dir
 
     if not project_dir.is_dir():
         print(
@@ -526,7 +557,17 @@ def main() -> None:
         sys.exit(1)
 
     result = analyze(project_dir)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    if args.markdown:
+        print(
+            generate_agents_md(
+                project_dir.resolve(),
+                result["languages"],
+                result["frameworks"],
+                result["structure"],
+            )
+        )
+    else:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

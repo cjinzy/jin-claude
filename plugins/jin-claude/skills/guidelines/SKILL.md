@@ -1,6 +1,6 @@
 ---
 name: guidelines
-description: Behavioral guidelines to reduce common LLM coding mistakes. Use when writing, reviewing, or refactoring code to avoid overcomplication, make surgical changes, surface assumptions, and define verifiable success criteria.
+description: 과잉 구현·무관한 수정·숨은 가정 같은 LLM 코딩 실수를 줄이는 행동 지침을 제공한다. "guidelines", "코딩 가이드라인", "행동 지침", "최소 변경", "surgical change" 요청이나 코드 작성·리뷰·리팩토링 중 범위와 검증 기준을 정할 때 사용한다.
 ---
 
 # Guidelines
@@ -14,18 +14,15 @@ Behavioral guidelines to reduce common LLM coding mistakes, derived from [Andrej
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
 Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+- State assumptions explicitly; unclear → stop, name it, ask.
+- Multiple interpretations → present them, don't pick silently.
+- A simpler approach exists → say so. Push back when warranted.
 
 ## 2. Simplicity First
 
 **Minimum code that solves the problem. Nothing speculative.**
 
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
+- No unrequested features, single-use abstractions, or configurability.
 - No error handling for impossible scenarios.
 - If you write 200 lines and it could be 50, rewrite it.
 

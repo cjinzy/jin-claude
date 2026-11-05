@@ -1,14 +1,28 @@
-"""AI 생성 코드 슬롭 패턴 정의 및 정적 감지 엔진.
+"""AI 생성 코드 슬롭 정적 스캐너 (jin-cleanser 의 유일한 정적 검사기).
 
-패턴 기반으로 불필요한 주석, 디버그 코드, 죽은 코드 등을 감지한다.
-시맨틱 분석은 Claude 에이전트가 담당하며, 이 모듈은 정적 패턴만 처리한다.
+라인 정규식으로 디버그 코드, 주석 처리된 코드, TODO 류 주석을 찾고,
+ruff 가 있으면 F401(미사용 임포트)도 검사해 마크다운 리포트를 출력한다.
+시맨틱 분석은 Claude 에이전트 담당.
+
+사용: python3 slop_patterns.py <파일|디렉토리> [...]
 """
 
 import re
+import shutil
+import subprocess
+import sys
 import traceback
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+
+# 디렉토리 모드 스캔 대상. 주석 패턴(`#`)은 Python 전용, 디버그 패턴은 JS/TS 도 포함.
+SCAN_EXTENSIONS = (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
+PYTHON_EXTENSION = ".py"
+RUFF_SKIPPED_NOTICE = "> ruff 미설치 — unused-import(F401) 검사 생략."
+EXIT_OK = 0
+EXIT_USAGE = 2
+EXIT_MISSING_PATH = 3
 
 
 class SlopCategory(Enum):
@@ -83,13 +97,6 @@ class SlopIssue:
     code_snippet: str
     suggestion: str
     end_line: int | None = None
-    confidence: float = field(default=1.0)
-
-    def __post_init__(self) -> None:
-        """confidence 값 범위를 검증한다."""
-        if not 0.0 <= self.confidence <= 1.0:
-            msg = f"confidence는 0.0~1.0 범위여야 한다: {self.confidence}"
-            raise ValueError(msg)
 
 
 # 정적 감지 패턴 정의
@@ -183,10 +190,10 @@ def detect_static_patterns(file_path: Path) -> list[SlopIssue]:
 
 
 def parse_ruff_output(output: str) -> list[SlopIssue]:
-    """ruff check --select F401 의 기본 출력을 파싱하여 SlopIssue 목록을 반환한다.
+    """ruff check --select F401 --output-format concise 출력을 파싱한다.
 
-    ruff 기본 출력 형식:
-        path/to/file.py:10:1: F401 `os` imported but unused
+    형식 (`[*]` 는 자동수정 가능 표시, 선택):
+        path/to/file.py:10:1: F401 [*] `os` imported but unused
 
     Args:
         output: ruff의 stdout 출력 문자열.
@@ -197,7 +204,7 @@ def parse_ruff_output(output: str) -> list[SlopIssue]:
     issues: list[SlopIssue] = []
     # ruff 기본 출력 패턴: file:line:col: CODE message
     ruff_pattern = re.compile(
-        r"^(.+?):(\d+):\d+:\s+F401\s+(.+)$",
+        r"^(.+?):(\d+):\d+:\s+F401\s+(?:\[\*\]\s+)?(.+)$",
         re.MULTILINE,
     )
 
@@ -275,30 +282,73 @@ def format_report(issues: list[SlopIssue]) -> str:
     return "\n".join(lines)
 
 
-if __name__ == "__main__":
-    import sys
+# 디렉토리 모드에서 건너뛸 의존성/빌드 산출물 디렉토리
+SKIP_DIRS = frozenset({".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build"})
 
-    if len(sys.argv) < 2:
-        print("사용법: python slop_patterns.py <파일경로> [파일경로...]")
-        print("예시: python slop_patterns.py src/main.py src/utils.py")
-        sys.exit(1)
 
-    all_issues: list[SlopIssue] = []
-    for arg in sys.argv[1:]:
-        target = Path(arg)
-        if not target.exists():
-            print(f"경고: 파일을 찾을 수 없습니다 — {target}")
-            continue
+def collect_files(targets: list[Path]) -> list[Path]:
+    """파일은 그대로, 디렉토리는 SCAN_EXTENSIONS 파일을 재귀 수집한다."""
+    files: list[Path] = []
+    for target in targets:
         if target.is_dir():
-            for py_file in target.rglob("*.py"):
-                try:
-                    all_issues.extend(detect_static_patterns(py_file))
-                except (UnicodeDecodeError, FileNotFoundError):
-                    traceback.print_exc()
+            files.extend(
+                p
+                for p in sorted(target.rglob("*"))
+                if p.is_file()
+                and p.suffix in SCAN_EXTENSIONS
+                and not SKIP_DIRS.intersection(p.relative_to(target).parts)
+            )
         else:
-            try:
-                all_issues.extend(detect_static_patterns(target))
-            except (UnicodeDecodeError, FileNotFoundError):
-                traceback.print_exc()
+            files.append(target)
+    return files
 
-    print(format_report(all_issues))
+
+def run_ruff_f401(py_files: list[Path]) -> list[SlopIssue] | None:
+    """ruff F401 검사 결과를 반환한다. ruff 미설치면 None."""
+    ruff = shutil.which("ruff")
+    if ruff is None:
+        return None
+    if not py_files:
+        return []
+    # ruff 는 이슈 발견 시 rc=1 이므로 returncode 로 실패 판단하지 않는다.
+    result = subprocess.run(
+        [ruff, "check", "--select", "F401", "--output-format", "concise", *map(str, py_files)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return parse_ruff_output(result.stdout)
+
+
+def main(argv: list[str]) -> int:
+    """대상 경로를 스캔해 리포트를 stdout 에 출력하고 종료 코드를 반환한다."""
+    if not argv:
+        print("사용법: python3 slop_patterns.py <파일|디렉토리> [...]", file=sys.stderr)
+        return EXIT_USAGE
+
+    targets = [Path(arg) for arg in argv]
+    missing = [str(t) for t in targets if not t.exists()]
+    if missing:
+        print(f"오류: 경로 없음 — {', '.join(missing)}", file=sys.stderr)
+        return EXIT_MISSING_PATH
+
+    files = collect_files(targets)
+    issues: list[SlopIssue] = []
+    for file in files:
+        try:
+            issues.extend(detect_static_patterns(file))
+        except UnicodeDecodeError:
+            traceback.print_exc()  # 바이너리/비 UTF-8 파일은 건너뛴다
+
+    ruff_issues = run_ruff_f401([f for f in files if f.suffix == PYTHON_EXTENSION])
+    if ruff_issues is not None:
+        issues.extend(ruff_issues)
+
+    print(format_report(issues))
+    if ruff_issues is None:
+        print(f"\n{RUFF_SKIPPED_NOTICE}")
+    return EXIT_OK
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
