@@ -20,7 +20,7 @@ HOOKS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "hooks"
 sys.path.insert(0, str(HOOKS_DIR))
 
 from keyword_detector import KEYWORDS, main as keyword_main
-from session_init import auto_update, main as session_main
+from session_init import auto_update, ensure_timer, main as session_main
 
 
 class TestKeywordDetector:
@@ -194,14 +194,16 @@ class TestSessionInit:
             auto_update()
         mock_run.assert_not_called()
 
+    @patch("session_init.ensure_timer")
     @patch("session_init.auto_update")
-    def test_main_outputs_approve(self, mock_update: MagicMock) -> None:
-        """main()은 approve JSON을 출력한다."""
+    def test_main_outputs_approve(self, mock_update: MagicMock, mock_timer: MagicMock) -> None:
+        """main()은 auto_update + ensure_timer 후 approve JSON을 출력한다."""
         with patch("builtins.print") as mock_print:
             session_main()
             output = json.loads(mock_print.call_args[0][0])
             assert output["result"] == "approve"
         mock_update.assert_called_once()
+        mock_timer.assert_called_once()
 
     @patch("session_init.subprocess.run")
     def test_auto_update_timeout_handled(self, mock_run: MagicMock, tmp_path: Path) -> None:
@@ -215,3 +217,59 @@ class TestSessionInit:
 
         with patch("session_init.Path.home", return_value=tmp_path):
             auto_update()  # 예외 없이 완료되어야 한다
+
+
+class TestEnsureTimer:
+    """ensure_timer(): 타이머 파일이 사라졌으면 install-timer.sh로 재등록한다."""
+
+    INSTALLER = Path(".claude/.jin-claude-repo/plugins/jin-claude/scripts/install-timer.sh")
+    PLIST = Path("Library/LaunchAgents/com.jin-claude.fetch-usage.plist")
+
+    def _installer(self, home: Path) -> Path:
+        path = home / self.INSTALLER
+        path.parent.mkdir(parents=True)
+        path.touch()
+        return path
+
+    @patch("session_init.subprocess.Popen")
+    def test_reinstalls_when_plist_missing(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        installer = self._installer(tmp_path)
+        with patch("session_init.Path.home", return_value=tmp_path), \
+             patch("session_init.sys.platform", "darwin"):
+            ensure_timer()
+        mock_run.assert_called_once()
+        assert mock_run.call_args[0][0] == ["bash", str(installer), "5"]
+
+    @patch("session_init.subprocess.Popen")
+    def test_skips_when_plist_exists(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        self._installer(tmp_path)
+        (tmp_path / self.PLIST).parent.mkdir(parents=True)
+        (tmp_path / self.PLIST).touch()
+        with patch("session_init.Path.home", return_value=tmp_path), \
+             patch("session_init.sys.platform", "darwin"):
+            ensure_timer()
+        mock_run.assert_not_called()
+
+    @patch("session_init.subprocess.Popen")
+    def test_skips_without_init(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        """init(sync_repo) 이력이 없으면 설치하지 않는다."""
+        with patch("session_init.Path.home", return_value=tmp_path), \
+             patch("session_init.sys.platform", "darwin"):
+            ensure_timer()
+        mock_run.assert_not_called()
+
+    @patch("session_init.subprocess.Popen")
+    def test_skips_unsupported_platform(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        self._installer(tmp_path)
+        with patch("session_init.Path.home", return_value=tmp_path), \
+             patch("session_init.sys.platform", "win32"):
+            ensure_timer()
+        mock_run.assert_not_called()
+
+    @patch("session_init.subprocess.Popen")
+    def test_install_failure_handled(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        self._installer(tmp_path)
+        mock_run.side_effect = OSError("bash not found")
+        with patch("session_init.Path.home", return_value=tmp_path), \
+             patch("session_init.sys.platform", "linux"):
+            ensure_timer()  # 예외 없이 완료되어야 한다
