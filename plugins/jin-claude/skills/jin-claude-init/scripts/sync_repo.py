@@ -20,7 +20,6 @@ CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jin-claudecode-mp"
 SYNC_TARGETS: list[tuple[str, Path]] = []
 
 # hooks는 ${CLAUDE_PLUGIN_ROOT}가 치환되지 않으므로 고정 경로에 복사.
-HOOKS_DIR = CLAUDE_DIR / "jin-hooks"
 
 # CLAUDE.md 가 @include 하는 보조 문서. 함께 복사하지 않으면 참조가 깨진다.
 CLAUDE_INCLUDES = (
@@ -46,10 +45,6 @@ SYNC_FILES = [
     ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh", False),
     (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md", True),
     *[(f".claude/{name}", CLAUDE_DIR / name, False) for name in CLAUDE_INCLUDES],
-    ("plugins/jin-claude/hooks/keyword_detector.py", HOOKS_DIR / "keyword_detector.py", False),
-    ("plugins/jin-claude/hooks/pre_tool_enforcer.sh", HOOKS_DIR / "pre_tool_enforcer.sh", False),
-    ("plugins/jin-claude/hooks/post_tool_verifier.sh", HOOKS_DIR / "post_tool_verifier.sh", False),
-    ("plugins/jin-claude/hooks/session_init.py", HOOKS_DIR / "session_init.py", False),
 ]
 
 

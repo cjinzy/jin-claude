@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""세션 시작 시 jin-claude 자동 업데이트 및 초기화를 수행한다.
+"""세션 시작 시 사용량 타이머 복구 + marketplace 자동 업데이트.
 
-SessionStart hook으로 사용된다.
-기존 bash SessionStart hook을 Python으로 이전한 버전.
+SessionStart hook (hooks/hooks.json). stdout 은 대화 컨텍스트에 주입되므로 쓰지 않는다.
 """
 
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +16,8 @@ TIMER_MARKERS = {
     "linux": Path(".config/systemd/user/fetch-claude-usage.timer"),
 }
 DEFAULT_INTERVAL_MIN = "5"
+# hooks.json timeout(10s) 안에 끝나야 hook 이 강제 종료되지 않는다
+GIT_PULL_TIMEOUT_SEC = 8
 
 
 def auto_update() -> None:
@@ -33,7 +33,7 @@ def auto_update() -> None:
                     ["git", "-C", str(mp_dir), "pull", "--ff-only"],
                     capture_output=True,
                     text=True,
-                    timeout=30,
+                    timeout=GIT_PULL_TIMEOUT_SEC,
                 )
                 if result.returncode != 0:
                     print(
@@ -79,9 +79,8 @@ def ensure_timer() -> None:
 
 def main() -> None:
     """메인 진입점."""
+    ensure_timer()  # 빠름 — 느린 git pull 보다 먼저
     auto_update()
-    ensure_timer()
-    print(json.dumps({"result": "approve"}))
 
 
 if __name__ == "__main__":

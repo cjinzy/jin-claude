@@ -82,17 +82,15 @@ plugins/jin-claude/
 
 ---
 
-## Hooks (4)
+## Hooks (1)
+
+`hooks/hooks.json` 에 등록 — Claude Code 는 플러그인 루트의 이 파일만 로드한다.
 
 | File | Event | Role |
 |------|-------|------|
-| `hooks/pre_tool_enforcer.sh` | `PreToolUse` | 도구 사용 전 규칙 강제 (현재 pass-through) |
-| `hooks/post_tool_verifier.sh` | `PostToolUse` | 도구 실행 후 결과 검증 (현재 pass-through) |
-| `hooks/session_init.py` | `SessionStart` | 세션 시작 시 marketplace 저장소 자동 업데이트 |
-| `hooks/keyword_detector.py` | `UserPromptSubmit` | 프롬프트 매직 키워드 감지 → 스킬 자동 라우팅 |
+| `hooks/session_init.py` | `SessionStart` | 사용량 타이머 유실 시 재등록 + marketplace 저장소 자동 업데이트 |
 
-> 키워드 라우팅 테이블은 `hooks/keyword_detector.py` 상단의 `KEYWORDS` dict 참조.
-> 키워드 등록 검증 테스트는 `tests/test_keyword_detector_chub.py` 에 격리되어 있어 훅 로더가 로드하지 않습니다.
+> `hooks/keyword_detector.py` 는 미등록 상태(출력 형식이 hook 규격과 다름). 키워드 테이블은 상단 `KEYWORDS` dict.
 
 ---
 

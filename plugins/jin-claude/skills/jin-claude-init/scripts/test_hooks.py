@@ -1,7 +1,6 @@
 """hooks 모듈 단위 테스트.
 
-keyword_detector(Python), pre_tool_enforcer(Bash), post_tool_verifier(Bash),
-session_init(Python)의 stdin/stdout JSON 프로토콜과 keyword 매칭을 검증한다.
+keyword_detector(Python, 미등록), session_init(Python, SessionStart)의 stdin/stdout JSON 프로토콜과 keyword 매칭을 검증한다.
 
 하이브리드 구성: 복잡한 로직(JSON 파싱, 한글 매칭)은 Python,
 단순 통과(approve)는 Bash로 구현되어 있다.
@@ -104,67 +103,6 @@ class TestKeywordDetector:
             assert output["result"] == "approve"
 
 
-class TestPreToolEnforcerBash:
-    """pre_tool_enforcer.sh (Bash) 테스트 스위트."""
-
-    def test_approves_any_tool(self) -> None:
-        """모든 도구에 대해 approve를 반환한다."""
-        script = HOOKS_DIR / "pre_tool_enforcer.sh"
-        result = subprocess.run(
-            ["bash", str(script)],
-            input='{"tool_name": "Edit"}',
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        output = json.loads(result.stdout.strip())
-        assert output["result"] == "approve"
-
-    def test_handles_empty_stdin(self) -> None:
-        """빈 stdin에도 approve를 반환한다."""
-        script = HOOKS_DIR / "pre_tool_enforcer.sh"
-        result = subprocess.run(
-            ["bash", str(script)],
-            input="",
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        output = json.loads(result.stdout.strip())
-        assert output["result"] == "approve"
-
-
-class TestPostToolVerifierBash:
-    """post_tool_verifier.sh (Bash) 테스트 스위트."""
-
-    def test_approves(self) -> None:
-        """기본 구현은 항상 approve를 반환한다."""
-        script = HOOKS_DIR / "post_tool_verifier.sh"
-        result = subprocess.run(
-            ["bash", str(script)],
-            input='{"tool_name": "Read", "output": "file content"}',
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        output = json.loads(result.stdout.strip())
-        assert output["result"] == "approve"
-
-    def test_handles_large_input(self) -> None:
-        """대량 stdin에도 정상 동작한다."""
-        script = HOOKS_DIR / "post_tool_verifier.sh"
-        large_input = json.dumps({"output": "x" * 10000})
-        result = subprocess.run(
-            ["bash", str(script)],
-            input=large_input,
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        output = json.loads(result.stdout.strip())
-        assert output["result"] == "approve"
-
-
 class TestSessionInit:
     """session_init.py 테스트 스위트."""
 
@@ -197,11 +135,13 @@ class TestSessionInit:
     @patch("session_init.ensure_timer")
     @patch("session_init.auto_update")
     def test_main_outputs_approve(self, mock_update: MagicMock, mock_timer: MagicMock) -> None:
-        """main()은 auto_update + ensure_timer 후 approve JSON을 출력한다."""
+        """main()은 ensure_timer + auto_update 만 실행하고 stdout 에 쓰지 않는다.
+
+        SessionStart stdout 은 대화 컨텍스트에 주입되므로 비워 둔다.
+        """
         with patch("builtins.print") as mock_print:
             session_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "approve"
+        mock_print.assert_not_called()
         mock_update.assert_called_once()
         mock_timer.assert_called_once()
 
@@ -273,3 +213,35 @@ class TestEnsureTimer:
         with patch("session_init.Path.home", return_value=tmp_path), \
              patch("session_init.sys.platform", "linux"):
             ensure_timer()  # 예외 없이 완료되어야 한다
+
+
+PLUGIN_DIR = HOOKS_DIR.parent
+MANIFEST = PLUGIN_DIR / "hooks" / "hooks.json"
+
+
+class TestHooksManifest:
+    """Claude Code 가 실제로 읽는 위치(플러그인 루트 hooks/hooks.json)에 등록됐는지 검증."""
+
+    def test_manifest_at_plugin_root(self) -> None:
+        assert MANIFEST.is_file()
+        assert not (PLUGIN_DIR / ".claude-plugin" / "hooks" / "hooks.json").exists()
+
+    def test_only_session_start_registered(self) -> None:
+        hooks = json.loads(MANIFEST.read_text())["hooks"]
+        assert set(hooks) == {"SessionStart"}
+
+    def test_session_start_uses_plugin_root(self) -> None:
+        """${CLAUDE_PLUGIN_ROOT} 경로 → 플러그인 업데이트만으로 훅 코드가 배포된다."""
+        hook = json.loads(MANIFEST.read_text())["hooks"]["SessionStart"][0]["hooks"][0]
+        assert "${CLAUDE_PLUGIN_ROOT}/hooks/session_init.py" in hook["command"]
+        assert (HOOKS_DIR / "session_init.py").is_file()
+
+    @patch("session_init.subprocess.run")
+    def test_git_pull_timeout_below_hook_timeout(self, mock_run: MagicMock, tmp_path: Path) -> None:
+        """git pull 이 hook timeout 보다 먼저 끝나야 hook 이 강제 종료되지 않는다."""
+        hook = json.loads(MANIFEST.read_text())["hooks"]["SessionStart"][0]["hooks"][0]
+        (tmp_path / ".claude" / "plugins" / "marketplaces" / "mp1" / "plugins" / "jin-claude").mkdir(parents=True)
+        mock_run.return_value = MagicMock(returncode=0)
+        with patch("session_init.Path.home", return_value=tmp_path):
+            auto_update()
+        assert mock_run.call_args.kwargs["timeout"] < hook["timeout"]

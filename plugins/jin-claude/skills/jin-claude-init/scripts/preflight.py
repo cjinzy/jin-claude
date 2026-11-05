@@ -61,7 +61,7 @@ EXPECTED_PLUGINS = [
     "autoresearch",
 ]
 
-HOOK_TYPES = ["UserPromptSubmit", "PreToolUse", "PostToolUse", "SessionStart"]
+HOOK_TYPES = ["SessionStart"]
 
 # context-mode는 Step 2의 플러그인이 자동 제공 (plugin:context-mode:context-mode)
 # 현재는 standalone으로 설치할 추가 MCP 서버가 없다.
@@ -228,7 +228,7 @@ def check_mcp_server(name: str) -> bool:
 def check_hooks(settings: dict) -> dict:
     """jin-claude hooks 설정 존재 여부를 확인한다.
 
-    플러그인 캐시의 .claude-plugin/hooks/hooks.json을 우선 확인하고,
+    플러그인 캐시 루트의 hooks/hooks.json(Claude Code 로드 위치)을 우선 확인하고,
     없으면 글로벌 settings.json의 hooks 키를 fallback으로 확인한다.
 
     Args:
@@ -247,7 +247,7 @@ def check_hooks(settings: dict) -> dict:
             key=lambda d: d.name,
         )
         if versions:
-            hooks_json = versions[-1] / ".claude-plugin" / "hooks" / "hooks.json"
+            hooks_json = versions[-1] / "hooks" / "hooks.json"
             if hooks_json.exists():
                 data = json.loads(hooks_json.read_text(encoding="utf-8"))
                 hooks = data.get("hooks", {})

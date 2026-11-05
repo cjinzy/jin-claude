@@ -127,25 +127,22 @@ python3 "SKILL_DIR/scripts/setup_mcp_and_teams.py"
 
 > **팀 설정**: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 환경변수가 Step 4에서 설정되므로, 별도 팀 제한 설정은 불필요하다.
 
-## Step 5 — Hooks 확인
+## Step 5 — Hook 확인
 
-jin-claude 플러그인의 `.claude-plugin/hooks/hooks.json`에 4개 hooks가 정의되어 있다:
+jin-claude 플러그인 루트의 `hooks/hooks.json`에 SessionStart hook 1개가 정의되어 있다:
 
 | Hook | 파일 | 역할 |
 |------|------|------|
-| UserPromptSubmit | `hooks/keyword_detector.py` | magic keyword 감지 → 스킬 자동 호출 |
-| PreToolUse | `hooks/pre_tool_enforcer.sh` | 도구 사용 규칙 강제 |
-| PostToolUse | `hooks/post_tool_verifier.sh` | 도구 실행 결과 검증 |
-| SessionStart | `hooks/session_init.py` | 세션 시작 시 자동 업데이트 |
+| SessionStart | `hooks/session_init.py` | 사용량 타이머 유실 시 재등록 + marketplace 자동 업데이트 |
 
-플러그인 설치(Step 2) 시 `${CLAUDE_PLUGIN_ROOT}` 치환과 함께 자동으로 적용되므로, 여기서는 설치 확인만 수행한다:
+플러그인 설치(Step 2) 시 `${CLAUDE_PLUGIN_ROOT}` 경로로 자동 적용되므로, 여기서는 설치 확인만 수행한다:
 
 ```bash
 python3 -c "
 import json; from pathlib import Path
 cache = Path.home() / '.claude/plugins/cache/jin-claudecode-mp/jin-claude'
 ver = sorted([d for d in cache.iterdir() if d.name[0].isdigit()])[-1]
-d = json.loads((ver / '.claude-plugin/hooks/hooks.json').read_text())
+d = json.loads((ver / 'hooks/hooks.json').read_text())
 print('Hooks:', list(d['hooks'].keys()))
 "
 ```
@@ -166,5 +163,5 @@ print('Hooks:', list(d['hooks'].keys()))
 - Skills: N개 동기화
 - Settings: 병합 완료 (model: opus, effortLevel: high, advisorModel: fable)
 - MCP: N개 서버 설치
-- Hooks: 4개 설치
+- Hooks: 1개 설치
 ```

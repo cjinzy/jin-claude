@@ -91,7 +91,6 @@ claude plugin install autoresearch@autoresearch
 | 대상 | 위치 |
 |------|------|
 | statusline 렌더러 | `~/.claude/statusline-command.sh`, `statusline-config.txt` |
-| Hooks 스크립트 | `~/.claude/jin-hooks/{keyword_detector.py, pre_tool_enforcer.sh, post_tool_verifier.sh, session_init.py}` |
 | 사용량 CLI venv | `~/.claude/.venv/` (uv 기반) |
 | 통계 타이머 | macOS: launchd plist · Linux: systemd timer |
 
@@ -103,16 +102,13 @@ claude plugin install autoresearch@autoresearch
 
 현재 `MCP_SERVERS = []` — **추가 standalone MCP 서버는 0개**입니다. 과거 standalone으로 설치하던 `serena`·`context7`은 Step 2의 `claude-plugins-official` 플러그인이, `context-mode`는 동명 플러그인이 MCP 기능을 자동 제공합니다. 향후 플러그인이 커버하지 않는 MCP가 필요하면 `MCP_SERVERS`에 항목을 추가하는 방식으로 확장합니다.
 
-#### Step 5 — Hooks 4개 검증
+#### Step 5 — Hook 검증
 
-`plugins/jin-claude/.claude-plugin/hooks/hooks.json`에 정의된 hooks가 등록되었는지 확인합니다. 실제 실행 파일은 Step 3에서 복사된 `~/.claude/jin-hooks/`를 가리킵니다.
+`plugins/jin-claude/hooks/hooks.json`(플러그인 루트 — Claude Code 로드 위치)에 SessionStart hook 1개가 등록됩니다. 플러그인 캐시에서 직접 실행되므로 플러그인 업데이트만으로 배포됩니다.
 
 | Hook Event | 실행 명령 | 역할 |
 |------------|-----------|------|
-| `UserPromptSubmit` | `python3 $HOME/.claude/jin-hooks/keyword_detector.py` | 매직 키워드 감지 → 스킬 자동 호출 |
-| `PreToolUse` | `bash $HOME/.claude/jin-hooks/pre_tool_enforcer.sh` | 도구 사용 전 정책 검사 |
-| `PostToolUse` | `bash $HOME/.claude/jin-hooks/post_tool_verifier.sh` | 도구 실행 결과 검증 |
-| `SessionStart` | `python3 $HOME/.claude/jin-hooks/session_init.py` | 세션 시작 시 자동 업데이트 |
+| `SessionStart` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session_init.py"` | 사용량 타이머 유실 시 재등록 + marketplace 자동 업데이트 |
 
 #### Step 6 — 검증 및 완료 보고
 
