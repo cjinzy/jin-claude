@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""세션 시작 시 사용량 타이머 복구 + marketplace 자동 업데이트.
+"""세션 시작 시 구버전 스킬 사본 정리 + 사용량 타이머 복구 + marketplace 자동 업데이트.
 
 SessionStart hook (hooks/hooks.json). stdout 은 대화 컨텍스트에 주입되므로 쓰지 않는다.
 """
 
+import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # sync_repo.py 가 clone 하는 저장소 — 존재 = init 이력 있음
@@ -18,6 +20,9 @@ TIMER_MARKERS = {
 DEFAULT_INTERVAL_MIN = "5"
 # hooks.json timeout(10s) 안에 끝나야 hook 이 강제 종료되지 않는다
 GIT_PULL_TIMEOUT_SEC = 8
+# 구버전(≤3.x) sync_repo 가 ~/.claude/skills 에 복사한 스킬 중 plugin 과 이름이 겹치거나(사용자 스킬이
+# plugin 스킬을 가림) 제거된 것. 다른 legacy 이름(py-standard 등)은 충돌이 없어 사용자 판단에 맡긴다.
+LEGACY_SKILLS = {"jin-claude-init", "jin-commit", "jin-interview", "manage-skills", "verify-implementation"}
 
 
 def auto_update() -> None:
@@ -52,6 +57,25 @@ def auto_update() -> None:
                 )
 
 
+def retire_legacy_skills() -> None:
+    """LEGACY_SKILLS 사본을 ~/.claude/backups/skills_backup_<YYYYMMDD>/ 로 옮긴다 (삭제 아님)."""
+    skills = Path.home() / ".claude" / "skills"
+    now = datetime.now()
+    for name in sorted(LEGACY_SKILLS):
+        src = skills / name
+        if not src.exists() and not src.is_symlink():
+            continue
+        dest = Path.home() / ".claude" / "backups" / f"skills_backup_{now:%Y%m%d}" / name
+        if dest.exists():
+            dest = dest.with_name(f"{name}_{now:%H%M%S%f}")
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src), dest)
+            print(f"[jin-claude] retired legacy skill {src} -> {dest}", file=sys.stderr)
+        except OSError as e:
+            print(f"[jin-claude] warning: retire {src} failed: {e!r}", file=sys.stderr)
+
+
 def ensure_timer() -> None:
     """사용량 수집 타이머가 사라졌으면 재등록한다.
 
@@ -79,6 +103,7 @@ def ensure_timer() -> None:
 
 def main() -> None:
     """메인 진입점."""
+    retire_legacy_skills()  # 빠름 — 사본이 plugin 스킬을 가리기 전에
     ensure_timer()  # 빠름 — 느린 git pull 보다 먼저
     auto_update()
 

@@ -19,7 +19,7 @@ HOOKS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "hooks"
 sys.path.insert(0, str(HOOKS_DIR))
 
 from keyword_detector import KEYWORDS, main as keyword_main
-from session_init import auto_update, ensure_timer, main as session_main
+from session_init import LEGACY_SKILLS, auto_update, ensure_timer, main as session_main, retire_legacy_skills
 
 
 class TestKeywordDetector:
@@ -137,10 +137,11 @@ class TestSessionInit:
             auto_update()
         mock_run.assert_not_called()
 
+    @patch("session_init.retire_legacy_skills")
     @patch("session_init.ensure_timer")
     @patch("session_init.auto_update")
-    def test_main_outputs_approve(self, mock_update: MagicMock, mock_timer: MagicMock) -> None:
-        """main()은 ensure_timer + auto_update 만 실행하고 stdout 에 쓰지 않는다.
+    def test_main_outputs_approve(self, mock_update: MagicMock, mock_timer: MagicMock, mock_retire: MagicMock) -> None:
+        """main()은 retire_legacy_skills + ensure_timer + auto_update 를 실행하고 stdout 에 쓰지 않는다.
 
         SessionStart stdout 은 대화 컨텍스트에 주입되므로 비워 둔다.
         """
@@ -149,6 +150,7 @@ class TestSessionInit:
         mock_print.assert_not_called()
         mock_update.assert_called_once()
         mock_timer.assert_called_once()
+        mock_retire.assert_called_once()
 
     @patch("session_init.subprocess.run")
     def test_auto_update_timeout_handled(self, mock_run: MagicMock, tmp_path: Path) -> None:
@@ -222,6 +224,45 @@ class TestEnsureTimer:
 
 PLUGIN_DIR = HOOKS_DIR.parent
 MANIFEST = PLUGIN_DIR / "hooks" / "hooks.json"
+
+
+class TestRetireLegacySkills:
+    """retire_legacy_skills(): 구버전 sync 가 남긴 ~/.claude/skills 사본은 plugin 스킬을 가리므로 백업 폴더로 옮긴다."""
+
+    def _skill(self, home: Path, name: str) -> Path:
+        path = home / ".claude" / "skills" / name
+        path.mkdir(parents=True)
+        (path / "SKILL.md").write_text(name)
+        return path
+
+    def test_moves_legacy_keeps_others(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+        legacy = self._skill(tmp_path, "jin-commit")
+        mine = self._skill(tmp_path, "my-skill")
+        with patch("session_init.Path.home", return_value=tmp_path):
+            retire_legacy_skills()
+        assert not legacy.exists()
+        assert mine.exists()
+        moved = list((tmp_path / ".claude" / "backups").glob("skills_backup_*/jin-commit/SKILL.md"))
+        assert len(moved) == 1
+        assert capsys.readouterr().out == ""  # SessionStart stdout = 컨텍스트 주입
+
+    def test_collision_keeps_both(self, tmp_path: Path) -> None:
+        """같은 날 두 번째 이동이 첫 백업을 덮지 않는다."""
+        with patch("session_init.Path.home", return_value=tmp_path):
+            self._skill(tmp_path, "jin-commit")
+            retire_legacy_skills()
+            self._skill(tmp_path, "jin-commit")
+            retire_legacy_skills()
+        assert len(list((tmp_path / ".claude" / "backups").glob("skills_backup_*/jin-commit*"))) == 2
+
+    def test_noop_without_skills_dir(self, tmp_path: Path) -> None:
+        with patch("session_init.Path.home", return_value=tmp_path):
+            retire_legacy_skills()
+        assert not (tmp_path / ".claude" / "backups").exists()
+
+    def test_covers_plugin_skill_names(self) -> None:
+        """plugin 에 같은 이름이 있거나 제거된 스킬만 대상."""
+        assert LEGACY_SKILLS == {"jin-claude-init", "jin-commit", "jin-interview", "manage-skills", "verify-implementation"}
 
 
 class TestHooksManifest:

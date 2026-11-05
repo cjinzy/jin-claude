@@ -7,7 +7,7 @@ from datetime import date
 from pathlib import Path
 
 import report_changes
-from merge_settings import REQUIRED_SETTINGS, deep_merge, merge_settings
+from merge_settings import DEFAULT_SETTINGS, REQUIRED_SETTINGS, deep_merge, merge_settings
 
 
 class TestDeepMerge(unittest.TestCase):
@@ -118,7 +118,7 @@ class TestMergeSettings(unittest.TestCase):
             path = Path(tmpdir) / "settings.json"
             result = merge_settings(path)
 
-            for key, value in REQUIRED_SETTINGS.items():
+            for key, value in {**DEFAULT_SETTINGS, **REQUIRED_SETTINGS}.items():
                 if isinstance(value, dict):
                     for sub_key, sub_value in value.items():
                         self.assertEqual(result[key][sub_key], sub_value)
@@ -126,17 +126,41 @@ class TestMergeSettings(unittest.TestCase):
                     self.assertEqual(result[key], value)
 
 
-def test_overrides_required_keys(tmp_path: Path) -> None:
-    """필수 키는 기존 값을 덮어쓴다 (보존 아님)."""
+LEGACY_HOOK = {"hooks": [{"type": "command", "command": "python3 $HOME/.claude/jin-hooks/session_init.py"}]}
+PERSONAL_HOOK = {"hooks": [{"type": "command", "command": "echo mine"}]}
+
+
+def test_forces_required_keys(tmp_path: Path) -> None:
+    """팀 필수 키는 기존 값을 덮어쓴다."""
     path = tmp_path / "settings.json"
-    path.write_text(json.dumps({"model": "sonnet"}))
-    assert merge_settings(path)["model"] == REQUIRED_SETTINGS["model"]
+    path.write_text(json.dumps({"enableAllProjectMcpServers": False}))
+    assert merge_settings(path)["enableAllProjectMcpServers"] is True
+
+
+def test_preserves_user_preferences(tmp_path: Path) -> None:
+    """개인 선호 키는 기존 값을 유지하고, 없을 때만 기본값을 넣는다."""
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps({"model": "sonnet", "permissions": {"defaultMode": "auto"}}))
+    result = merge_settings(path)
+    assert result["model"] == "sonnet"
+    assert result["permissions"]["defaultMode"] == "auto"
+    assert result["language"] == DEFAULT_SETTINGS["language"]
+
+
+def test_keeps_personal_hooks_drops_legacy(tmp_path: Path) -> None:
+    """jin-hooks/ 구버전 항목만 제거하고 개인 hooks 는 보존. 비면 이벤트·키 삭제."""
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps({"hooks": {"Stop": [PERSONAL_HOOK, LEGACY_HOOK], "SessionStart": [LEGACY_HOOK]}}))
+    assert merge_settings(path)["hooks"] == {"Stop": [PERSONAL_HOOK]}
+
+    path.write_text(json.dumps({"hooks": {"SessionStart": [LEGACY_HOOK]}}))
+    assert "hooks" not in merge_settings(path)
 
 
 def test_changed_settings_backed_up_with_diff(tmp_path: Path) -> None:
-    """변경 시 settings_backup_<날짜>.json 백업 + 키 단위 diff(hooks 삭제 포함) 기록."""
+    """변경 시 settings_backup_<날짜>.json 백업 + 키 단위 diff(구버전 hooks 삭제 포함) 기록."""
     path = tmp_path / "settings.json"
-    original = {"model": "sonnet", "hooks": {"Stop": []}, "customKey": 1}
+    original = {"enableAllProjectMcpServers": False, "hooks": {"Stop": [LEGACY_HOOK]}, "customKey": 1}
     path.write_text(json.dumps(original))
 
     merge_settings(path)
@@ -147,8 +171,8 @@ def test_changed_settings_backed_up_with_diff(tmp_path: Path) -> None:
     entry = report_changes.load_report()[str(path)]
     assert entry["status"] == report_changes.CHANGED
     assert entry["backup"] == str(bak)
-    assert entry["diff"]["changed"]["model"] == ["sonnet", REQUIRED_SETTINGS["model"]]
-    assert entry["diff"]["removed"] == {"hooks": {"Stop": []}}
+    assert entry["diff"]["changed"]["enableAllProjectMcpServers"] == [False, True]
+    assert entry["diff"]["removed"] == {"hooks": {"Stop": [LEGACY_HOOK]}}
     assert "language" in entry["diff"]["added"]
     assert "customKey" not in entry["diff"]["added"]
 

@@ -28,7 +28,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/preflight.py"
 Step 2–4 는 사용자 파일을 덮어쓴다. 실행 전 아래를 알리고 **명시적 동의**를 받는다. 동의하지 않으면 Step 2–4 를 건너뛴다.
 
 - 덮어쓰는 파일: `~/.claude/CLAUDE.md`, 그것이 @include 하는 `~/.claude/*.md` 보조 문서, `~/.claude/statusline-command.sh`, `~/.claude/settings.json`
-- `settings.json`: Step 2(plugin 설치)가 `enabledPlugins`·`extraKnownMarketplaces` 를 쓰고, Step 4 의 키는 기존 값을 **덮어쓴다**. 전역 `hooks` 키는 **삭제**된다.
+- `settings.json`: Step 2(plugin 설치)가 `enabledPlugins`·`extraKnownMarketplaces` 를 쓰고, Step 4 가 팀 필수 키를 **덮어쓰고** 개인 선호 키는 없을 때만 넣는다. 전역 `hooks` 는 구버전 `jin-hooks/` 항목만 제거한다.
 - 내용이 바뀌는 파일만 같은 폴더에 `<이름>_backup_<YYYYMMDD>.<확장자>` 로 백업한다 (예: `settings_backup_20260101.json`). 그날 백업이 이미 있으면 유지하고(첫 init 전 원본), 같은 날 재실행이 덮어쓰는 내용은 `<이름>_backup_<YYYYMMDD>_<HHMMSS>.<확장자>` 에 추가 백업한다.
 
 동의하면 첫 쓰기 전에 실행한다:
@@ -96,20 +96,21 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/sync_repo.py" "$INTERVAL"
 python3 "${CLAUDE_SKILL_DIR}/scripts/merge_settings.py"
 ```
 
-`~/.claude/settings.json` 에 아래 키를 **덮어쓴다** (중첩 dict 는 해당 하위 키만). 그 외 키는 보존. 전역 `hooks` 키는 삭제 (plugin `hooks/hooks.json` 이 관리). 이미 같으면 파일을 쓰지 않는다.
+`~/.claude/settings.json` 에 병합한다 (중첩 dict 는 해당 하위 키만). 표에 없는 키는 보존. 이미 같으면 파일을 쓰지 않는다.
+- 전역 `hooks`: 구버전 `~/.claude/jin-hooks/` 항목만 제거 (현재는 plugin `hooks/hooks.json` 이 관리). 개인 hooks 는 보존.
 
-| 키 | 값 |
-|----|----|
-| `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | `"1"` |
-| `permissions.defaultMode` | `"plan"` |
-| `enableAllProjectMcpServers` | `true` |
-| `statusLine` | `bash ~/.claude/statusline-command.sh` |
-| `outputStyle` | `"Explanatory"` |
-| `language` | `"korean"` |
-| `skipDangerousModePermissionPrompt` | `true` |
-| `effortLevel` | `"high"` |
-| `model` | `"opus"` |
-| `advisorModel` | `"fable"` |
+| 키 | 값 | 적용 |
+|----|----|------|
+| `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | `"1"` | 덮어씀 |
+| `enableAllProjectMcpServers` | `true` | 덮어씀 |
+| `statusLine` | `bash ~/.claude/statusline-command.sh` | 덮어씀 |
+| `skipDangerousModePermissionPrompt` | `true` | 덮어씀 |
+| `permissions.defaultMode` | `"plan"` | 없을 때만 |
+| `outputStyle` | `"Explanatory"` | 없을 때만 |
+| `language` | `"korean"` | 없을 때만 |
+| `effortLevel` | `"high"` | 없을 때만 |
+| `model` | `"opus"` | 없을 때만 |
+| `advisorModel` | `"fable"` | 없을 때만 |
 
 ## Step 5 — MCP
 
@@ -121,7 +122,7 @@ standalone 자동 설치 대상 MCP 는 현재 없다 (`MCP_SERVERS = []`). 추�
 
 ## Step 6 — 검증
 
-1. `preflight.py` 를 다시 실행한다. `hooks.missing` 이 비어 있어야 한다 (SessionStart: 타이머 재등록 + marketplace 자동 업데이트). 남은 `missing` 항목은 사용자에게 알린다.
+1. `preflight.py` 를 다시 실행한다. `hooks.missing` 이 비어 있어야 한다 (SessionStart: 구버전 `~/.claude/skills` 사본 백업 이동 + 타이머 재등록 + marketplace 자동 업데이트). 남은 `missing` 항목은 사용자에게 알린다.
 2. `claude plugin list`, `claude mcp list` 로 설치 상태 확인.
 
 ## Step 7 — 변경 안내 (필수)
@@ -142,6 +143,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py"
 [DONE] jin-claude-init
 - Marketplace: N개 추가 / Plugins: N개 설치
 - 파일: 신규 N · 변경 N · 동일 N (report_changes 출력 기준)
-- Settings: model opus, effortLevel high, advisorModel fable
+- Settings: 필수 키 반영, 개인 선호·hooks 보존
 - Hooks: SessionStart 확인
 ```

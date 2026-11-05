@@ -11,7 +11,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from merge_settings import REQUIRED_SETTINGS  # 필수 설정 단일 출처
+from merge_settings import DEFAULT_SETTINGS, REQUIRED_SETTINGS  # 설정 단일 출처
 
 CLAUDE_DIR = Path.home() / ".claude"
 SETTINGS_PATH = CLAUDE_DIR / "settings.json"
@@ -119,7 +119,7 @@ def check_settings(settings: dict) -> dict:
         complete 여부와 missing 키 목록.
     """
     missing = []
-    for key, value in REQUIRED_SETTINGS.items():
+    for key, value in {**DEFAULT_SETTINGS, **REQUIRED_SETTINGS}.items():
         if key not in settings:
             missing.append(key)
         elif isinstance(value, dict):

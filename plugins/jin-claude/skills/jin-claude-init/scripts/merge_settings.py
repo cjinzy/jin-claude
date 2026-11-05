@@ -1,7 +1,7 @@
 """settings.json deep merge 스크립트.
 
-REQUIRED_SETTINGS 의 키는 기존 값을 덮어쓰고(override), 그 외 키는 보존한다.
-전역 "hooks" 키는 삭제한다 (플러그인 hooks.json 이 관리).
+REQUIRED_SETTINGS(팀 필수) 는 기존 값을 덮어쓰고, DEFAULT_SETTINGS(개인 선호) 는 없을 때만 넣는다.
+전역 "hooks" 는 구버전 jin-hooks/ 항목만 제거한다 (개인 hooks 보존, 현재는 plugin hooks.json 이 관리).
 변경 시 settings_backup_<YYYYMMDD>.json 백업 후 쓰고, 키 단위 diff 를 report_changes 에 기록한다.
 diff 기준은 `report_changes.py --snapshot` 시점(Step 2 plugin 설치 전) 원본, 없으면 현재 파일.
 멱등: 이미 병합된 상태면 파일을 다시 쓰지 않는다. stdlib 만 사용.
@@ -16,21 +16,43 @@ from report_changes import diff_dicts, load_baseline, track_write
 
 SETTINGS_PATH = Path.home() / ".claude" / "settings.json"
 
+# 팀 공통 동작에 필요 → 항상 덮어쓴다.
 REQUIRED_SETTINGS: dict = {
     "env": {"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"},
-    "permissions": {"defaultMode": "plan"},
     "enableAllProjectMcpServers": True,
     "statusLine": {
         "type": "command",
         "command": "bash ~/.claude/statusline-command.sh",
     },
+    "skipDangerousModePermissionPrompt": True,
+}
+
+# 개인 선호 → 키가 없을 때만 넣는다 (재 init 이 사용자 선택을 되돌리지 않게).
+DEFAULT_SETTINGS: dict = {
+    "permissions": {"defaultMode": "plan"},
     "outputStyle": "Explanatory",
     "language": "korean",
-    "skipDangerousModePermissionPrompt": True,
     "effortLevel": "high",
     "model": "opus",
     "advisorModel": "fable",
 }
+
+# 구버전(≤3.x) sync 가 settings.json 에 직접 등록한 hook 스크립트 경로.
+LEGACY_HOOK_MARKER = "/.claude/jin-hooks/"
+
+
+def drop_legacy_hooks(hooks: dict) -> dict:
+    """LEGACY_HOOK_MARKER 를 실행하는 hook 만 제거한다. 빈 group·event 도 제거."""
+    kept: dict = {}
+    for event, groups in hooks.items():
+        new_groups = []
+        for group in groups:
+            entries = [h for h in group.get("hooks", []) if LEGACY_HOOK_MARKER not in h.get("command", "")]
+            if entries:
+                new_groups.append({**group, "hooks": entries})
+        if new_groups:
+            kept[event] = new_groups
+    return kept
 
 
 def deep_merge(base: dict, override: dict) -> dict:
@@ -71,14 +93,17 @@ def merge_settings(settings_path: Path | None = None) -> dict:
         existing = {}
         print(f"[merge_settings] 설정 파일 없음, 새로 생성: {path}")
 
-    merged = deep_merge(existing, REQUIRED_SETTINGS)
+    # 기본값 ← 기존 ← 필수 순으로 덮는다: 기존 값이 기본값을 이기고, 필수가 모두를 이긴다.
+    merged = deep_merge(deep_merge(DEFAULT_SETTINGS, existing), REQUIRED_SETTINGS)
 
-    # hooks는 플러그인 hooks/hooks.json에서 관리하므로 글로벌 설정에서 제거.
-    # 구버전(3.0.0) 플러그인이 settings.json에 hooks를 정의했고,
-    # 플러그인 시스템이 이를 글로벌 설정에 병합/저장했을 수 있다.
     if "hooks" in merged:
-        del merged["hooks"]
-        print("[merge_settings] 글로벌 설정에서 hooks 제거 (플러그인 hooks.json으로 이관)")
+        hooks = drop_legacy_hooks(merged["hooks"])
+        if hooks != merged["hooks"]:
+            print("[merge_settings] 구버전 jin-hooks 항목 제거 (plugin hooks.json 으로 이관됨)")
+        if hooks:
+            merged["hooks"] = hooks
+        else:
+            del merged["hooks"]
 
     # 보고는 snapshot 기준 대비, 쓰기는 현재 파일 대비 — Step 2 변경도 보고에 포함.
     snapped, raw = load_baseline(path)

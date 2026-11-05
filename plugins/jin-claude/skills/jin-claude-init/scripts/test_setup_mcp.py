@@ -73,13 +73,17 @@ class TestGetInstalledMcps:
         assert result == set()
 
 
+FAKE_SERVERS = [{"name": "a", "args": ["npx", "a"]}, {"name": "b", "args": ["npx", "b"]}]
+
+
 class TestSetupMcpServers:
     """setup_mcp_servers() 테스트 스위트."""
 
+    @patch("setup_mcp_and_teams.MCP_SERVERS", FAKE_SERVERS)
     @patch("setup_mcp_and_teams.subprocess.run")
     def test_installs_all_when_none_exist(self, mock_run: MagicMock) -> None:
         """MCP 서버가 없으면 모두 설치한다."""
-        server_count = len(MCP_SERVERS)
+        server_count = len(FAKE_SERVERS)
         mock_run.side_effect = [
             _make_result(stdout=""),  # mcp list
         ] + [_make_result(0) for _ in range(server_count)]  # 각 서버 설치
@@ -87,10 +91,11 @@ class TestSetupMcpServers:
         assert count == server_count
         assert mock_run.call_count == server_count + 1  # list + 각 서버
 
+    @patch("setup_mcp_and_teams.MCP_SERVERS", FAKE_SERVERS)
     @patch("setup_mcp_and_teams.subprocess.run")
     def test_skips_existing(self, mock_run: MagicMock) -> None:
         """이미 설치된 서버는 스킵한다."""
-        all_names = "  local  npx\n".join(s["name"] for s in MCP_SERVERS) + "  local  npx\n"
+        all_names = "".join(f"{s['name']}: npx - ✓ Connected\n" for s in FAKE_SERVERS)
         mock_run.side_effect = [
             _make_result(stdout=all_names),
         ]
@@ -147,3 +152,11 @@ class TestSetupMcpServers:
         ]
         count = setup_mcp_servers()
         assert count == 2
+
+
+@patch("setup_mcp_and_teams.MCP_SERVERS", [])
+@patch("setup_mcp_and_teams.subprocess.run")
+def test_no_servers_skips_mcp_list(mock_run: MagicMock) -> None:
+    """설치 대상이 없으면 느린 `claude mcp list` 를 호출하지 않는다."""
+    assert setup_mcp_servers() == 0
+    mock_run.assert_not_called()

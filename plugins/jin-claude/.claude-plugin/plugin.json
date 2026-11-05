@@ -1,6 +1,6 @@
 {
   "name": "jin-claude",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "Team-standard skills & hooks for Claude Code: 9 skills, lifecycle hooks, keyword routing, statusline",
   "author": {
     "name": "jin",

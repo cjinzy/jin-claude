@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 9개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.0.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.0.1` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -108,7 +108,7 @@ claude plugin install autoresearch@autoresearch
 
 | Hook Event | 실행 명령 | 역할 |
 |------------|-----------|------|
-| `SessionStart` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session_init.py"` | 사용량 타이머 유실 시 재등록 + marketplace 자동 업데이트 |
+| `SessionStart` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session_init.py"` | 구버전 `~/.claude/skills` 사본 백업 이동 + 사용량 타이머 유실 시 재등록 + marketplace 자동 업데이트 |
 
 #### Step 6 — 검증 및 완료 보고
 

@@ -59,6 +59,8 @@ def setup_mcp_servers() -> int:
     Returns:
         새로 설치된 서버 수.
     """
+    if not MCP_SERVERS:
+        return 0  # `claude mcp list` 는 서버 연결 확인으로 30s+ 걸린다 → 대상 없으면 생략
     installed = get_installed_mcps()
     count = 0
     for server in MCP_SERVERS:
