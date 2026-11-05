@@ -1,5 +1,3 @@
-# linear.md
-
 # Linear (MCP)
 
 Issue tracking for this project. Always check Linear before starting work.
@@ -12,7 +10,7 @@ Issue tracking for this project. Always check Linear before starting work.
 * `save_comment` — add a comment to an issue
 * `list_projects`, `list_issue_labels` — look up existing values before setting them
 
-## Statuses (team STEATLHMOLE, issue prefix `MOLE-`)
+## Statuses (team STEALTHMOLE, key `MOLE`, issue prefix `MOLE-`)
 
 `Triage` · `Backlog` · `Todo` · `Plan` · `In Progress` · `Feedback` · `Done` · `Canceled` · `Duplicate`
 
@@ -20,7 +18,7 @@ Issue tracking for this project. Always check Linear before starting work.
 
  1. Search existing issues first. Create one only if none exists.
  2. If you don't know which Linear project this directory belongs to, ask the user, then save the answer to memory (CLAUDE.md / agent memory) so you don't ask again. If none exists, ask whether to create one or pick an existing one.
- 3. When creating, fill in project, priority (default Medium), assignee (default me), and an existing label.
+ 3. When creating, fill in project, priority (default Medium), assignee (default me), and an existing label. Title and description follow **Issue format**.
  4. Large tasks: create a parent issue and split into sub-issues, one per deliverable. Work through them one at a time.
  5. Picking the next task: `Todo` first, then `Backlog`.
  6. "Remaining work" = all issues except `Done` / `Canceled` / `Duplicate`.
@@ -30,13 +28,80 @@ Issue tracking for this project. Always check Linear before starting work.
 10. Done → summary comment including commit hash(es) and PR link, status `Done`, set due date. Use `Feedback` if the user must review first. Parent is Done only when all sub-issues are Done.
 11. Use the issue's `gitBranchName`; put the issue ID in commits/PRs.
 12. Never create labels/statuses, never delete issues.
+13. Every comment follows **Comment format**.
+
+## Issue format
+
+**Title** — one line, verb form, the core change only. No tags, brackets, or trailing period. ~70 chars max.
+
+* ✅ `만료 토큰으로 로그인 시 500 에러 수정` · `Fix 500 on login with expired token`
+* ❌ `로그인 버그` · `[BE] 로그인 관련 이슈`
+
+**Description** — these sections, in this order:
+
+```
+## As-is
+현재 상태. 관찰된 동작, 에러 메시지, 수치.
+
+## To-be
+어떻게 수정·구현할지. 완료 여부를 확인할 수 있는 결과로.
+
+## 재현 방법
+1. ...
+2. ...
+기대: ... / 실제: ...
+
+## 참고자료
+- 링크, 로그, 스크린샷, 관련 이슈 (MOLE-123)
+```
+
+* As-is, To-be: always required.
+* 재현 방법: required for bugs. Omit when nothing to reproduce (features, chores).
+* 참고자료: omit when empty. Never write "없음".
+* To-be must be checkable. No "빠르게", "깔끔하게", "개선" alone — state observable behavior or a number.
+* Write for people: short sentences, one term per concept. Agent-only detail (file lists, implementation plan, raw logs) goes in a collapsible block at the end:
+
+```
++++ Agent notes
+
+...
+
++++
+```
+
+## Comment format
+
+One comment, one purpose. Don't restate the description. Lead with the prefix:
+
+```
+Plan:
+1. ...
+2. ...
+검증: <how To-be will be confirmed>
+```
+
+```
+Done: <what changed, 1–3 lines, measured against To-be>
+검증: <test/command run and result>
+Commit: a1b2c3d · PR: <link>
+```
+
+```
+BLOCKED: <cause>
+필요: <what is needed, from whom>
+```
+
+* Status-change comments (Plan / Done / BLOCKED) use these templates exactly.
+* Code, logs, diffs → `+++ Agent notes` block or a link, not the comment body.
 
 ## Example
 
+Send real newlines in `description` / `body`, never `\n` escapes.
+
 ```
 list_issues(project="my-project", state="Todo", assignee="me")
-save_issue(team="STEATLHMOLE", project="my-project", title="Add authentication", priority=3, assignee="me", labels=["backend"])
-save_comment(issueId="MOLE-123", body="Plan: ...")
+save_issue(team="STEALTHMOLE", project="my-project", title="만료 토큰으로 로그인 시 500 에러 수정", priority=3, assignee="me", labels=["backend"], description=<Issue format>)
+save_comment(issueId="MOLE-123", body=<Plan: template>)
 save_issue(id="MOLE-123", state="In Progress")
-save_comment(issueId="MOLE-123", body="Done: ... (commit a1b2c3d, PR #45)")
+save_comment(issueId="MOLE-123", body=<Done: template>)
 ```
