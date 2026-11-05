@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 9개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.1.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.1.1` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -26,12 +26,13 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 
 #### Step 1·2 — Plugin 선택·설치 (`scripts/install_plugins.py`)
 
-필수 2개는 항상, 선택 10개는 init 때 고른 것만 설치합니다. 선택은 `~/.claude/.jin-claude-plugins.json` 에 저장돼 재실행·preflight 가 따르고, 선택 해제한 플러그인은 제거하지 않고 알리기만 합니다. 필요한 marketplace 만 추가하며, `claude plugin` CLI 가 settings.json 을 다시 쓰며 지우는 키(hook group 의 `_gstack_source`, marketplace `autoUpdate`)는 실행 후 되살립니다. 목록 단일 출처: `preflight.py` 의 `CORE_PLUGINS`·`OPTIONAL_PLUGINS`·`EXPECTED_MARKETPLACES`.
+필수 3개는 항상, 선택 9개는 init 때 고른 것만 설치합니다. 선택은 `~/.claude/.jin-claude-plugins.json` 에 저장돼 재실행·preflight 가 따르고, 선택 해제한 플러그인은 제거하지 않고 알리기만 합니다. 필요한 marketplace 만 추가하며, `claude plugin` CLI 가 settings.json 을 다시 쓰며 지우는 키(hook group 의 `_gstack_source`, marketplace `autoUpdate`)는 실행 후 되살립니다. 목록 단일 출처: `preflight.py` 의 `CORE_PLUGINS`·`OPTIONAL_PLUGINS`·`EXPECTED_MARKETPLACES`.
 
 | Plugin | Marketplace | 구분 | 용도 |
 |--------|-------------|------|------|
 | `context-mode` | `context-mode` | 필수 | 큰 출력을 sandbox·인덱스로 보냄 (컨텍스트 보호) |
 | `serena` | `claude-plugins-official` | 필수 | 시맨틱 코드 검색·편집 MCP |
+| `i-have-adhd` | `i-have-adhd` | 필수 | ADHD 친화 출력 (다음 행동 먼저, 번호 단계) — 팀 출력 형식 표준 |
 | `context7` | `claude-plugins-official` | 선택 | 라이브러리 최신 문서 조회 MCP (claude.ai Context7 커넥터가 있으면 불필요) |
 | `pyright-lsp` | `claude-plugins-official` | 선택 | Python 타입 검사 LSP |
 | `code-simplifier` | `claude-plugins-official` | 선택 | 코드 단순화 agent |
@@ -40,7 +41,6 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 | `ui-ux-pro-max` | `ui-ux-pro-max-skill` | 선택 | UI/UX 디자인 DB (스타일·팔레트·폰트) |
 | `browser-use` | `claude-plugins-official` | 선택 | 실제 Chrome 제어 (자동화·스크린샷) |
 | `html-plan` | `claude-community` | 선택 | 구현 계획을 인터랙티브 HTML 한 장으로 |
-| `i-have-adhd` | `i-have-adhd` | 선택 | ADHD 친화 출력 (다음 행동 먼저, 번호 단계) |
 | `typesafe` | `typesafe-ai` | 선택 | TypeSafe System One API 스킬 |
 
 | Marketplace ID | 출처 |

@@ -41,7 +41,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py" --snapshot ~/.claude/set
 
 같은 질문에서 사용량 수집 주기도 받는다: 1분 / 3분 / **5분(권장)** / 10분 → `INTERVAL` (기본 5).
 
-이어서 **선택 플러그인**을 묻는다 (별도 AskUserQuestion). Step 0 출력의 `optional_plugins` 를 4개씩 나눠 multiSelect 질문으로 만든다 (질문당 option 최대 4개). 각 option 은 label = plugin 이름(`@` 앞), description = `description`. `selected: true` 인 항목을 기본 추천으로 표시한다. 필수(`context-mode`, `serena`)는 묻지 않고 항상 설치한다고 알린다. 고른 ID 를 쉼표로 이어 `SELECT` 로 둔다 (아무것도 안 고르면 빈 문자열).
+이어서 **선택 플러그인**을 묻는다 (별도 AskUserQuestion). Step 0 출력의 `optional_plugins` 를 4개씩 나눠 multiSelect 질문으로 만든다 (질문당 option 최대 4개). 각 option 은 label = plugin 이름(`@` 앞), description = `description`. `selected: true` 인 항목을 기본 추천으로 표시한다. 필수(`context-mode`, `serena`, `i-have-adhd`)는 묻지 않고 항상 설치한다고 알린다. 고른 ID 를 쉼표로 이어 `SELECT` 로 둔다 (아무것도 안 고르면 빈 문자열).
 
 ## Step 2 — Marketplace·Plugin 설치
 

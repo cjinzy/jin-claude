@@ -17,10 +17,11 @@ CLAUDE_DIR = Path.home() / ".claude"
 SETTINGS_PATH = CLAUDE_DIR / "settings.json"
 
 # Step 2 설치 대상 단일 출처 (install_plugins.py 가 사용). ID 형식 = enabledPlugins 키 (plugin@marketplace).
-# 필수: 배포 CLAUDE.md·mcp-servers.md 가 전제 → 항상 설치.
+# 필수: 배포 CLAUDE.md·mcp-servers.md 가 전제하거나 팀 표준 → 항상 설치.
 CORE_PLUGINS = [
     "context-mode@context-mode",
     "serena@claude-plugins-official",
+    "i-have-adhd@i-have-adhd",  # 팀 출력 형식 표준
 ]
 # 선택: init 때 사용자가 고른다 (Step 1). 값 = 질문에 보여줄 설명.
 OPTIONAL_PLUGINS: dict[str, str] = {
@@ -32,7 +33,6 @@ OPTIONAL_PLUGINS: dict[str, str] = {
     "ui-ux-pro-max@ui-ux-pro-max-skill": "UI/UX 디자인 DB (스타일·팔레트·폰트)",
     "browser-use@claude-plugins-official": "실제 Chrome 제어 (자동화·스크린샷)",
     "html-plan@claude-community": "구현 계획을 인터랙티브 HTML 한 장으로",
-    "i-have-adhd@i-have-adhd": "ADHD 친화 출력 (다음 행동 먼저, 번호 단계)",
     "typesafe@typesafe-ai": "TypeSafe System One API 스킬",
 }
 EXPECTED_PLUGINS = CORE_PLUGINS + list(OPTIONAL_PLUGINS)
