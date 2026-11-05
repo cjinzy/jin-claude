@@ -19,6 +19,7 @@ HOOKS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "hooks"
 sys.path.insert(0, str(HOOKS_DIR))
 
 from keyword_detector import KEYWORDS, main as keyword_main
+from ambition_plan import ASK, LOAD, context_for, main as ambition_main
 from session_init import LEGACY_SKILLS, auto_update, ensure_timer, main as session_main, retire_legacy_skills
 
 
@@ -265,6 +266,39 @@ class TestRetireLegacySkills:
         assert LEGACY_SKILLS == {"jin-claude-init", "jin-commit", "jin-interview", "manage-skills", "verify-implementation"}
 
 
+class TestAmbitionPlan:
+    """UserPromptSubmit: plan 모드면 ambition 여부를 묻게 하고, 프롬프트에 ambition 이 있으면 묻지 않고 3개 스킬 로드."""
+
+    @pytest.mark.parametrize("mode", ["plan", "default", "auto"])
+    def test_keyword_loads_without_asking(self, mode: str) -> None:
+        assert context_for("이번 계획은 Ambition 으로", mode) == LOAD
+        assert context_for("앰비션 모드로 계획", mode) == LOAD
+
+    def test_plan_mode_asks(self) -> None:
+        assert context_for("로그인 기능 계획 세워줘", "plan") == ASK
+
+    def test_other_modes_silent(self) -> None:
+        assert context_for("로그인 기능 만들어줘", "default") is None
+
+    def test_load_names_all_skills(self) -> None:
+        for name in ("jin-claude:jin-altitude", "jin-claude:jin-depth", "jin-claude:jin-range", "## Ambition"):
+            assert name in LOAD and name in ASK
+
+    def test_main_emits_additional_context(self, capsys: pytest.CaptureFixture) -> None:
+        payload = json.dumps({"prompt": "계획", "permission_mode": "plan", "hook_event_name": "UserPromptSubmit"})
+        with patch("sys.stdin.read", return_value=payload):
+            ambition_main()
+        out = json.loads(capsys.readouterr().out)
+        assert out["hookSpecificOutput"] == {"hookEventName": "UserPromptSubmit", "additionalContext": ASK}
+
+    @pytest.mark.parametrize("raw", ["", "not json", json.dumps({"prompt": "x", "permission_mode": "default"})])
+    def test_main_silent_never_blocks(self, raw: str, capsys: pytest.CaptureFixture) -> None:
+        """잘못된 입력·대상 아님 → 출력 없음, 예외 없음 (프롬프트를 막지 않는다)."""
+        with patch("sys.stdin.read", return_value=raw):
+            ambition_main()
+        assert capsys.readouterr().out == ""
+
+
 class TestHooksManifest:
     """Claude Code 가 실제로 읽는 위치(플러그인 루트 hooks/hooks.json)에 등록됐는지 검증."""
 
@@ -272,9 +306,12 @@ class TestHooksManifest:
         assert MANIFEST.is_file()
         assert not (PLUGIN_DIR / ".claude-plugin" / "hooks" / "hooks.json").exists()
 
-    def test_only_session_start_registered(self) -> None:
+    def test_registered_events(self) -> None:
         hooks = json.loads(MANIFEST.read_text())["hooks"]
-        assert set(hooks) == {"SessionStart"}
+        assert set(hooks) == {"SessionStart", "UserPromptSubmit"}
+        cmd = hooks["UserPromptSubmit"][0]["hooks"][0]["command"]
+        assert "${CLAUDE_PLUGIN_ROOT}/hooks/ambition_plan.py" in cmd
+        assert (HOOKS_DIR / "ambition_plan.py").is_file()
 
     def test_session_start_uses_plugin_root(self) -> None:
         """${CLAUDE_PLUGIN_ROOT} 경로 → 플러그인 업데이트만으로 훅 코드가 배포된다."""

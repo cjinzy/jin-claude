@@ -1,7 +1,7 @@
 # jin-claude
 
-> Team-standard skills & hooks for Claude Code — **9 skills · 1 hook**
-> Version: **5.1.1** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Team-standard skills & hooks for Claude Code — **12 skills · 2 hooks**
+> Version: **5.2.0** · License: MIT · Marketplace: `jin-claudecode-mp`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
@@ -39,7 +39,7 @@ plugins/jin-claude/
 |------|---------|-------------|
 | `jin-codex-side` | `jin codex` | Codex CLI 로 독립 second opinion (review / challenge / consult) |
 
-### Spec & Commit (2)
+### Spec & Commit (3)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
@@ -47,13 +47,21 @@ plugins/jin-claude/
 | `mole-linear` | `linear`, `이슈 등록`, `MOLE-` | STEALTHMOLE Linear issue/comment work with team format rules |
 | `jin-commit` | `jin commit`, `commit` | Gitmoji 기반 커밋 메시지 자동 추천 및 생성 |
 
+### Ambition Planning (3)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `jin-altitude` | plan 모드 ambition, `ambition` | 작업 너머의 결과를 맡기고 사람 없이 유지할 전제조건 점검 |
+| `jin-depth` | plan 모드 ambition, `ambition` | 최고 전문가의 원자료·방법·외부 판정으로 깊게 |
+| `jin-range` | plan 모드 ambition, `ambition` | 동사 재서술 → 다른 분야 기법 + red team |
+
 ### Code Quality (1)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
 | `jin-cleanser` | `jin cleanser`, `jin deslop` | AI 생성 코드 슬롭 리뷰어 — 불필요 코멘트/과잉 에러 처리/미사용 임포트 탐지 |
 
-### Knowledge & Discovery (3)
+### Knowledge & Discovery (2)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
@@ -66,11 +74,6 @@ plugins/jin-claude/
 |------|---------|-------------|
 | `jin-claude-init` | `jin init`, `초기화`, `환경 세팅` | 팀원 Claude Code 환경 초기화 — plugin 설치/settings/MCP/hooks/skills 동기화 |
 
-### Behavioral Guidelines (1)
-
-| Slug | Trigger | Description |
-|------|---------|-------------|
-
 ### Meta (1)
 
 | Slug | Trigger | Description |
@@ -79,13 +82,14 @@ plugins/jin-claude/
 
 ---
 
-## Hooks (1)
+## Hooks (2)
 
 `hooks/hooks.json` 에 등록 — Claude Code 는 플러그인 루트의 이 파일만 로드한다.
 
 | File | Event | Role |
 |------|-------|------|
 | `hooks/session_init.py` | `SessionStart` | 구버전 `~/.claude/skills` 사본 백업 이동 + 사용량 타이머 유실 시 재등록 + marketplace 저장소 자동 업데이트 |
+| `hooks/ambition_plan.py` | `UserPromptSubmit` | plan 모드면 ambition 계획 여부 질문 지시, 프롬프트에 `ambition`/`앰비션` 이 있으면 묻지 않고 jin-altitude·jin-depth·jin-range 로드 지시 |
 
 > `hooks/keyword_detector.py` 는 미등록 상태(출력 형식이 hook 규격과 다름). 키워드 테이블은 상단 `KEYWORDS` dict.
 

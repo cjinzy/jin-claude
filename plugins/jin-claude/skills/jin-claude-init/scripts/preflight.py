@@ -66,7 +66,7 @@ def marketplaces_for(plugins: list[str]) -> list[str]:
     return [m for m in EXPECTED_MARKETPLACES if m in needed]
 
 
-HOOK_TYPES = ["SessionStart"]
+HOOK_TYPES = ["SessionStart", "UserPromptSubmit"]
 
 # context-mode는 Step 2의 플러그인이 자동 제공 (plugin:context-mode:context-mode)
 # 현재는 standalone으로 설치할 추가 MCP 서버가 없다.

@@ -1,8 +1,8 @@
 # jin-claude
 
-Claude Code 팀 표준 환경 플러그인. 9개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
+Claude Code 팀 표준 환경 플러그인. 12개 스킬, 2개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.1.1` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.2.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -74,11 +74,12 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 
 #### Step 5 — Hook 검증
 
-`plugins/jin-claude/hooks/hooks.json`(플러그인 루트 — Claude Code 로드 위치)에 SessionStart hook 1개가 등록됩니다. 플러그인 캐시에서 직접 실행되므로 플러그인 업데이트만으로 배포됩니다.
+`plugins/jin-claude/hooks/hooks.json`(플러그인 루트 — Claude Code 로드 위치)에 hook 2개(SessionStart, UserPromptSubmit)가 등록됩니다. 플러그인 캐시에서 직접 실행되므로 플러그인 업데이트만으로 배포됩니다.
 
 | Hook Event | 실행 명령 | 역할 |
 |------------|-----------|------|
 | `SessionStart` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session_init.py"` | 구버전 `~/.claude/skills` 사본 백업 이동 + 사용량 타이머 유실 시 재등록 + marketplace 자동 업데이트 |
+| `UserPromptSubmit` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/ambition_plan.py"` | plan 모드면 ambition 계획 여부를 묻게 하고, 프롬프트에 `ambition`/`앰비션` 이 있으면 묻지 않고 jin-altitude·jin-depth·jin-range 로드 |
 
 #### Step 6 — 검증 및 완료 보고
 
@@ -86,7 +87,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 
 ---
 
-## 스킬 (9개)
+## 스킬 (12개)
 
 ### 핵심 워크플로우
 
@@ -96,6 +97,9 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 | `jin-commit` | gitmoji 기반 커밋 메시지 추천 |
 | `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
 | `mole-linear` | STEALTHMOLE 팀 Linear 이슈·댓글 작업 (As-is/To-be 양식, Plan/Done/BLOCKED 댓글) |
+| `jin-altitude` | Ambition 계획: 작업 너머의 결과를 맡기고, 사람 없이 유지할 전제조건 점검 |
+| `jin-depth` | Ambition 계획: 최고 전문가의 원자료·방법·외부 판정으로 깊게 |
+| `jin-range` | Ambition 계획: 동사 재서술 → 다른 분야 기법 + red team (역할극 금지) |
 | `jin-sot-create` | SoT 문서셋 생성 — 세부항목별 파일 + fact ID 인용 + Index 생성기 + drift 검증 |
 
 ### 코드 품질 & 분석
@@ -241,10 +245,13 @@ jin-claude/
 │       ├── skills/                      # 스킬
 │       │   ├── jin-claude-init/
 │       │   ├── jin-cleanser/
+│       │   ├── jin-altitude/
 │       │   ├── jin-codex-side/
+│       │   ├── jin-depth/
 │       │   ├── jin-commit/
 │       │   ├── jin-deepinit/
 │       │   ├── jin-interview/
+│       │   ├── jin-range/
 │       │   ├── mole-linear/
 │       │   ├── jin-sot-create/
 │       │   └── manage-skills/

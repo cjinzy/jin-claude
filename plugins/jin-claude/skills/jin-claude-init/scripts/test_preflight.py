@@ -137,11 +137,11 @@ class TestCheckHooks:
         (hooks_dir / "hooks.json").write_text(json.dumps({"hooks": hooks}))
 
     def test_session_start_from_plugin_cache(self, tmp_path: Path) -> None:
-        """플러그인 루트 hooks/hooks.json 에 SessionStart 가 있으면 installed=1."""
-        self._write_manifest(tmp_path, "4.1.2", {"SessionStart": [{}]})
+        """플러그인 루트 hooks/hooks.json 에 등록된 event 를 센다."""
+        self._write_manifest(tmp_path, "4.1.2", {"SessionStart": [{}], "UserPromptSubmit": [{}]})
         with patch("preflight.CLAUDE_DIR", tmp_path):
             result = check_hooks({})
-        assert result == {"installed": 1, "total": 1, "missing": []}
+        assert result == {"installed": 2, "total": 2, "missing": []}
 
     def test_legacy_location_not_counted(self, tmp_path: Path) -> None:
         """Claude Code 가 읽지 않는 .claude-plugin/hooks/hooks.json 은 설치로 보지 않는다."""
@@ -162,7 +162,7 @@ class TestCheckHooks:
         """hooks가 어디에도 없으면 installed=0."""
         with patch("preflight.CLAUDE_DIR", Path("/nonexistent")):
             result = check_hooks({})
-        assert result == {"installed": 0, "total": 1, "missing": ["SessionStart"]}
+        assert result == {"installed": 0, "total": 2, "missing": ["SessionStart", "UserPromptSubmit"]}
 
 
 class TestDetermineRecommendation:
