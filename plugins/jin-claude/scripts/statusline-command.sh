@@ -40,6 +40,7 @@ current_dir_path=$(echo "$input" | grep -o '"current_dir":"[^"]*"' | sed 's/"cur
 current_dir=$(basename "$current_dir_path")
 model_name=$(echo "$input" | jq -r '.model.display_name // empty' 2>/dev/null)
 app_version=$(echo "$input" | jq -r '.version // empty' 2>/dev/null)
+effort_level=$(echo "$input" | jq -r '.effort.level // empty' 2>/dev/null)
 context_used=$(echo "$input" | jq -r '.context_window.used_percentage // empty' 2>/dev/null)
 cache_read=$(echo "$input" | jq -r '.context_window.current_usage.cache_read_input_tokens // empty' 2>/dev/null)
 BLUE=$'\033[0;34m'
@@ -73,6 +74,9 @@ fi
 
 model_text=""
 [ -n "$model_name" ] && model_text="${CYAN}${model_name}${RESET}"
+
+effort_text=""
+[ -n "$effort_level" ] && effort_text="${YELLOW}${effort_level}${RESET}"
 
 version_text=""
 [ -n "$app_version" ] && version_text="${MAGENTA}v${app_version}${RESET}"
@@ -238,7 +242,7 @@ fi
 
 separator="${GRAY} │ ${RESET}"
 
-# Line 1: dir │ branch │ model │ version
+# Line 1: dir │ branch │ model │ effort │ version
 line1=""
 [ -n "$dir_text" ] && line1="${dir_text}"
 
@@ -250,6 +254,11 @@ fi
 if [ -n "$model_text" ]; then
   [ -n "$line1" ] && line1="${line1}${separator}"
   line1="${line1}${model_text}"
+fi
+
+if [ -n "$effort_text" ]; then
+  [ -n "$line1" ] && line1="${line1}${separator}"
+  line1="${line1}${effort_text}"
 fi
 
 if [ -n "$version_text" ]; then

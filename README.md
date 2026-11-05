@@ -156,7 +156,7 @@ claude plugin install autoresearch@autoresearch
 Claude Code 상태 표시줄에 세션 정보, 컨텍스트, API 사용량을 실시간 표시합니다.
 
 ```
-claude │ ⎇ master │ Opus │ v1.0
+claude │ ⎇ master │ Opus │ high │ v1.0
 ctx: 50% │ cache: 1.0K │ 7D: 36% →1D/18H CHILL │ Fable: 20% →1D/18H
 ```
 
@@ -167,6 +167,7 @@ ctx: 50% │ cache: 1.0K │ 7D: 36% →1D/18H CHILL │ Fable: 20% →1D/18H
 | 1 | 디렉토리 | 현재 작업 디렉토리명 |
 | 1 | 브랜치 | 현재 git 브랜치 |
 | 1 | 모델 | 사용 중인 Claude 모델 |
+| 1 | effort | reasoning effort 레벨 (low~max) |
 | 1 | 버전 | Claude Code 버전 |
 | 2 | ctx | 컨텍스트 윈도우 사용률 (%) |
 | 2 | cache | 캐시 읽기 토큰 수 |

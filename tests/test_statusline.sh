@@ -170,6 +170,16 @@ else
   fail "Line 2 missing 7D/Fable or has 5H: $fable_line2"
 fi
 
+# Test 16: Line 1 order is model │ effort │ version
+TEST_HOME=$(mktemp -d)
+effort_line1=$(echo '{"current_dir":"/test","model":{"display_name":"Opus"},"effort":{"level":"high"},"version":"1.0"}' | HOME="$TEST_HOME" bash "$SCRIPT" 2>/dev/null | sed -n 1p)
+rm -rf "$TEST_HOME"
+if echo "$effort_line1" | grep -q "Opus.*│.*high.*│.*v1.0"; then
+  pass "Line 1 shows model | effort | version"
+else
+  fail "Line 1 missing effort between model and version: $effort_line1"
+fi
+
 echo ""
 echo "Results: $passed passed, $failed failed"
 [ "$failed" -eq 0 ] && exit 0 || exit 1
