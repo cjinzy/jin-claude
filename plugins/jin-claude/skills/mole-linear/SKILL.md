@@ -1,8 +1,15 @@
-# Linear (MCP)
+---
+name: mole-linear
+description: STEALTHMOLE(MOLE) 팀 규칙에 맞춰 Linear 이슈를 조회·생성·갱신하고 댓글을 단다 — 제목·As-is/To-be 본문 양식, Plan/Done/BLOCKED 댓글 템플릿, 상태 전환, 다음 agent 인계용 Agent notes. Linear 이슈 검색·생성·수정·상태 변경·댓글 작성, MOLE-123 같은 이슈 작업, 남은 작업·다음 작업 확인 등 Linear 를 다루는 모든 작업 전에 사용한다. "linear", "이슈 등록", "이슈 생성", "이슈 댓글", "MOLE-".
+---
 
-Issue tracking for this project. Always check Linear before starting work.
+# mole-linear
+
+Linear work for team STEALTHMOLE. Load this before any Linear tool call and follow it to the end of the task.
 
 ## Tools
+
+Linear MCP tools. Names below are the tool part; the prefix depends on how Linear is connected (e.g. `mcp__claude_ai_Linear__list_issues` for the claude.ai connector). If no Linear tools are available, tell the user to connect Linear and stop.
 
 * `list_issues` — filter by project / state / assignee (`me`)
 * `get_issue` — issue incl. sub-issues, `gitBranchName` (no comments)

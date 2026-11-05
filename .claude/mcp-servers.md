@@ -8,7 +8,7 @@ Tool names below are the tool part only. The full name depends on how the server
 | Code structure, symbol lookup, refactoring | Serena | call its instructions tool first; use what it exposes | init (plugin `serena`) |
 | Library / API docs before using an unfamiliar API | Context7 | `resolve-library-id` → `query-docs` | init (plugin `context7`) |
 | Output over 20 lines, logs, big JSON, fetching URLs | context-mode | `ctx_execute`, `ctx_batch_execute`, `ctx_fetch_and_index`, `ctx_search` | init (plugin `context-mode`) |
-| Issue tracking | Linear | rules: @mcp-linear.md | claude.ai connector (per account) |
+| Issue tracking | Linear | invoke the `mole-linear` skill first | claude.ai connector (per account) |
 | Code search by meaning | Semble | `search`, `find_related` | personal |
 | Long-term memory | Hindsight | `retain`, `recall` — rules: @memory-routing.md | personal |
 | Browser automation, UI testing | Playwright | `browser_navigate`, `browser_snapshot`, `browser_click`, … | personal |

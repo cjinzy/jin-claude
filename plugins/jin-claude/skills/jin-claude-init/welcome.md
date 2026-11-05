@@ -7,6 +7,7 @@
 | 스킬 | 키워드 | 설명 |
 |------|--------|------|
 | jin-interview | `jin interview` | 상세 인터뷰 후 스펙 작성 |
+| mole-linear | Linear 작업 시 자동 | 팀 규칙대로 Linear 이슈·댓글 작성 |
 | jin-sot-create | `jin sot` | SoT 문서셋 생성·검증 |
 | jin-deepinit | `jin deepinit` | 프로젝트 분석 후 AGENTS.md 생성 |
 | jin-codex-side | `jin codex` | Codex CLI 세컨드 오피니언 (review / challenge / consult) |

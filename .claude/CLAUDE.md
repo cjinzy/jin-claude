@@ -33,4 +33,6 @@ Complete tasks in this order: deploy(execute) → verify → jin-commit.
 SoT lives in `sot/` (entry point `sot/Index.md`), managed locally and excluded from Git via .gitignore. Create and maintain it with the `jin-sot-create` skill, which defines the categories and file layout.
 
 ## Issue Management
-Use Linear for tracking; follow @mcp-linear.md.
+- Use Linear for tracking.
+- Before any Linear work (searching, creating or updating issues, comments, status changes), invoke the `mole-linear` skill and follow it.
+- Never create labels/statuses, never delete issues.

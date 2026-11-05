@@ -1,7 +1,7 @@
 {
   "name": "jin-claude",
   "version": "5.0.0",
-  "description": "Team-standard skills & hooks for Claude Code: 8 skills, lifecycle hooks, keyword routing, statusline",
+  "description": "Team-standard skills & hooks for Claude Code: 9 skills, lifecycle hooks, keyword routing, statusline",
   "author": {
     "name": "jin",
     "email": "jin@stealthmole.com"

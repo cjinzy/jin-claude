@@ -1,6 +1,6 @@
 # jin-claude
 
-> Team-standard skills & hooks for Claude Code — **8 skills · 1 hook**
+> Team-standard skills & hooks for Claude Code — **9 skills · 1 hook**
 > Version: **5.0.0** · License: MIT · Marketplace: `jin-claudecode-mp`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
@@ -31,7 +31,7 @@ plugins/jin-claude/
 
 ---
 
-## Skills (8)
+## Skills (9)
 
 ### Analysis (1)
 
@@ -44,6 +44,7 @@ plugins/jin-claude/
 | Slug | Trigger | Description |
 |------|---------|-------------|
 | `jin-interview` | — | In-depth interview to create a detailed spec |
+| `mole-linear` | `linear`, `이슈 등록`, `MOLE-` | STEALTHMOLE Linear issue/comment work with team format rules |
 | `jin-commit` | `jin commit`, `commit` | Gitmoji 기반 커밋 메시지 자동 추천 및 생성 |
 
 ### Code Quality (1)

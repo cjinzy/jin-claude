@@ -22,7 +22,6 @@ CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jin-claudecode-mp"
 # CLAUDE.md 가 @include 하는 보조 문서. 함께 복사하지 않으면 참조가 깨진다.
 CLAUDE_INCLUDES = (
     "mcp-servers.md",
-    "mcp-linear.md",
     "memory-routing.md",
     "backend-spec.md",
     "frontend-spec.md",
