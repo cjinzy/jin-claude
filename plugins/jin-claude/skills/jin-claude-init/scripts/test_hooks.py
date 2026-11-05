@@ -67,7 +67,7 @@ class TestKeywordDetector:
 
     def test_removed_skills_not_mapped(self) -> None:
         """제거된 스킬로 라우팅하는 키워드가 없다."""
-        removed = {"jin-gcc", "jin-chub", "verify-implementation"}
+        removed = {"jin-gcc", "jin-chub", "verify-implementation", "jin-suggest", "guidelines"}
         assert not removed & set(KEYWORDS.values())
 
     def test_jin_korean_keyword(self) -> None:

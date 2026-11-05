@@ -5,14 +5,14 @@
     "email": "jin@stealthmole.com"
   },
   "metadata": {
-    "description": "Team-standard skills & hooks for Claude Code: 10 skills, lifecycle hooks, keyword routing, statusline",
+    "description": "Team-standard skills & hooks for Claude Code: 8 skills, lifecycle hooks, keyword routing, statusline",
     "version": "5.0.0"
   },
   "plugins": [
     {
       "name": "jin-claude",
       "source": "./plugins/jin-claude",
-      "description": "Team-standard skills & hooks for Claude Code: 10 skills, lifecycle hooks, keyword routing, statusline",
+      "description": "Team-standard skills & hooks for Claude Code: 8 skills, lifecycle hooks, keyword routing, statusline",
       "version": "5.0.0",
       "author": {
         "name": "jin",
@@ -29,7 +29,6 @@
         "codex",
         "cleanser",
         "deepinit",
-        "guidelines",
         "sot",
         "commit",
         "interview"

@@ -192,3 +192,29 @@ class TestInstallTimer:
 
         mock_run.side_effect = OSError("permission denied")
         install_timer(tmp_path)
+
+
+REPO_CLAUDE_DIR = Path(__file__).resolve().parents[5] / ".claude"
+
+
+class TestClaudeIncludes:
+    """배포 CLAUDE.md 가 @include 하는 문서 집합 == sync 대상 (깨진 참조·고아 파일 방지)."""
+
+    def _referenced(self) -> set[str]:
+        import re
+
+        seen, todo = set(), ["CLAUDE.md"]
+        while todo:
+            text = (REPO_CLAUDE_DIR / todo.pop()).read_text()
+            for name in re.findall(r"@([\w.-]+\.md)", text):
+                if name not in seen:
+                    seen.add(name)
+                    todo.append(name)
+        return seen
+
+    def test_includes_match_references(self) -> None:
+        assert set(sync_repo.CLAUDE_INCLUDES) == self._referenced()
+
+    def test_includes_exist(self) -> None:
+        missing = [n for n in sync_repo.CLAUDE_INCLUDES if not (REPO_CLAUDE_DIR / n).is_file()]
+        assert not missing

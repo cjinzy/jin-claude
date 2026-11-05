@@ -6,11 +6,9 @@
 
 | 스킬 | 키워드 | 설명 |
 |------|--------|------|
-| jin-suggest | `jin suggest` | 상황에 맞는 jin 스킬 추천 |
 | jin-interview | `jin interview` | 상세 인터뷰 후 스펙 작성 |
 | jin-sot-create | `jin sot` | SoT 문서셋 생성·검증 |
 | jin-deepinit | `jin deepinit` | 프로젝트 분석 후 AGENTS.md 생성 |
-| guidelines | `guidelines` | LLM 코딩 행동 지침 (최소 변경) |
 | jin-codex-side | `jin codex` | Codex CLI 세컨드 오피니언 (review / challenge / consult) |
 | jin-cleanser | `jin cleanser` | AI 코드 슬롭 리포트 |
 | manage-skills | `/jin-claude:manage-skills` | verify-* 검증 스킬 관리 |

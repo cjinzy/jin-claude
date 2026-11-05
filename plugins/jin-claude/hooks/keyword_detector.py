@@ -32,12 +32,6 @@ KEYWORDS = {
     "cleanser": "jin-cleanser",
     "jin deslop": "jin-cleanser",
     "deslop": "jin-cleanser",
-    # Phase 4: Suggest
-    "jin suggest": "jin-suggest",
-    "suggest": "jin-suggest",
-    "추천": "jin-suggest",
-    "뭐 써야": "jin-suggest",
-    "어떤 스킬": "jin-suggest",
     # Phase 6: SoT (substring 충돌 방지 — bare "sot" 미등록)
     "jin sot": "jin-sot-create",
     "sot create": "jin-sot-create",

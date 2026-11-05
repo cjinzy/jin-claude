@@ -1,5 +1,7 @@
 # Memory Routing (Hindsight First)
 
+**Applies only when the Hindsight MCP tools are available.** Without them, file-based memory is the only store — skip every Hindsight step below.
+
 Persistent memory uses a per-project Hindsight bank as the Primary (Source of Truth), with file-based memory acting as a Mirror/Backup. Storage, recall, and conflict resolution always prioritize Hindsight, mirroring one-way (Hindsight → File) to prevent drift.
 
 - **bank_id Convention**: Current git repo basename (e.g., `/Users/x/git/4kd` → `4kd`); if outside git, use the working directory basename. Auto-generate with `mcp__hindsight__create_bank` if missing (do not mix with the generic `hermes` bank — isolate per project). If the project CLAUDE.md specifies a bank binding, that takes precedence.

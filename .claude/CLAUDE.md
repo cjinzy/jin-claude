@@ -30,29 +30,7 @@ Complete tasks in this order: deploy(execute) → verify → jin-commit.
 @memory-routing.md
 
 ## SoT (Source of Truth)
-SoT is managed locally and excluded from Git via .gitignore.
-
-Structure:
-- Root: sot/ directory
-- Index: sot/Index.md (links to all entries)
-- Content: Split by category into subdirectories with individual .md files.
-
-Categories:
-1. Project Overview — What this project is, purpose, goals
-2. Tech Stack — Backend (@backend-spec.md), Frontend (@frontend-spec.md), Database, Infrastructure
-3. Database Schema — Table definitions, column specs, ER diagrams
-4. Architecture — Components, layers, data flow, API contracts
-5. Workflow — How components interact, business logic flow, user journey, system behavior
-6. Design — Design rules: visual language, layout, components, accessibility. Tokens live in root DESIGN.md (tracked); sot/design/ cites it, never copies
-7. Rules — Coding standards, naming conventions, commit rules (see jin-commit skill)
-
-Create subdirectories under sot/ for each category (e.g., sot/architecture/). Store details in separate .md files. List all files in sot/Index.md.
+SoT lives in `sot/` (entry point `sot/Index.md`), managed locally and excluded from Git via .gitignore. Create and maintain it with the `jin-sot-create` skill, which defines the categories and file layout.
 
 ## Issue Management
-- Use Linear for tracking.
-- Check for existing issues. Create one if none exists.
-- When creating, fill in project, priority, assign, and label.
-- When planning, set status to plan and write the plan.
-- When working, set status to in progress.
-- When done, write a summary, set status to done, and set a due date.
-- If no project exists, ask the user whether to create one or which project to use.
+Use Linear for tracking; follow @mcp-linear.md.

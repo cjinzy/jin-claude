@@ -1,6 +1,6 @@
 # jin-claude
 
-Claude Code 팀 표준 환경 플러그인. 10개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
+Claude Code 팀 표준 환경 플러그인. 8개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
 > **현재 버전**: `5.0.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
@@ -116,7 +116,7 @@ claude plugin install autoresearch@autoresearch
 
 ---
 
-## 스킬 (10개)
+## 스킬 (8개)
 
 ### 핵심 워크플로우
 
@@ -125,7 +125,6 @@ claude plugin install autoresearch@autoresearch
 | `jin-claude-init` | 팀원 환경 초기화 자동화 |
 | `jin-commit` | gitmoji 기반 커밋 메시지 추천 |
 | `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
-| `jin-suggest` | 적합한 스킬 추천 |
 | `jin-sot-create` | SoT 문서셋 생성 — 세부항목별 파일 + fact ID 인용 + Index 생성기 + drift 검증 |
 
 ### 코드 품질 & 분석
@@ -141,7 +140,6 @@ claude plugin install autoresearch@autoresearch
 | 스킬 | 설명 |
 |------|------|
 | `manage-skills` | 프로젝트 verify-* 검증 스킬 생성·업데이트 (변경 파일 대비 누락 탐지) |
-| `guidelines` | LLM 코딩 행동 가이드 (Karpathy 기반) |
 
 ---
 
@@ -270,7 +268,6 @@ jin-claude/
 │       ├── .claude-plugin/
 │       │   └── plugin.json              # 플러그인 매니페스트
 │       ├── skills/                      # 스킬
-│       │   ├── guidelines/
 │       │   ├── jin-claude-init/
 │       │   ├── jin-cleanser/
 │       │   ├── jin-codex-side/
@@ -278,7 +275,6 @@ jin-claude/
 │       │   ├── jin-deepinit/
 │       │   ├── jin-interview/
 │       │   ├── jin-sot-create/
-│       │   ├── jin-suggest/
 │       │   └── manage-skills/
 │       ├── scripts/                     # statusline + timer
 │       │   ├── statusline-command.sh    # statusline 렌더러
