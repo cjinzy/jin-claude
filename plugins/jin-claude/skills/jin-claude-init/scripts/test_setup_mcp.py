@@ -6,8 +6,6 @@ MCP 서버 설치/스킵, claude mcp list 파싱을 검증한다.
 import subprocess
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from setup_mcp_and_teams import MCP_SERVERS, get_installed_mcps, setup_mcp_servers
 
 

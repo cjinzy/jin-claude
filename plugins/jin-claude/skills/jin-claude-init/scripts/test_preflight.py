@@ -5,9 +5,7 @@
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from preflight import (
     EXPECTED_MARKETPLACES,
@@ -19,7 +17,6 @@ from preflight import (
     check_statusline,
     check_venv,
     determine_recommendation,
-    run_preflight,
 )
 
 

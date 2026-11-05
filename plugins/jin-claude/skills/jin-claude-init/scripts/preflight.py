@@ -11,28 +11,10 @@ import sys
 import traceback
 from pathlib import Path
 
+from merge_settings import REQUIRED_SETTINGS  # 필수 설정 단일 출처
+
 CLAUDE_DIR = Path.home() / ".claude"
 SETTINGS_PATH = CLAUDE_DIR / "settings.json"
-
-# merge_settings.py와 동일한 필수 설정을 import 시도, 실패 시 인라인 정의
-try:
-    from merge_settings import REQUIRED_SETTINGS
-except ImportError:
-    REQUIRED_SETTINGS: dict = {
-        "env": {"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"},
-        "permissions": {"defaultMode": "plan"},
-        "enableAllProjectMcpServers": True,
-        "statusLine": {
-            "type": "command",
-            "command": "bash ~/.claude/statusline-command.sh",
-        },
-        "outputStyle": "Explanatory",
-        "language": "korean",
-        "skipDangerousModePermissionPrompt": True,
-        "effortLevel": "high",
-        "model": "opus",
-        "advisorModel": "fable",
-    }
 
 EXPECTED_MARKETPLACES = [
     "obsidian-skills",
@@ -216,7 +198,6 @@ def check_mcp_server(name: str) -> bool:
             timeout=30,
         )
         for line in result.stdout.splitlines():
-            raw = line.strip().split(":")[0] if ":" in line else line.strip().split()[0] if line.strip() else ""
             # standalone: "serena: ..." 또는 plugin: "plugin:X:serena: ..."
             if line.strip().startswith(f"{name}:") or f":{name}:" in line:
                 return True

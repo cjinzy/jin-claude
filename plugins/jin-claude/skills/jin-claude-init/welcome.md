@@ -1,24 +1,20 @@
 # jin-claude 환경 초기화 완료!
 
-## 주요 스킬
+## 스킬
 
-| 스킬 | 사용법 | 설명 |
+프롬프트에 키워드를 쓰거나 `/jin-claude:<스킬>` 로 직접 실행한다.
+
+| 스킬 | 키워드 | 설명 |
 |------|--------|------|
-| jin-commit | `jin commit` 또는 `/jin-claude:jin-commit` | gitmoji 커밋 메시지 자동 추천 |
-| jin-interview | `jin interview` 또는 `/jin-claude:jin-interview` | 상세 인터뷰 후 스펙 생성 |
-| guidelines | `/jin-claude:guidelines` | LLM 코딩 행동 가이드 (Karpathy 기반) |
-| verify-implementation | `/jin-claude:verify-implementation` | 구현 검증 |
-| manage-skills | `/jin-claude:manage-skills` | 스킬 관리 |
-| jin-claude-init | `jin init` 또는 `/jin-claude:jin-claude-init` | 환경 재초기화 |
+| jin-suggest | `jin suggest` | 상황에 맞는 jin 스킬 추천 |
+| jin-interview | `jin interview` | 상세 인터뷰 후 스펙 작성 |
+| jin-sot-create | `jin sot` | SoT 문서셋 생성·검증 |
+| jin-deepinit | `jin deepinit` | 프로젝트 분석 후 AGENTS.md 생성 |
+| guidelines | `guidelines` | LLM 코딩 행동 지침 (최소 변경) |
+| jin-codex-side | `jin codex` | Codex CLI 세컨드 오피니언 (review / challenge / consult) |
+| jin-cleanser | `jin cleanser` | AI 코드 슬롭 리포트 |
+| manage-skills | `/jin-claude:manage-skills` | verify-* 검증 스킬 관리 |
+| jin-commit | `jin commit` | gitmoji 커밋 메시지 추천·커밋 |
+| jin-claude-init | `jin init` / `jin 초기화` | 환경 재초기화 |
 
-## Magic Keywords
-
-프롬프트에 아래 키워드를 입력하면 자동으로 해당 스킬이 실행됩니다:
-
-| Keyword | 스킬 |
-|---------|------|
-| `jin init` / `jin 초기화` | jin-claude-init |
-| `jin commit` | jin-commit |
-| `jin interview` | jin-interview |
-
-자세한 내용은 README.md를 참고하세요.
+자세한 내용은 README.md 참고.

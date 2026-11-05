@@ -1,14 +1,18 @@
 """settings.json deep merge 스크립트.
 
-기존 설정을 보존하면서 필수 설정만 추가/갱신한다.
-멱등성 보장: 여러 번 실행해도 결과가 동일하다.
-stdlib만 사용하여 외부 의존성이 없다.
+REQUIRED_SETTINGS 의 키는 기존 값을 덮어쓰고(override), 그 외 키는 보존한다.
+전역 "hooks" 키는 삭제한다 (플러그인 hooks.json 이 관리).
+변경 시 settings_backup_<YYYYMMDD>.json 백업 후 쓰고, 키 단위 diff 를 report_changes 에 기록한다.
+diff 기준은 `report_changes.py --snapshot` 시점(Step 2 plugin 설치 전) 원본, 없으면 현재 파일.
+멱등: 이미 병합된 상태면 파일을 다시 쓰지 않는다. stdlib 만 사용.
 """
 
 import json
 import sys
 import traceback
 from pathlib import Path
+
+from report_changes import diff_dicts, load_baseline, track_write
 
 SETTINGS_PATH = Path.home() / ".claude" / "settings.json"
 
@@ -75,6 +79,14 @@ def merge_settings(settings_path: Path | None = None) -> dict:
     if "hooks" in merged:
         del merged["hooks"]
         print("[merge_settings] 글로벌 설정에서 hooks 제거 (플러그인 hooks.json으로 이관)")
+
+    # 보고는 snapshot 기준 대비, 쓰기는 현재 파일 대비 — Step 2 변경도 보고에 포함.
+    snapped, raw = load_baseline(path)
+    baseline = json.loads(raw or "{}") if snapped else existing
+    track_write(path, merged == baseline, diff_dicts(baseline, merged))
+    if merged == existing:
+        print(f"[merge_settings] 변경 없음: {path}")
+        return merged
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(

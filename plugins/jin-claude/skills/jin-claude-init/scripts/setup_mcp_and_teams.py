@@ -10,7 +10,6 @@ context-mode는 Step 2의 context-mode 플러그인이 자동 제공한다.
 import subprocess
 import sys
 import traceback
-from pathlib import Path
 
 MCP_SERVERS: list[dict] = []
 

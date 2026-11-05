@@ -3,8 +3,10 @@
 import json
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
+import report_changes
 from merge_settings import REQUIRED_SETTINGS, deep_merge, merge_settings
 
 
@@ -123,6 +125,80 @@ class TestMergeSettings(unittest.TestCase):
                 else:
                     self.assertEqual(result[key], value)
 
+
+def test_overrides_required_keys(tmp_path: Path) -> None:
+    """필수 키는 기존 값을 덮어쓴다 (보존 아님)."""
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps({"model": "sonnet"}))
+    assert merge_settings(path)["model"] == REQUIRED_SETTINGS["model"]
+
+
+def test_changed_settings_backed_up_with_diff(tmp_path: Path) -> None:
+    """변경 시 settings_backup_<날짜>.json 백업 + 키 단위 diff(hooks 삭제 포함) 기록."""
+    path = tmp_path / "settings.json"
+    original = {"model": "sonnet", "hooks": {"Stop": []}, "customKey": 1}
+    path.write_text(json.dumps(original))
+
+    merge_settings(path)
+
+    bak = report_changes.backup_path(path)
+    assert bak.name == f"settings_backup_{date.today():%Y%m%d}.json"
+    assert json.loads(bak.read_text()) == original
+    entry = report_changes.load_report()[str(path)]
+    assert entry["status"] == report_changes.CHANGED
+    assert entry["backup"] == str(bak)
+    assert entry["diff"]["changed"]["model"] == ["sonnet", REQUIRED_SETTINGS["model"]]
+    assert entry["diff"]["removed"] == {"hooks": {"Stop": []}}
+    assert "language" in entry["diff"]["added"]
+    assert "customKey" not in entry["diff"]["added"]
+
+
+def test_unchanged_settings_not_rewritten(tmp_path: Path) -> None:
+    """이미 병합된 설정이면 백업·쓰기 없이 unchanged 로 기록."""
+    path = tmp_path / "settings.json"
+    merge_settings(path)
+    mtime = path.stat().st_mtime_ns
+
+    merge_settings(path)
+
+    assert path.stat().st_mtime_ns == mtime
+    assert not report_changes.backup_path(path).exists()
+    assert report_changes.load_report()[str(path)]["status"] == report_changes.UNCHANGED
+
+
+
+def test_diff_against_snapshot_baseline(tmp_path: Path) -> None:
+    """Step 2(plugin 설치)가 쓴 키도 snapshot 기준 diff 에 나타나고, 백업은 Step 2 이전 원본."""
+    path = tmp_path / "settings.json"
+    original = {"model": "sonnet"}
+    path.write_text(json.dumps(original))
+    report_changes.snapshot(path)
+    path.write_text(json.dumps({**original, "enabledPlugins": {"x@y": True}}))  # Step 2
+
+    merge_settings(path)
+
+    entry = report_changes.load_report()[str(path)]
+    assert entry["status"] == report_changes.CHANGED
+    assert entry["diff"]["added"]["enabledPlugins"] == {"x@y": True}
+    assert json.loads(report_changes.backup_path(path).read_text()) == original
+
+
+def test_already_merged_but_baseline_differs(tmp_path: Path) -> None:
+    """파일은 이미 병합 상태(재작성 안 함)여도 snapshot 기준 변경은 보고한다."""
+    path = tmp_path / "settings.json"
+    path.write_text("{}")
+    report_changes.snapshot(path)
+    merged = merge_settings(path)
+    report_changes.snapshot(path)  # 다음 실행: 기준 = 병합 상태
+    path.write_text(json.dumps({**merged, "enabledPlugins": {"x@y": True}}))  # Step 2
+    mtime = path.stat().st_mtime_ns
+
+    merge_settings(path)
+
+    assert path.stat().st_mtime_ns == mtime
+    entry = report_changes.load_report()[str(path)]
+    assert entry["status"] == report_changes.CHANGED
+    assert entry["diff"]["added"] == {"enabledPlugins": {"x@y": True}}
 
 if __name__ == "__main__":
     unittest.main()

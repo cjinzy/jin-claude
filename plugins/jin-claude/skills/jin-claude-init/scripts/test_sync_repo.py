@@ -1,127 +1,14 @@
-"""sync_repo 모듈의 단위 테스트.
+"""sync_repo 모듈의 단위 테스트."""
 
-sync_directory()의 파일 동기화 및 잔류 항목 제거,
-install_superclaude()의 subprocess fallback 시나리오를 검증한다.
-"""
-
-import shutil
 import subprocess
+from datetime import date
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from sync_repo import clean_stale_cache, install_superclaude, install_timer, sync_directory
-
-
-def _make_skill(base: Path, name: str, content: str = "skill") -> None:
-    """스킬 디렉토리와 SKILL.md 파일을 생성한다."""
-    d = base / name
-    d.mkdir(parents=True, exist_ok=True)
-    (d / "SKILL.md").write_text(content)
-
-
-@pytest.fixture
-def sync_dirs(tmp_path: Path) -> tuple[Path, Path]:
-    """소스/대상 디렉토리 쌍을 생성한다."""
-    src = tmp_path / "src"
-    dst = tmp_path / "dst"
-    src.mkdir()
-    dst.mkdir()
-    return src, dst
-
-
-class TestSyncDirectory:
-    """sync_directory() 테스트 스위트."""
-
-    def test_copies_files_from_src_to_dst(self, sync_dirs: tuple[Path, Path]) -> None:
-        """소스 파일이 대상에 복사된다."""
-        src, dst = sync_dirs
-        _make_skill(src, "jin-commit", "new content")
-
-        count = sync_directory(src, dst)
-
-        assert count == 1
-        assert (dst / "jin-commit" / "SKILL.md").read_text() == "new content"
-
-    def test_overwrites_existing_files(self, sync_dirs: tuple[Path, Path]) -> None:
-        """기존 파일은 덮어쓴다."""
-        src, dst = sync_dirs
-        _make_skill(src, "jin-commit", "updated")
-        _make_skill(dst, "jin-commit", "old")
-
-        sync_directory(src, dst)
-
-        assert (dst / "jin-commit" / "SKILL.md").read_text() == "updated"
-
-    def test_removes_stale_dirs_not_in_src(self, sync_dirs: tuple[Path, Path]) -> None:
-        """소스에 없는 대상 최상위 디렉토리를 제거한다."""
-        src, dst = sync_dirs
-        _make_skill(src, "jin-commit")
-        _make_skill(dst, "zy-commit")
-        _make_skill(dst, "zy-interview")
-
-        sync_directory(src, dst)
-
-        assert (dst / "jin-commit").exists()
-        assert not (dst / "zy-commit").exists()
-        assert not (dst / "zy-interview").exists()
-
-    def test_removes_stale_files(self, sync_dirs: tuple[Path, Path]) -> None:
-        """소스에 없는 대상 최상위 파일도 제거한다."""
-        src, dst = sync_dirs
-        _make_skill(src, "jin-commit")
-        (dst / "orphan.txt").write_text("stale")
-
-        sync_directory(src, dst)
-
-        assert not (dst / "orphan.txt").exists()
-
-    def test_preserves_items_in_src(self, sync_dirs: tuple[Path, Path]) -> None:
-        """소스에 있는 대상 항목은 유지한다."""
-        src, dst = sync_dirs
-        _make_skill(src, "jin-commit")
-        _make_skill(src, "guidelines")
-        _make_skill(dst, "jin-commit", "old")
-        _make_skill(dst, "guidelines", "old")
-
-        sync_directory(src, dst)
-
-        assert (dst / "jin-commit").exists()
-        assert (dst / "guidelines").exists()
-
-    def test_nonexistent_src_returns_zero(self, sync_dirs: tuple[Path, Path]) -> None:
-        """소스 디렉토리가 없으면 0을 반환한다."""
-        src, dst = sync_dirs
-        shutil.rmtree(src)
-
-        count = sync_directory(src, dst)
-
-        assert count == 0
-
-    def test_empty_src_removes_all_dst_items(self, sync_dirs: tuple[Path, Path]) -> None:
-        """소스가 비어있으면 대상의 모든 항목을 제거한다."""
-        src, dst = sync_dirs
-        _make_skill(dst, "zy-commit")
-        _make_skill(dst, "zy-interview")
-
-        sync_directory(src, dst)
-
-        assert list(dst.iterdir()) == []
-
-    def test_nested_files_copied(self, sync_dirs: tuple[Path, Path]) -> None:
-        """중첩된 파일 구조도 올바르게 복사된다."""
-        src, dst = sync_dirs
-        skill_dir = src / "jin-init" / "scripts"
-        skill_dir.mkdir(parents=True)
-        (skill_dir / "setup.py").write_text("setup")
-        (src / "jin-init" / "SKILL.md").write_text("init skill")
-
-        count = sync_directory(src, dst)
-
-        assert count == 2
-        assert (dst / "jin-init" / "scripts" / "setup.py").read_text() == "setup"
-        assert (dst / "jin-init" / "SKILL.md").read_text() == "init skill"
+import report_changes
+import sync_repo
+from sync_repo import clean_stale_cache, clone_or_pull, install_timer, sync_file
 
 
 def _make_result(returncode: int = 0, stdout: str = "", stderr: str = "") -> MagicMock:
@@ -133,142 +20,83 @@ def _make_result(returncode: int = 0, stdout: str = "", stderr: str = "") -> Mag
     return result
 
 
-class TestInstallSuperclaude:
-    """install_superclaude() 테스트 스위트."""
+TODAY = date.today().strftime(report_changes.DATE_FORMAT)
 
-    @patch("sync_repo.subprocess.run")
-    def test_pipx_success(self, mock_run: MagicMock) -> None:
-        """pipx install + superclaude install 모두 성공하는 경우."""
-        mock_run.side_effect = [
-            _make_result(0, "installed superclaude"),  # pipx install
-            _make_result(0, "initialized"),  # superclaude install
-        ]
 
-        assert install_superclaude() is True
+class TestCloneOrPull:
+    """clone_or_pull() — https origin 강제, pull 실패 시 기존 clone 보존."""
 
-        assert mock_run.call_count == 2
-        mock_run.assert_any_call(
-            ["pipx", "install", "superclaude"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        mock_run.assert_any_call(
-            ["superclaude", "install"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
+    @pytest.fixture
+    def repo(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+        repo = tmp_path / ".jin-claude-repo"
+        (repo / ".git").mkdir(parents=True)
+        (repo / "local.txt").write_text("local edit")
+        monkeypatch.setattr(sync_repo, "REPO_DIR", repo)
+        return repo
 
-    @patch("sync_repo.subprocess.run")
-    def test_pipx_success_but_init_fails(self, mock_run: MagicMock) -> None:
-        """pipx install 성공, superclaude install 실패해도 True 반환."""
-        mock_run.side_effect = [
-            _make_result(0),  # pipx install 성공
-            _make_result(1, stderr="init error"),  # superclaude install 실패
-        ]
+    def test_repo_url_is_https(self) -> None:
+        assert sync_repo.REPO_URL == "https://github.com/cjinzy/jin-claude.git"
 
-        assert install_superclaude() is True
-        assert mock_run.call_count == 2
+    def test_switches_origin_to_https_before_pull(self, repo: Path) -> None:
+        with patch("sync_repo.run_git", return_value=_make_result(0)) as git:
+            clone_or_pull()
+        calls = [c.args for c in git.call_args_list]
+        assert calls[0] == ("remote", "set-url", "origin", sync_repo.REPO_URL)
+        assert calls[1] == ("pull", "--ff-only")
 
-    @patch("sync_repo.subprocess.run")
-    def test_pipx_not_found_pip_fallback_success(self, mock_run: MagicMock) -> None:
-        """pipx 미설치(FileNotFoundError) → pip fallback 성공."""
-        mock_run.side_effect = [
-            FileNotFoundError("pipx not found"),  # pipx 실패
-            _make_result(0),  # pip install --user 성공
-            _make_result(0),  # superclaude install 성공
-        ]
+    def test_pull_failure_moves_clone_aside(self, repo: Path) -> None:
+        def fake_git(*args: str, cwd: Path | None = None) -> MagicMock:
+            if args[0] == "pull":
+                return _make_result(1, stderr="diverged")
+            if args[0] == "clone":
+                Path(args[2]).mkdir()
+            return _make_result(0)
 
-        assert install_superclaude() is True
-        assert mock_run.call_count == 3
+        with patch("sync_repo.run_git", side_effect=fake_git):
+            clone_or_pull()
+        aside = repo.parent / f".jin-claude-repo_backup_{TODAY}"
+        assert (aside / "local.txt").read_text() == "local edit"
+        assert repo.exists()
 
-    @patch("sync_repo.subprocess.run")
-    def test_pipx_returncode_fail_pip_fallback_success(self, mock_run: MagicMock) -> None:
-        """pipx install 반환코드 실패 → pip fallback 성공."""
-        mock_run.side_effect = [
-            _make_result(1, stderr="pipx error"),  # pipx 반환코드 실패
-            _make_result(0),  # pip install --user 성공
-            _make_result(0),  # superclaude install 성공
-        ]
 
-        assert install_superclaude() is True
-        assert mock_run.call_count == 3
+class TestSyncFile:
+    """sync_file() — 변경 시에만 날짜 백업 후 덮어쓰기."""
 
-    @patch("sync_repo.subprocess.run")
-    def test_pipx_timeout_pip_fallback_success(self, mock_run: MagicMock) -> None:
-        """pipx 타임아웃 → pip fallback 성공."""
-        mock_run.side_effect = [
-            subprocess.TimeoutExpired(cmd="pipx", timeout=120),  # pipx 타임아웃
-            _make_result(0),  # pip install --user 성공
-            _make_result(0),  # superclaude install 성공
-        ]
+    def test_changed_file_backed_up(self, tmp_path: Path) -> None:
+        src, dst = tmp_path / "src.md", tmp_path / "CLAUDE.md"
+        src.write_text("new")
+        dst.write_text("old")
+        assert sync_file(src, dst) is True
+        assert dst.read_text() == "new"
+        assert (tmp_path / f"CLAUDE_backup_{TODAY}.md").read_text() == "old"
+        assert not (tmp_path / "CLAUDE.md.bak").exists()
 
-        assert install_superclaude() is True
-        assert mock_run.call_count == 3
+    def test_changed_file_records_line_diff(self, tmp_path: Path) -> None:
+        src, dst = tmp_path / "src.md", tmp_path / "CLAUDE.md"
+        src.write_text("keep\nnew\n")
+        dst.write_text("keep\nold\n")
+        sync_file(src, dst)
+        diff = report_changes.load_report()[str(dst)]["diff"]
+        assert diff == {"plus": 1, "minus": 1, "lines": ["-old", "+new"]}
 
-    @patch("sync_repo.find_uv", return_value="/usr/local/bin/uv")
-    @patch("sync_repo.subprocess.run")
-    def test_pipx_and_pip_fail_uv_fallback_success(
-        self, mock_run: MagicMock, mock_find_uv: MagicMock
-    ) -> None:
-        """pipx+pip 실패 → uv tool install 성공."""
-        mock_run.side_effect = [
-            FileNotFoundError("pipx not found"),  # pipx 미설치
-            _make_result(1, stderr="pip error"),  # pip 실패
-            _make_result(0, "installed superclaude"),  # uv tool install 성공
-            _make_result(0, "initialized"),  # superclaude install 성공
-        ]
+    def test_unchanged_file_no_backup(self, tmp_path: Path) -> None:
+        src, dst = tmp_path / "src.md", tmp_path / "CLAUDE.md"
+        src.write_text("same")
+        dst.write_text("same")
+        assert sync_file(src, dst) is True
+        assert not (tmp_path / f"CLAUDE_backup_{TODAY}.md").exists()
+        assert report_changes.load_report()[str(dst)]["status"] == report_changes.UNCHANGED
 
-        assert install_superclaude() is True
-        assert mock_run.call_count == 4
-        mock_run.assert_any_call(
-            ["/usr/local/bin/uv", "tool", "install", "superclaude"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
+    def test_new_file_recorded(self, tmp_path: Path) -> None:
+        src, dst = tmp_path / "src.sh", tmp_path / "sub" / "statusline-command.sh"
+        src.write_text("echo")
+        assert sync_file(src, dst) is True
+        assert dst.read_text() == "echo"
+        assert report_changes.load_report()[str(dst)]["status"] == report_changes.NEW
 
-    @patch("sync_repo.find_uv", return_value=None)
-    @patch("sync_repo.subprocess.run")
-    def test_all_three_fail(self, mock_run: MagicMock, mock_find_uv: MagicMock) -> None:
-        """pipx+pip+uv 모두 실패하면 False 반환."""
-        mock_run.side_effect = [
-            FileNotFoundError("pipx not found"),  # pipx 미설치
-            _make_result(1, stderr="pip error"),  # pip 실패
-        ]
+    def test_missing_source_skipped(self, tmp_path: Path) -> None:
+        assert sync_file(tmp_path / "nope", tmp_path / "dst") is False
 
-        assert install_superclaude() is False
-        assert mock_run.call_count == 2
-
-    @patch("sync_repo.find_uv", return_value="/usr/local/bin/uv")
-    @patch("sync_repo.subprocess.run")
-    def test_all_three_fail_uv_present_but_fails(
-        self, mock_run: MagicMock, mock_find_uv: MagicMock
-    ) -> None:
-        """pipx+pip 실패, uv 존재하지만 설치 실패 → False 반환."""
-        mock_run.side_effect = [
-            FileNotFoundError("pipx not found"),  # pipx 미설치
-            _make_result(1, stderr="pip error"),  # pip 실패
-            _make_result(1, stderr="uv error"),  # uv tool install 실패
-        ]
-
-        assert install_superclaude() is False
-        assert mock_run.call_count == 3
-
-    @patch("sync_repo.find_uv", return_value=None)
-    @patch("sync_repo.subprocess.run")
-    def test_pip_fallback_timeout(
-        self, mock_run: MagicMock, mock_find_uv: MagicMock
-    ) -> None:
-        """pipx 미설치, pip 타임아웃, uv 미설치 → False 반환."""
-        mock_run.side_effect = [
-            FileNotFoundError("pipx not found"),  # pipx 미설치
-            subprocess.TimeoutExpired(cmd="pip", timeout=120),  # pip 타임아웃
-        ]
-
-        assert install_superclaude() is False
-        assert mock_run.call_count == 2
 
 class TestCleanStaleCache:
     """clean_stale_cache() 테스트 스위트."""
@@ -364,19 +192,3 @@ class TestInstallTimer:
 
         mock_run.side_effect = OSError("permission denied")
         install_timer(tmp_path)
-
-
-    @patch("sync_repo.find_uv", return_value="/usr/local/bin/uv")
-    @patch("sync_repo.subprocess.run")
-    def test_uv_fallback_timeout(
-        self, mock_run: MagicMock, mock_find_uv: MagicMock
-    ) -> None:
-        """pipx+pip 실패, uv 타임아웃 → False 반환."""
-        mock_run.side_effect = [
-            FileNotFoundError("pipx not found"),  # pipx 미설치
-            _make_result(1, stderr="pip error"),  # pip 실패
-            subprocess.TimeoutExpired(cmd="uv", timeout=120),  # uv 타임아웃
-        ]
-
-        assert install_superclaude() is False
-        assert mock_run.call_count == 3

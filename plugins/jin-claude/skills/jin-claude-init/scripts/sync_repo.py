@@ -1,7 +1,8 @@
 """jin-claude git repo에서 statusline·설정·venv를 동기화하는 스크립트.
 
-repo를 clone/pull 한 후, 개별 파일을 ~/.claude/ 하위에 복사하고
-가상환경과 사용량 타이머를 설치한다.
+repo를 https 로 clone/pull 한 후, 개별 파일을 ~/.claude/ 하위에 복사하고
+가상환경과 사용량 타이머를 설치한다. 내용이 바뀌는 기존 파일은
+<stem>_backup_<YYYYMMDD><ext> 로 백업하고 변경을 report_changes 에 기록한다.
 """
 
 import shutil
@@ -10,16 +11,13 @@ import sys
 import traceback
 from pathlib import Path
 
-REPO_URL = "git@github.com:cjinzy/jin-claude.git"
+from report_changes import backup_path, text_diff, track_write
+
+REPO_URL = "https://github.com/cjinzy/jin-claude.git"
 REPO_DIR = Path.home() / ".claude" / ".jin-claude-repo"
 CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"
 CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jin-claudecode-mp" / "jin-claude"
-
-# Agents와 Skills는 marketplace plugin install이 자동 처리하므로 동기화 대상에서 제외.
-SYNC_TARGETS: list[tuple[str, Path]] = []
-
-# hooks는 ${CLAUDE_PLUGIN_ROOT}가 치환되지 않으므로 고정 경로에 복사.
 
 # CLAUDE.md 가 @include 하는 보조 문서. 함께 복사하지 않으면 참조가 깨진다.
 CLAUDE_INCLUDES = (
@@ -40,11 +38,11 @@ CLAUDE_INCLUDES = (
     "frontend-spec.md",
 )
 
-# (소스 상대경로, 대상 경로, 백업 여부)
+# (repo 상대 소스 경로, 대상 경로). agents/skills/hooks 는 plugin install 이 처리.
 SYNC_FILES = [
-    ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh", False),
-    (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md", True),
-    *[(f".claude/{name}", CLAUDE_DIR / name, False) for name in CLAUDE_INCLUDES],
+    ("plugins/jin-claude/scripts/statusline-command.sh", CLAUDE_DIR / "statusline-command.sh"),
+    (".claude/CLAUDE.md", CLAUDE_DIR / "CLAUDE.md"),
+    *[(f".claude/{name}", CLAUDE_DIR / name) for name in CLAUDE_INCLUDES],
 ]
 
 
@@ -76,10 +74,21 @@ def clone_or_pull() -> Path:
     """
     if (REPO_DIR / ".git").exists():
         print(f"[sync_repo] 기존 repo 업데이트: {REPO_DIR}")
+        # 과거 SSH clone 도 https 로 전환 (SSH 키 없는 팀원 대응)
+        run_git("remote", "set-url", "origin", REPO_URL, cwd=REPO_DIR)
         result = run_git("pull", "--ff-only", cwd=REPO_DIR)
         if result.returncode != 0:
-            print(f"[sync_repo] pull 실패, re-clone 시도: {result.stderr}")
-            shutil.rmtree(REPO_DIR)
+            aside = backup_path(REPO_DIR)
+            if aside.exists():
+                # ponytail: 그날 백업 유지 — 현재 clone 은 오늘 재clone 된 사본이라 삭제.
+                shutil.rmtree(REPO_DIR)
+            else:
+                REPO_DIR.rename(aside)
+            print(
+                f"[sync_repo] 경고: pull 실패 → 기존 clone 을 {aside} 로 보존, re-clone\n"
+                f"{result.stderr}",
+                file=sys.stderr,
+            )
             return clone_or_pull()
         print(f"[sync_repo] pull 완료: {result.stdout.strip()}")
     else:
@@ -93,69 +102,28 @@ def clone_or_pull() -> Path:
     return REPO_DIR
 
 
-def sync_directory(src: Path, dst: Path) -> int:
-    """소스 디렉토리의 파일을 대상 디렉토리로 복사하고, 소스에 없는 항목을 제거한다.
-
-    기존 파일은 덮어쓴다. 소스에 없는 대상의 최상위 항목(파일/디렉토리)은
-    삭제하여 이름 변경이나 삭제된 항목이 잔류하지 않도록 한다.
-
-    Args:
-        src: 소스 디렉토리.
-        dst: 대상 디렉토리.
-
-    Returns:
-        복사된 파일 수.
-    """
-    if not src.exists():
-        print(f"[sync_repo] 소스 디렉토리 없음, 건너뜀: {src}")
-        return 0
-
-    dst.mkdir(parents=True, exist_ok=True)
-    count = 0
-
-    for item in src.rglob("*"):
-        if item.is_file():
-            rel = item.relative_to(src)
-            target = dst / rel
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(item, target)
-            count += 1
-
-    # 소스에 없는 대상 최상위 항목 제거
-    src_top_names = {p.name for p in src.iterdir()} if src.exists() else set()
-    for item in dst.iterdir():
-        if item.name not in src_top_names:
-            if item.is_dir():
-                shutil.rmtree(item)
-            else:
-                item.unlink()
-            print(f"[sync_repo] 소스에 없는 항목 제거: {item.name}")
-
-    return count
-
-
-def sync_file(src: Path, dst: Path, *, backup: bool = False) -> bool:
-    """단일 파일을 복사한다.
+def sync_file(src: Path, dst: Path) -> bool:
+    """단일 파일을 복사한다. 내용이 바뀌는 기존 파일은 날짜 백업 후 덮어쓴다.
 
     Args:
         src: 소스 파일.
         dst: 대상 파일 경로.
-        backup: True이면 기존 파일을 .bak으로 백업한다.
 
     Returns:
-        복사 성공 여부.
+        동기화 여부 (소스 없으면 False).
     """
     if not src.exists():
         print(f"[sync_repo] 소스 파일 없음, 건너뜀: {src}")
         return False
 
-    if backup and dst.exists():
-        bak = dst.with_suffix(dst.suffix + ".bak")
-        shutil.copy2(dst, bak)
-        print(f"[sync_repo] 기존 파일 백업: {bak}")
-
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(src, dst)
+    unchanged = dst.exists() and dst.read_bytes() == src.read_bytes()
+    diff = None
+    if dst.exists() and not unchanged:
+        old, new = (p.read_text(encoding="utf-8", errors="replace") for p in (dst, src))
+        diff = text_diff(old, new)
+    if track_write(dst, unchanged, diff):
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
     return True
 
 
@@ -264,89 +232,6 @@ def _install_with_pip(repo_dir: Path, venv_dir: Path) -> bool:
     return True
 
 
-def _run_superclaude_install() -> None:
-    """superclaude install 명령을 실행하여 초기화한다."""
-    init_result = subprocess.run(
-        ["superclaude", "install"],
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    if init_result.returncode == 0:
-        print("[sync_repo] superclaude install 완료")
-    else:
-        print(f"[sync_repo] superclaude install 실패: {init_result.stderr}")
-
-
-def install_superclaude() -> bool:
-    """SuperClaude Framework를 pipx로 설치한다.
-
-    pipx가 없으면 pip install --user로, 그것도 실패하면
-    uv tool install로 fallback한다.
-    설치 성공 시 superclaude install을 실행하여 초기화한다.
-
-    fallback 순서: pipx → pip --user → uv tool install
-
-    Returns:
-        설치 성공 여부.
-    """
-    # pipx 시도
-    try:
-        result = subprocess.run(
-            ["pipx", "install", "superclaude"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if result.returncode == 0:
-            print("[sync_repo] pipx install superclaude 완료")
-            _run_superclaude_install()
-            return True
-        print(f"[sync_repo] pipx install 실패: {result.stderr}")
-    except FileNotFoundError:
-        print("[sync_repo] pipx 미설치, pip fallback 시도")
-    except subprocess.TimeoutExpired:
-        print("[sync_repo] pipx install 타임아웃, pip fallback 시도")
-
-    # pip --user fallback
-    try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--user", "superclaude"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if result.returncode == 0:
-            print("[sync_repo] pip install --user superclaude 완료")
-            _run_superclaude_install()
-            return True
-        print(f"[sync_repo] pip install --user 실패: {result.stderr}")
-    except subprocess.TimeoutExpired:
-        print("[sync_repo] pip install --user 타임아웃")
-
-    # uv tool install fallback
-    uv_path = find_uv()
-    if uv_path:
-        try:
-            result = subprocess.run(
-                [uv_path, "tool", "install", "superclaude"],
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if result.returncode == 0:
-                print("[sync_repo] uv tool install superclaude 완료")
-                _run_superclaude_install()
-                return True
-            print(f"[sync_repo] uv tool install 실패: {result.stderr}")
-        except subprocess.TimeoutExpired:
-            print("[sync_repo] uv tool install 타임아웃")
-    else:
-        print("[sync_repo] uv 미설치, 모든 설치 방법 실패")
-
-    return False
-
-
 def ensure_venv(repo_dir: Path, venv_dir: Path | None = None) -> bool:
     """가상환경을 생성하고 패키지를 설치한다.
 
@@ -440,22 +325,15 @@ def main() -> None:
         if removed:
             print(f"[sync_repo] 구버전 캐시 {removed}개 제거 완료")
 
-        for dir_name, target in SYNC_TARGETS:
-            src = repo_dir / dir_name
-            count = sync_directory(src, target)
-            print(f"[sync_repo] {dir_name}/ → {target}: {count}개 파일 동기화")
-
-        for file_name, target, backup in SYNC_FILES:
+        for file_name, target in SYNC_FILES:
             src = repo_dir / file_name
-            ok = sync_file(src, target, backup=backup)
+            ok = sync_file(src, target)
             status = "완료" if ok else "건너뜀"
             print(f"[sync_repo] {file_name} → {target}: {status}")
 
         ok = ensure_venv(repo_dir)
         status = "완료" if ok else "건너뜀"
         print(f"[sync_repo] venv 패키지 설치: {status}")
-
-        # SuperClaude는 marketplace plugin install로 설치되므로 여기서는 건너뜀
 
         # CLI 인자로 timer 주기를 받음 (기본값: 5분)
         interval = 5

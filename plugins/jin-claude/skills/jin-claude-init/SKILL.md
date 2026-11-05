@@ -1,31 +1,49 @@
 ---
 name: jin-claude-init
-description: 팀원 Claude Code 환경 초기화. plugin 설치, settings 구성, MCP/hooks 설정, skills 동기화를 자동화. "jin init", "jin 초기화", "Claude Code 초기 설정", "환경 세팅" 등의 요청 시 사용.
+description: 팀원 Claude Code 환경을 한 번에 초기화한다 — marketplace·plugin 설치, jin-claude 저장소(https) 동기화, ~/.claude/settings.json 병합, 사용량 타이머 설치. 덮어쓰는 기존 파일은 "<이름>_backup_<YYYYMMDD>.<확장자>"로 백업하고, 끝나면 이전 설정 대비 변경점을 안내한다. "jin init", "jin 초기화", "jin-claude-init", "Claude Code 초기 설정", "환경 세팅", "새 머신 세팅", "팀 환경 재설정" 요청이나, 새 머신에 Claude Code를 설치한 직후 또는 팀 공통 설정·플러그인을 최신으로 맞추고 싶을 때 사용한다.
 ---
 
 # Jin Claude Init
 
-팀원이 새 머신에서 Claude Code를 설치한 뒤, 동일한 플러그인·설정·스킬 환경을 한 번에 구성하는 자동화 스킬.
+새 머신(또는 재설정)에서 팀 공통 플러그인·설정·statusline 을 구성한다.
 
-## Step 0 — Pre-flight Check
+**전제 조건**: `git`, `python3`, `claude` CLI, `uv`(없으면 `pip` fallback).
 
-설치 상태를 사전 점검하여 이미 완료된 단계를 자동 스킵한다.
+**스크립트 규칙**: `${CLAUDE_SKILL_DIR}/scripts/*.py` 는 **실행**한다 (읽지 않는다). 각 Step 에 출력이 적혀 있다.
+
+## Step 0 — Pre-flight
 
 ```bash
-python3 "SKILL_DIR/scripts/preflight.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/preflight.py"
 ```
 
-이 스크립트는 JSON으로 각 항목(marketplace, plugins, statusline, settings, venv, timer, MCP, hooks)의 설치 여부를 출력한다.
+출력: 항목별(marketplaces, plugins, statusline, settings, venv, timer, hooks) 설치 상태 JSON + `recommendation`.
 
-- `recommendation: "full"` → 전체 초기화 필요 (모든 Step 실행)
-- `recommendation: "partial"` → 미설치 항목만 선택적 실행
-- `recommendation: "none"` → 모든 항목 설치 완료, 사용자에게 확인 후 종료 가능
+- `"full"` → 모든 Step 실행
+- `"partial"` → `missing` 항목에 해당하는 Step 만 실행
+- `"none"` → 사용자에게 재실행 여부를 묻고, 원하지 않으면 종료
 
-**자동 스킵 정책**: `recommendation`이 `"partial"`이면, `missing` 항목에 해당하는 Step만 실행한다.
+## Step 1 — 사용자 확인 (필수)
 
-## Step 1 — Plugin Marketplace 추가
+Step 2–4 는 사용자 파일을 덮어쓴다. 실행 전 아래를 알리고 **명시적 동의**를 받는다. 동의하지 않으면 Step 2–4 를 건너뛴다.
 
-아래 명령어를 **순서대로** Bash로 실행한다:
+- 덮어쓰는 파일: `~/.claude/CLAUDE.md`, 그것이 @include 하는 `~/.claude/*.md` 보조 문서, `~/.claude/statusline-command.sh`, `~/.claude/settings.json`
+- `settings.json`: Step 2(plugin 설치)가 `enabledPlugins`·`extraKnownMarketplaces` 를 쓰고, Step 4 의 키는 기존 값을 **덮어쓴다**. 전역 `hooks` 키는 **삭제**된다.
+- 내용이 바뀌는 파일만 같은 폴더에 `<이름>_backup_<YYYYMMDD>.<확장자>` 로 백업한다 (예: `settings_backup_20260101.json`). 그날 백업이 이미 있으면 유지하고(첫 init 전 원본), 같은 날 재실행이 덮어쓰는 내용은 `<이름>_backup_<YYYYMMDD>_<HHMMSS>.<확장자>` 에 추가 백업한다.
+
+동의하면 첫 쓰기 전에 실행한다:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py" --snapshot ~/.claude/settings.json
+```
+
+출력: `[report_changes] 기준 저장: ...`. 이전 변경 기록을 비우고 Step 2 이전 `settings.json` 을 백업·기준으로 저장한다 (Step 7 diff 기준).
+
+같은 질문에서 사용량 수집 주기도 받는다: 1분 / 3분 / **5분(권장)** / 10분 → `INTERVAL` (기본 5).
+
+## Step 2 — Marketplace·Plugin 설치
+
+순서대로 실행한다. 이미 추가/설치된 항목은 건너뛴다.
 
 ```bash
 claude plugin marketplace add kepano/obsidian-skills
@@ -37,12 +55,6 @@ claude plugin marketplace add revfactory/harness
 claude plugin marketplace add uditgoenka/autoresearch
 claude plugin marketplace add iha2/superlite
 ```
-
-각 명령어 실행 결과를 확인하고, 이미 추가된 marketplace는 건너뛴다.
-
-## Step 2 — Plugin 설치
-
-아래 명령어를 **순서대로** Bash로 실행한다:
 
 ```bash
 claude plugin install obsidian@obsidian-skills
@@ -60,108 +72,76 @@ claude plugin install harness@harness-marketplace
 claude plugin install autoresearch@autoresearch
 ```
 
-이미 설치된 플러그인은 건너뛴다.
+skills·agents·hooks·context-mode MCP 는 plugin 설치가 제공한다. `enabledPlugins` 도 이 단계가 기록한다.
 
-> **SuperClaude:** Step 2의 `claude plugin install sc@superclaude`으로 설치된다.
-> **anthropics/claude-plugins-official:** context7, code-simplifier, claude-md-management, serena, pyright-lsp, agent-sdk-dev 6개 플러그인을 공식 마켓플레이스에서 일괄 설치한다.
-
-## Step 3 — Git Repo에서 Statusline·설정 동기화 + 캐시 정리
-
-jin-claude 저장소에서 statusline, 설정 파일, venv를 동기화한다. 동기화 직후 구버전 플러그인 캐시를 자동으로 정리한다.
-
-> **참고:** Skills는 Step 2의 `claude plugin install`이 자동으로 설치하므로, 이 단계에서는 동기화하지 않는다.
-
-**먼저 사용자에게 사용량 수집 주기를 물어본다:**
-
-> "사용량 수집 주기를 선택해 주세요: 1분 / 3분 / **5분(권장)** / 10분"
-
-사용자가 선택한 값을 `INTERVAL` 변수로 사용한다 (기본값: 5).
+## Step 3 — 저장소 동기화
 
 ```bash
-python3 "SKILL_DIR/scripts/sync_repo.py" $INTERVAL
+python3 "${CLAUDE_SKILL_DIR}/scripts/sync_repo.py" "$INTERVAL"
 ```
 
-이 스크립트는:
-- `https://github.com/cjinzy/jin-claude.git`을 `~/.claude/.jin-claude-repo/`에 clone (또는 pull)
-- 구버전 플러그인 캐시 자동 정리 (`~/.claude/plugins/cache/jin-claudecode-mp/jin-claude/`)
-- `plugins/jin-claude/scripts/statusline-command.sh`, `.claude/CLAUDE.md` 등 개별 파일 동기화
-- `~/.claude/.venv/`에 Python 가상환경 생성 및 패키지 설치 (`uv` 우선, `pip` fallback)
-  - `pyproject.toml`이 존재할 때만 실행
-  - statusline에서 사용하는 `fetch-claude-usage` 등의 CLI 도구가 이 venv에 설치됨
-- OS별 타이머 설치 (`scripts/install-timer.sh` — macOS launchd / Linux systemd 자동 감지)
-  - 사용자가 선택한 주기(`$INTERVAL`)를 인자로 전달
+동작:
+- `https://github.com/cjinzy/jin-claude.git` 을 `~/.claude/.jin-claude-repo/` 에 clone, 있으면 origin 을 https 로 바꾼 뒤 `pull --ff-only`
+- pull 실패 시 기존 clone 을 `.jin-claude-repo_backup_<YYYYMMDD>` 로 옮기고(경고 출력) 다시 clone
+- 구버전 플러그인 캐시(`~/.claude/plugins/cache/jin-claudecode-mp/jin-claude/`) 정리
+- statusline, `CLAUDE.md`, 보조 문서를 `~/.claude/` 에 복사 (변경 시 백업)
+- `~/.claude/.venv/` 생성 후 저장소 패키지 설치 (statusline 용 `fetch-claude-usage`)
+- 사용량 타이머 설치 (macOS launchd / Linux systemd)
+
+출력: 단계별 `[sync_repo]` 로그. 실패 시 traceback 과 exit 1.
 
 ## Step 4 — Settings 병합
 
-설정 파일에 필수 값을 deep merge한다:
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/merge_settings.py"
+```
+
+`~/.claude/settings.json` 에 아래 키를 **덮어쓴다** (중첩 dict 는 해당 하위 키만). 그 외 키는 보존. 전역 `hooks` 키는 삭제 (plugin `hooks/hooks.json` 이 관리). 이미 같으면 파일을 쓰지 않는다.
+
+| 키 | 값 |
+|----|----|
+| `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | `"1"` |
+| `permissions.defaultMode` | `"plan"` |
+| `enableAllProjectMcpServers` | `true` |
+| `statusLine` | `bash ~/.claude/statusline-command.sh` |
+| `outputStyle` | `"Explanatory"` |
+| `language` | `"korean"` |
+| `skipDangerousModePermissionPrompt` | `true` |
+| `effortLevel` | `"high"` |
+| `model` | `"opus"` |
+| `advisorModel` | `"fable"` |
+
+## Step 5 — MCP
 
 ```bash
-python3 "SKILL_DIR/scripts/merge_settings.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/setup_mcp_and_teams.py"
 ```
 
-이 스크립트는 `~/.claude/settings.json`에 아래 설정을 병합한다 (기존 값 보존):
-- `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`: `"1"`
-- `permissions.defaultMode`: `"plan"`
-- `enableAllProjectMcpServers`: `true`
-- `statusLine`: statusline-command.sh 실행
-- `outputStyle`: `"Explanatory"`
-- `language`: `"korean"`
-- `skipDangerousModePermissionPrompt`: `true`
-- `effortLevel`: `"high"`
-- `model`: `"opus"`
-- `advisorModel`: `"fable"` (advisor 활성화)
+standalone 자동 설치 대상 MCP 는 현재 없다 (`MCP_SERVERS = []`). 추가 MCP 는 `claude mcp add` 또는 plugin 으로.
 
-`enabledPlugins`는 Step 2의 `claude plugin install`이 자동으로 추가하므로 병합 대상에서 제외한다.
+## Step 6 — 검증
 
-## Step 4.5 — MCP + Teams 설정
+1. `preflight.py` 를 다시 실행한다. `hooks.missing` 이 비어 있어야 한다 (SessionStart: 타이머 재등록 + marketplace 자동 업데이트). 남은 `missing` 항목은 사용자에게 알린다.
+2. `claude plugin list`, `claude mcp list` 로 설치 상태 확인.
 
-플러그인이 자동 제공하지 않는 standalone MCP 서버를 설치한다. 이미 설치된 서버는 자동 스킵한다.
+## Step 7 — 변경 안내 (필수)
 
 ```bash
-python3 "SKILL_DIR/scripts/setup_mcp_and_teams.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py"
 ```
 
-현재는 standalone 으로 자동 설치하는 MCP 서버가 없다 (`MCP_SERVERS = []`). 필요한 MCP는 사용자가 직접 `claude mcp add` 또는 플러그인을 통해 추가한다.
+출력: 파일별 신규/변경/동일 개수, 변경 파일의 백업 경로, 텍스트 파일 줄 diff (`줄 +N / -M` + 앞쪽 변경 줄), `settings.json` 키 diff (Step 2 포함, `+` 추가, `~` 이전→이후, `-` 삭제), 롤백 방법. 실행 후 기록은 비워진다.
 
-> **참고:** context-mode MCP는 Step 2의 `context-mode@context-mode` 플러그인이 자동 제공한다.
+출력을 **그대로** 사용자에게 전달하고 롤백 방법을 덧붙인다:
+- 변경 파일: 출력의 `백업:` 경로로 `cp <백업> <원본>` (전체 변경은 `diff -u <백업> <원본>`)
+- 신규 파일: 삭제
 
-> **팀 설정**: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 환경변수가 Step 4에서 설정되므로, 별도 팀 제한 설정은 불필요하다.
-
-## Step 5 — Hook 확인
-
-jin-claude 플러그인 루트의 `hooks/hooks.json`에 SessionStart hook 1개가 정의되어 있다:
-
-| Hook | 파일 | 역할 |
-|------|------|------|
-| SessionStart | `hooks/session_init.py` | 사용량 타이머 유실 시 재등록 + marketplace 자동 업데이트 |
-
-플러그인 설치(Step 2) 시 `${CLAUDE_PLUGIN_ROOT}` 경로로 자동 적용되므로, 여기서는 설치 확인만 수행한다:
-
-```bash
-python3 -c "
-import json; from pathlib import Path
-cache = Path.home() / '.claude/plugins/cache/jin-claudecode-mp/jin-claude'
-ver = sorted([d for d in cache.iterdir() if d.name[0].isdigit()])[-1]
-d = json.loads((ver / 'hooks/hooks.json').read_text())
-print('Hooks:', list(d['hooks'].keys()))
-"
-```
-
-## Step 6 — 검증 및 완료 보고
-
-모든 단계 완료 후:
-
-1. `claude plugin list`로 플러그인 설치 상태 확인
-2. `~/.claude/settings.json` 내용 읽어서 설정 반영 확인
-3. `claude mcp list`로 MCP 서버 설치 확인
-4. `SKILL_DIR/welcome.md`를 읽어 사용자에게 사용법 안내를 표시한다.
+마지막으로 `${CLAUDE_SKILL_DIR}/welcome.md` 를 읽어 사용법을 안내한다.
 
 ```
-[DONE] jin-claude-init: 환경 초기화 완료
-- Marketplace: N개 추가
-- Plugins: N개 설치
-- Skills: N개 동기화
-- Settings: 병합 완료 (model: opus, effortLevel: high, advisorModel: fable)
-- MCP: N개 서버 설치
-- Hooks: 1개 설치
+[DONE] jin-claude-init
+- Marketplace: N개 추가 / Plugins: N개 설치
+- 파일: 신규 N · 변경 N · 동일 N (report_changes 출력 기준)
+- Settings: model opus, effortLevel high, advisorModel fable
+- Hooks: SessionStart 확인
 ```
