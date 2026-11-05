@@ -5,7 +5,8 @@ Issue tracking for this project. Always check Linear before starting work.
 ## Tools
 
 * `list_issues` — filter by project / state / assignee (`me`)
-* `get_issue` — full issue incl. sub-issues, comments, `gitBranchName`
+* `get_issue` — issue incl. sub-issues, `gitBranchName` (no comments)
+* `list_comments` — comments incl. Agent notes. Read before starting work
 * `save_issue` — create (no id) or update (with id): status, priority, assignee, labels, parent, due date
 * `save_comment` — add a comment to an issue
 * `list_projects`, `list_issue_labels` — look up existing values before setting them
@@ -28,13 +29,23 @@ Issue tracking for this project. Always check Linear before starting work.
 10. Done → summary comment including commit hash(es) and PR link, status `Done`, set due date. Use `Feedback` if the user must review first. Parent is Done only when all sub-issues are Done.
 11. Use the issue's `gitBranchName`; put the issue ID in commits/PRs.
 12. Never create labels/statuses, never delete issues.
-13. Every comment follows **Comment format**.
+13. Every issue and comment follows **Writing style**; every comment follows **Comment format**.
+14. Before working on an issue, read `list_comments` and every `+++ Agent notes` block in them.
+
+## Writing style (issues and comments)
+
+* Plain words a 70-year-old non-developer can follow.
+* No jargon or abbreviations. If unavoidable, explain once in plain words: `API`(다른 프로그램과 데이터를 주고받는 통로).
+* One sentence, one fact. Each section 3 lines or fewer.
+* Cut anything that doesn't change what the reader does.
+* Code names (error codes, file names) stay in backticks, next to a plain explanation: `500` 에러(서버가 요청을 처리하지 못함).
+* Exempt: `+++ Agent notes` blocks.
 
 ## Issue format
 
 **Title** — one line, verb form, the core change only. No tags, brackets, or trailing period. ~70 chars max.
 
-* ✅ `만료 토큰으로 로그인 시 500 에러 수정` · `Fix 500 on login with expired token`
+* ✅ `로그인 기한이 지난 사용자에게 오류 화면 대신 재로그인 안내 표시` · `Show re-login prompt instead of error page when session expires`
 * ❌ `로그인 버그` · `[BE] 로그인 관련 이슈`
 
 **Description** — these sections, in this order:
@@ -59,7 +70,7 @@ Issue tracking for this project. Always check Linear before starting work.
 * 재현 방법: required for bugs. Omit when nothing to reproduce (features, chores).
 * 참고자료: omit when empty. Never write "없음".
 * To-be must be checkable. No "빠르게", "깔끔하게", "개선" alone — state observable behavior or a number.
-* Write for people: short sentences, one term per concept. Agent-only detail (file lists, implementation plan, raw logs) goes in a collapsible block at the end:
+* One term per concept. Pre-work agent detail (file lists, implementation plan, raw logs) goes in a collapsible block at the end:
 
 ```
 +++ Agent notes
@@ -94,14 +105,31 @@ BLOCKED: <cause>
 * Status-change comments (Plan / Done / BLOCKED) use these templates exactly.
 * Code, logs, diffs → `+++ Agent notes` block or a link, not the comment body.
 
+Done / BLOCKED comments end with an Agent notes block for the next agent (the description is frozen, so learnings go here):
+
+```
++++ Agent notes
+
+결정: <what was chosen, why>
+시도·실패: <what didn't work, why>
+주의: <traps, side effects>
+위치: <key files, commands>
+다음: <where to resume>
+
++++
+```
+
+* Omit empty lines. Skip the block if nothing is worth handing off.
+
 ## Example
 
 Send real newlines in `description` / `body`, never `\n` escapes.
 
 ```
 list_issues(project="my-project", state="Todo", assignee="me")
-save_issue(team="STEALTHMOLE", project="my-project", title="만료 토큰으로 로그인 시 500 에러 수정", priority=3, assignee="me", labels=["backend"], description=<Issue format>)
+save_issue(team="STEALTHMOLE", project="my-project", title="로그인 기한이 지난 사용자에게 오류 화면 대신 재로그인 안내 표시", priority=3, assignee="me", labels=["backend"], description=<Issue format>)
 save_comment(issueId="MOLE-123", body=<Plan: template>)
+list_comments(issueId="MOLE-123")  # read prior Agent notes first
 save_issue(id="MOLE-123", state="In Progress")
 save_comment(issueId="MOLE-123", body=<Done: template>)
 ```
