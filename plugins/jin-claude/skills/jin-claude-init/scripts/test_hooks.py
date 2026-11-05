@@ -55,15 +55,20 @@ class TestKeywordDetector:
             assert output["result"] == "block"
             assert "jin-interview" in output["reason"]
 
-    def test_jin_gcc_detected(self) -> None:
-        """'jin gcc' 키워드를 감지한다."""
-        event = json.dumps({"prompt": "jin gcc로 검토해줘"})
+    def test_jin_codex_detected(self) -> None:
+        """'jin codex' 키워드를 감지한다 (commit 등 다른 키워드보다 우선)."""
+        event = json.dumps({"prompt": "jin codex로 이 commit 검토해줘"})
         with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
             mock_stdin.read.return_value = event
             keyword_main()
             output = json.loads(mock_print.call_args[0][0])
             assert output["result"] == "block"
-            assert "jin-gcc" in output["reason"]
+            assert "jin-codex-side" in output["reason"]
+
+    def test_removed_skills_not_mapped(self) -> None:
+        """제거된 스킬로 라우팅하는 키워드가 없다."""
+        removed = {"jin-gcc", "jin-chub", "verify-implementation"}
+        assert not removed & set(KEYWORDS.values())
 
     def test_jin_korean_keyword(self) -> None:
         """'jin 초기화' 한글 키워드를 감지한다."""

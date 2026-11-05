@@ -16,6 +16,8 @@ KEYWORDS = {
     "jin deepinit": "jin-deepinit",
     "deepinit": "jin-deepinit",
     "프로젝트 분석": "jin-deepinit",
+    # Codex second opinion (commit/init 등 generic 키워드보다 먼저 매칭)
+    "jin codex": "jin-codex-side",
     # 기존 스킬 (jin 접두사 + 접두사 없음)
     "jin init": "jin-claude-init",
     "init": "jin-claude-init",
@@ -25,10 +27,6 @@ KEYWORDS = {
     "commit": "jin-commit",
     "jin interview": "jin-interview",
     "interview": "jin-interview",
-    # Phase 3A: GCC
-    "jin gcc": "jin-gcc",
-    "gcc": "jin-gcc",
-    "다관점": "jin-gcc",
     # Phase 3B: Cleanser
     "jin cleanser": "jin-cleanser",
     "cleanser": "jin-cleanser",
@@ -40,11 +38,6 @@ KEYWORDS = {
     "추천": "jin-suggest",
     "뭐 써야": "jin-suggest",
     "어떤 스킬": "jin-suggest",
-    # Phase 5: Chub
-    "jin chub": "jin-chub",
-    "chub": "jin-chub",
-    "context-hub": "jin-chub",
-    "api 문서": "jin-chub",
     # Phase 6: SoT (substring 충돌 방지 — bare "sot" 미등록)
     "jin sot": "jin-sot-create",
     "sot create": "jin-sot-create",
