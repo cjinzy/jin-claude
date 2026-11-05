@@ -1,6 +1,6 @@
 {
   "name": "jin-claude",
-  "version": "5.0.2",
+  "version": "5.1.0",
   "description": "Team-standard skills & hooks for Claude Code: 9 skills, SessionStart hook, statusline",
   "author": {
     "name": "jin",

@@ -5,7 +5,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from install_plugins import install, restore_dropped_keys
-from preflight import EXPECTED_MARKETPLACES, EXPECTED_PLUGINS
+import pytest
+
+from preflight import CORE_PLUGINS, EXPECTED_MARKETPLACES, EXPECTED_PLUGINS, OPTIONAL_PLUGINS, SELECTION_FILE
 
 GSTACK_GROUP = {"_gstack_source": "gstack", "hooks": [{"type": "command", "command": "true"}]}
 
@@ -104,3 +106,43 @@ def test_restore_ignores_changed_groups() -> None:
     after = {"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "other"}]}]}}
     assert restore_dropped_keys(before, after) == []
     assert "_gstack_source" not in after["hooks"]["Stop"][0]
+
+
+def _installs(mock_run: MagicMock) -> list[str]:
+    return [c.args[0][-1] for c in mock_run.call_args_list if c.args[0][2] == "install"]
+
+
+def test_plugin_lists_consistent() -> None:
+    """marketplace 목록 = 플러그인들이 필요로 하는 marketplace 전부, 그 이상도 이하도 아님."""
+    assert {p.split("@", 1)[1] for p in EXPECTED_PLUGINS} == set(EXPECTED_MARKETPLACES)
+    assert not set(CORE_PLUGINS) & set(OPTIONAL_PLUGINS)
+
+
+@patch("install_plugins.subprocess.run", side_effect=_ok)
+def test_select_installs_core_plus_selected_and_saves(mock_run: MagicMock, tmp_path: Path) -> None:
+    pick = next(iter(OPTIONAL_PLUGINS))
+    path = tmp_path / "settings.json"
+    _write(path, {}, known=[])
+    install(path, select=[pick])
+    assert _installs(mock_run) == CORE_PLUGINS + [pick]
+    needed = {p.split("@", 1)[1] for p in CORE_PLUGINS + [pick]}
+    added = [c.args[0][-1] for c in mock_run.call_args_list if c.args[0][2] == "marketplace"]
+    assert added == [EXPECTED_MARKETPLACES[m] for m in EXPECTED_MARKETPLACES if m in needed]
+    assert json.loads((tmp_path / SELECTION_FILE).read_text()) == {"optional": [pick]}
+
+
+@patch("install_plugins.subprocess.run", side_effect=_ok)
+def test_rerun_uses_saved_selection(mock_run: MagicMock, tmp_path: Path) -> None:
+    """선택 안 한 플러그인은 재실행 때도 설치하지 않는다."""
+    path = tmp_path / "settings.json"
+    _write(path, {})
+    (tmp_path / SELECTION_FILE).write_text(json.dumps({"optional": []}))
+    install(path)
+    assert _installs(mock_run) == CORE_PLUGINS
+
+
+def test_unknown_selection_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "settings.json"
+    _write(path, {})
+    with pytest.raises(ValueError):
+        install(path, select=["nope@nowhere"])

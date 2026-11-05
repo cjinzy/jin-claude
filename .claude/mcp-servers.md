@@ -6,7 +6,7 @@ Tool names below are the tool part only. The full name depends on how the server
 | Task | Server | Tools | Installed by |
 |---|---|---|---|
 | Code structure, symbol lookup, refactoring | Serena | call its instructions tool first; use what it exposes | init (plugin `serena`) |
-| Library / API docs before using an unfamiliar API | Context7 | `resolve-library-id` → `query-docs` | init (plugin `context7`) |
+| Library / API docs before using an unfamiliar API | Context7 | `resolve-library-id` → `query-docs` | init optional (plugin `context7`) or claude.ai connector |
 | Output over 20 lines, logs, big JSON, fetching URLs | context-mode | `ctx_execute`, `ctx_batch_execute`, `ctx_fetch_and_index`, `ctx_search` | init (plugin `context-mode`) |
 | Issue tracking | Linear | invoke the `mole-linear` skill first | claude.ai connector (per account) |
 | Code search by meaning | Semble | `search`, `find_related` | personal |

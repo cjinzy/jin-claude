@@ -9,13 +9,24 @@ settings 만 복사된 머신은 clone 이 없어 plugin install 이 "not found 
     settings 읽기(before) → missing 계산 → CLI 실행 → settings 읽기(after) → 버린 키 복구 → 쓰기
 """
 
+import argparse
 import json
 import subprocess
 import sys
 import traceback
 from pathlib import Path
 
-from preflight import EXPECTED_MARKETPLACES, SETTINGS_PATH, check_marketplaces, check_plugins
+from preflight import (
+    CORE_PLUGINS,
+    EXPECTED_MARKETPLACES,
+    OPTIONAL_PLUGINS,
+    SELECTION_FILE,
+    SETTINGS_PATH,
+    check_marketplaces,
+    check_plugins,
+    marketplaces_for,
+    selected_plugins,
+)
 
 CLI_TIMEOUT_SEC = 300  # marketplace clone 이 느린 망에서도 끝나도록
 
@@ -62,14 +73,30 @@ def _run(cmd: list[str]) -> bool:
     return True
 
 
-def install(settings_path: Path = SETTINGS_PATH) -> int:
-    """빠진 항목만 설치하고 실패 개수를 반환한다."""
+def install(settings_path: Path = SETTINGS_PATH, select: list[str] | None = None) -> int:
+    """필수 + 선택 플러그인 중 빠진 것만 설치하고 실패 개수를 반환한다.
+
+    Args:
+        select: 이번에 고른 선택 플러그인 ID (저장됨). None 이면 저장된 선택 사용.
+    """
+    claude_dir = settings_path.parent
+    if select is not None:
+        unknown = set(select) - set(OPTIONAL_PLUGINS)
+        if unknown:
+            raise ValueError(f"선택 목록에 없는 plugin: {sorted(unknown)}")
+        (claude_dir / SELECTION_FILE).write_text(json.dumps({"optional": select}) + "\n", encoding="utf-8")
+    plugins = selected_plugins(claude_dir)
     before = _load(settings_path)
-    cloned = _load(settings_path.parent / "plugins" / "known_marketplaces.json")
-    unlisted = set(check_marketplaces(before)["missing"])
-    cmds = [["claude", "plugin", "marketplace", "add", repo]
-            for name, repo in EXPECTED_MARKETPLACES.items() if name in unlisted or name not in cloned]
-    cmds += [["claude", "plugin", "install", p] for p in check_plugins(before)["missing"]]
+    cloned = _load(claude_dir / "plugins" / "known_marketplaces.json")
+    needed = marketplaces_for(plugins)
+    unlisted = set(check_marketplaces(before, needed)["missing"])
+    cmds = [["claude", "plugin", "marketplace", "add", EXPECTED_MARKETPLACES[m]]
+            for m in needed if m in unlisted or m not in cloned]
+    cmds += [["claude", "plugin", "install", p] for p in check_plugins(before, plugins)["missing"]]
+    # ponytail: 선택 해제는 제거하지 않고 알리기만 — 다른 경로로 설치했을 수 있음.
+    leftover = [p for p in OPTIONAL_PLUGINS if p not in plugins and p in before.get("enabledPlugins", {})]
+    if leftover:
+        print(f"[install_plugins] 선택 안 함·설치돼 있음 (제거: claude plugin uninstall <id>): {', '.join(leftover)}")
     if not cmds:
         print("[install_plugins] 모두 설치됨, 스킵")
         return 0
@@ -86,8 +113,13 @@ def install(settings_path: Path = SETTINGS_PATH) -> int:
 
 
 def main() -> None:
+    """`--select a@m,b@m` (빈 값 = 선택 없음) 로 선택 저장 후 설치. 생략 시 저장된 선택."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--select", help="선택 플러그인 ID 쉼표 구분 (필수: " + ", ".join(CORE_PLUGINS) + ")")
+    args = parser.parse_args()
+    select = None if args.select is None else [p for p in args.select.split(",") if p]
     try:
-        sys.exit(1 if install() else 0)
+        sys.exit(1 if install(select=select) else 0)
     except Exception:
         traceback.print_exc()
         sys.exit(1)

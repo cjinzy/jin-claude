@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 9개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.0.2` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.1.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -24,44 +24,35 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 
 `scripts/preflight.py`가 marketplace, 플러그인, statusline, settings, venv, 타이머, MCP 서버, hooks 의 현재 설치 상태를 확인해 필요한 단계만 진행합니다.
 
-#### Step 1·2 — Marketplace 8개 · Plugin 13개 (`scripts/install_plugins.py`)
+#### Step 1·2 — Plugin 선택·설치 (`scripts/install_plugins.py`)
 
-빠진 항목만 `claude plugin marketplace add` / `install` 로 설치합니다. 이 CLI 가 settings.json 을 다시 쓰며 지우는 키(hook group 의 `_gstack_source`, marketplace `autoUpdate`)는 실행 후 되살립니다. 목록 단일 출처: `preflight.py` 의 `EXPECTED_MARKETPLACES`·`EXPECTED_PLUGINS`.
+필수 2개는 항상, 선택 10개는 init 때 고른 것만 설치합니다. 선택은 `~/.claude/.jin-claude-plugins.json` 에 저장돼 재실행·preflight 가 따르고, 선택 해제한 플러그인은 제거하지 않고 알리기만 합니다. 필요한 marketplace 만 추가하며, `claude plugin` CLI 가 settings.json 을 다시 쓰며 지우는 키(hook group 의 `_gstack_source`, marketplace `autoUpdate`)는 실행 후 되살립니다. 목록 단일 출처: `preflight.py` 의 `CORE_PLUGINS`·`OPTIONAL_PLUGINS`·`EXPECTED_MARKETPLACES`.
 
-##### Marketplace
+| Plugin | Marketplace | 구분 | 용도 |
+|--------|-------------|------|------|
+| `context-mode` | `context-mode` | 필수 | 큰 출력을 sandbox·인덱스로 보냄 (컨텍스트 보호) |
+| `serena` | `claude-plugins-official` | 필수 | 시맨틱 코드 검색·편집 MCP |
+| `context7` | `claude-plugins-official` | 선택 | 라이브러리 최신 문서 조회 MCP (claude.ai Context7 커넥터가 있으면 불필요) |
+| `pyright-lsp` | `claude-plugins-official` | 선택 | Python 타입 검사 LSP |
+| `code-simplifier` | `claude-plugins-official` | 선택 | 코드 단순화 agent |
+| `ponytail` | `ponytail` | 선택 | 최소 코드 모드 — 매 세션 규칙 주입 |
+| `superlite` | `superlite-dev` | 선택 | 빌드 라이프사이클 (승인 1회 → 병렬 → 짧은 보고) — 매 세션 주입 |
+| `ui-ux-pro-max` | `ui-ux-pro-max-skill` | 선택 | UI/UX 디자인 DB (스타일·팔레트·폰트) |
+| `browser-use` | `claude-plugins-official` | 선택 | 실제 Chrome 제어 (자동화·스크린샷) |
+| `html-plan` | `claude-community` | 선택 | 구현 계획을 인터랙티브 HTML 한 장으로 |
+| `i-have-adhd` | `i-have-adhd` | 선택 | ADHD 친화 출력 (다음 행동 먼저, 번호 단계) |
+| `typesafe` | `typesafe-ai` | 선택 | TypeSafe System One API 스킬 |
 
-| # | Marketplace ID | 출처 |
-|---|----------------|------|
-| 1 | `obsidian-skills` | `kepano/obsidian-skills` |
-| 2 | `ui-ux-pro-max-skill` | `nextlevelbuilder/ui-ux-pro-max-skill` |
-| 3 | `claude-plugins-official` | `anthropics/claude-plugins-official` |
-| 4 | `context-mode` | `mksglu/claude-context-mode` |
-| 5 | `superclaude` | `SuperClaude-Org/SuperClaude_Plugin` |
-| 6 | `harness-marketplace` | `revfactory/harness` |
-| 7 | `autoresearch` | `uditgoenka/autoresearch` |
-| 8 | `superlite-dev` | `iha2/superlite` |
-
-
-##### Plugin
-
-`anthropics/claude-plugins-official` 단일 마켓에서 7개, 나머지 6개 마켓에서 각 1개씩 — 총 13개를 설치합니다.
-
-| # | Plugin | Marketplace | 용도 |
-|---|--------|-------------|------|
-| 1 | `obsidian` | `obsidian-skills` | Obsidian vault 연동 (defuddle, markdown, CLI, canvas, bases) |
-| 2 | `ui-ux-pro-max` | `ui-ux-pro-max-skill` | UI/UX 디자인 인텔리전스 (50+ 스타일, 161 팔레트) |
-| 3 | `superlite` | `superlite-dev` | 경량 빌드 라이프사이클 (승인 1회 · 병렬 웨이브 · 짧은 보고) |
-| 4 | `context7` | `claude-plugins-official` | 라이브러리 문서 조회 (MCP 경유) |
-| 5 | `code-simplifier` | `claude-plugins-official` | 코드 단순화 워크플로우 |
-| 6 | `claude-md-management` | `claude-plugins-official` | CLAUDE.md 관리 |
-| 7 | `serena` | `claude-plugins-official` | 시맨틱 코드 검색·편집 (MCP 경유) |
-| 8 | `pyright-lsp` | `claude-plugins-official` | Python LSP 통합 |
-| 9 | `agent-sdk-dev` | `claude-plugins-official` | Claude Agent SDK 개발 도구 |
-| 10 | `context-mode` | `context-mode` | 컨텍스트 윈도우 보호 (대용량 출력 라우팅) |
-| 11 | `sc` | `superclaude` | SuperClaude 슬래시 명령 디스패처 |
-| 12 | `harness` | `harness-marketplace` | 하네스 구성 메타 스킬 |
-| 13 | `autoresearch` | `autoresearch` | 자율 목표지향 반복 루프 |
-
+| Marketplace ID | 출처 |
+|----------------|------|
+| `context-mode` | `mksglu/claude-context-mode` |
+| `claude-plugins-official` | `anthropics/claude-plugins-official` |
+| `ponytail` | `DietrichGebert/ponytail` |
+| `superlite-dev` | `iha2/superlite` |
+| `ui-ux-pro-max-skill` | `nextlevelbuilder/ui-ux-pro-max-skill` |
+| `claude-community` | `anthropics/claude-plugins-community` |
+| `i-have-adhd` | `ayghri/i-have-adhd` |
+| `typesafe-ai` | `typesafe-ai/skills` |
 
 #### Step 3 — Repo 동기화 (`scripts/sync_repo.py`)
 
@@ -79,7 +70,7 @@ Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플
 
 #### Step 4.5 — Standalone MCP 설치 (`scripts/setup_mcp_and_teams.py`)
 
-현재 `MCP_SERVERS = []` — **추가 standalone MCP 서버는 0개**입니다. 과거 standalone으로 설치하던 `serena`·`context7`은 Step 2의 `claude-plugins-official` 플러그인이, `context-mode`는 동명 플러그인이 MCP 기능을 자동 제공합니다. 향후 플러그인이 커버하지 않는 MCP가 필요하면 `MCP_SERVERS`에 항목을 추가하는 방식으로 확장합니다.
+현재 `MCP_SERVERS = []` — **추가 standalone MCP 서버는 0개**입니다. 과거 standalone으로 설치하던 `serena`(필수)·`context7`(선택)은 Step 2의 `claude-plugins-official` 플러그인이, `context-mode`는 동명 플러그인이 MCP 기능을 자동 제공합니다. 향후 플러그인이 커버하지 않는 MCP가 필요하면 `MCP_SERVERS`에 항목을 추가하는 방식으로 확장합니다.
 
 #### Step 5 — Hook 검증
 

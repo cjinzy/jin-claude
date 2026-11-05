@@ -17,11 +17,11 @@ description: 팀원 Claude Code 환경을 한 번에 초기화한다 — marketp
 python3 "${CLAUDE_SKILL_DIR}/scripts/preflight.py"
 ```
 
-출력: 항목별(marketplaces, plugins, statusline, settings, venv, timer, hooks) 설치 상태 JSON + `recommendation`.
+출력: 항목별(marketplaces, plugins, statusline, settings, venv, timer, hooks) 설치 상태 JSON + `optional_plugins`(선택 플러그인 설명·현재 선택) + `recommendation`. plugins·marketplaces 는 필수 + 저장된 선택 기준.
 
 - `"full"` → 모든 Step 실행
 - `"partial"` → `missing` 항목에 해당하는 Step 만 실행
-- `"none"` → 사용자에게 재실행 여부를 묻고, 원하지 않으면 종료
+- `"none"` → 사용자에게 재실행 / 플러그인 선택만 변경 / 종료 중 고르게 한다. 선택만 변경 → Step 1 의 선택 플러그인 질문 + Step 2 만 실행
 
 ## Step 1 — 사용자 확인 (필수)
 
@@ -41,15 +41,17 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py" --snapshot ~/.claude/set
 
 같은 질문에서 사용량 수집 주기도 받는다: 1분 / 3분 / **5분(권장)** / 10분 → `INTERVAL` (기본 5).
 
+이어서 **선택 플러그인**을 묻는다 (별도 AskUserQuestion). Step 0 출력의 `optional_plugins` 를 4개씩 나눠 multiSelect 질문으로 만든다 (질문당 option 최대 4개). 각 option 은 label = plugin 이름(`@` 앞), description = `description`. `selected: true` 인 항목을 기본 추천으로 표시한다. 필수(`context-mode`, `serena`)는 묻지 않고 항상 설치한다고 알린다. 고른 ID 를 쉼표로 이어 `SELECT` 로 둔다 (아무것도 안 고르면 빈 문자열).
+
 ## Step 2 — Marketplace·Plugin 설치
 
 ```bash
-python3 "${CLAUDE_SKILL_DIR}/scripts/install_plugins.py"
+python3 "${CLAUDE_SKILL_DIR}/scripts/install_plugins.py" --select "$SELECT"
 ```
 
-`claude plugin` 명령을 직접 실행하지 않는다. 이 CLI 는 settings.json 을 다시 쓰며 hook group 의 비표준 키(`_gstack_source` 등)를 지우고, 이미 있는 marketplace 를 다시 add 하면 `autoUpdate` 를 지운다. 스크립트는 빠진 항목만 실행하고 지워진 키를 되살린다. 대상 목록은 `preflight.py` 의 `EXPECTED_MARKETPLACES`·`EXPECTED_PLUGINS`.
+`claude plugin` 명령을 직접 실행하지 않는다. 이 CLI 는 settings.json 을 다시 쓰며 hook group 의 비표준 키(`_gstack_source` 등)를 지우고, 이미 있는 marketplace 를 다시 add 하면 `autoUpdate` 를 지운다. 스크립트는 필수 + 선택 플러그인 중 빠진 것과 그에 필요한 marketplace 만 실행하고, 지워진 키를 되살린다. 선택은 `~/.claude/.jin-claude-plugins.json` 에 저장돼 재실행·preflight 가 따른다. 선택 해제한 플러그인은 제거하지 않고 목록만 알린다. 대상 목록: `preflight.py` 의 `CORE_PLUGINS`·`OPTIONAL_PLUGINS`.
 
-출력: `[install_plugins]` 항목별 완료/실패, 복구한 키, `N/M 완료` (모두 설치돼 있으면 `스킵`). 실패가 있으면 exit 1 — 실패 항목을 사용자에게 알린다.
+출력: `[install_plugins]` 항목별 완료/실패, 복구한 키, 선택 안 함·설치돼 있음 목록, `N/M 완료` (모두 설치돼 있으면 `스킵`). 실패가 있으면 exit 1 — 실패 항목을 사용자에게 알린다.
 
 skills·agents·hooks·context-mode MCP 는 plugin 설치가 제공한다.
 
