@@ -34,11 +34,10 @@ Issue tracking for this project. Always check Linear before starting work.
 
 ## Writing style (issues and comments)
 
-* Plain words a 70-year-old non-developer can follow.
-* No jargon or abbreviations. If unavoidable, explain once in plain words: `API`(다른 프로그램과 데이터를 주고받는 통로).
+* Short, plain sentences a 70-year-old can follow. Technical terms are fine.
 * One sentence, one fact. Each section 3 lines or fewer.
 * Cut anything that doesn't change what the reader does.
-* Code names (error codes, file names) stay in backticks, next to a plain explanation: `500` 에러(서버가 요청을 처리하지 못함).
+* Code names (error codes, file names, functions) in backticks.
 * Exempt: `+++ Agent notes` blocks.
 
 ## Issue format
