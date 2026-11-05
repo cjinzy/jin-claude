@@ -34,7 +34,7 @@ Issue tracking for this project. Always check Linear before starting work.
 
 ## Writing style (issues and comments)
 
-* Short, plain sentences a 70-year-old can follow. Technical terms are fine.
+* Short, plain sentences. Technical terms are fine.
 * One sentence, one fact. Each section 3 lines or fewer.
 * Cut anything that doesn't change what the reader does.
 * Code names (error codes, file names, functions) in backticks.
