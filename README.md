@@ -1,8 +1,8 @@
 # jin-claude
 
-Claude Code 팀 표준 환경 플러그인. 12개 스킬, 4개 hooks, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
+Claude Code 팀 표준 환경 플러그인. 10개 스킬, 1개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `4.1.2` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.0.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -18,11 +18,11 @@ claude plugin install jin-claude@jin-claudecode-mp
 
 ### 팀원 환경 초기화 (jin-claude-init)
 
-Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플러그인, 설정, MCP, hooks, 동기화, 통계 타이머를 자동으로 구성합니다. 실측 결과는 `plugins/jin-claude/skills/jin-claude-init/SKILL.md`을 참조하세요.
+Claude Code 내에서 `/jin-claude-init`을 실행하면 마켓플레이스, 플러그인, 설정, MCP, hooks, 동기화, 통계 타이머를 자동으로 구성합니다. 덮어쓰는 기존 설정 파일은 `<name>_backup_<YYYYMMDD>.<ext>` 로 백업하고, 완료 후 init 전/후 변경 요약을 출력합니다. 실측 결과는 `plugins/jin-claude/skills/jin-claude-init/SKILL.md`을 참조하세요.
 
 #### Step 0 — Pre-flight Check
 
-`scripts/preflight.py`가 Claude Code 설치 여부, Python 3.13, `git`, `jq` 등의 필수 도구를 확인합니다.
+`scripts/preflight.py`가 marketplace, 플러그인, statusline, settings, venv, 타이머, MCP 서버, hooks 의 현재 설치 상태를 확인해 필요한 단계만 진행합니다.
 
 #### Step 1 — Plugin Marketplace 8개 등록
 
@@ -116,7 +116,7 @@ claude plugin install autoresearch@autoresearch
 
 ---
 
-## 스킬 (12개)
+## 스킬 (10개)
 
 ### 핵심 워크플로우
 
@@ -133,17 +133,15 @@ claude plugin install autoresearch@autoresearch
 | 스킬 | 설명 |
 |------|------|
 | `jin-cleanser` | AI 생성 코드 슬롭 리뷰어 (deslop) |
-| `jin-gcc` | 다중 관점 분석 (codex/gemini CLI 우선) |
+| `jin-codex-side` | Codex CLI 로 독립 second opinion (review / challenge / consult) |
 | `jin-deepinit` | 프로젝트 구조 분석 → AGENTS.md 생성 |
-| `jin-chub` | Context-Hub CLI 기반 커뮤니티 API 문서 검색 |
 
 ### 유틸리티
 
 | 스킬 | 설명 |
 |------|------|
-| `manage-skills` | 스킬 관리 (추가/제거/목록) |
+| `manage-skills` | 프로젝트 verify-* 검증 스킬 생성·업데이트 (변경 파일 대비 누락 탐지) |
 | `guidelines` | LLM 코딩 행동 가이드 (Karpathy 기반) |
-| `verify-implementation` | 구현 검증 체크리스트 |
 
 ---
 
@@ -271,19 +269,17 @@ jin-claude/
 │   └── jin-claude/                      # 단일 플러그인
 │       ├── .claude-plugin/
 │       │   └── plugin.json              # 플러그인 매니페스트
-│       ├── skills/                      # 12 스킬
+│       ├── skills/                      # 스킬
 │       │   ├── guidelines/
-│       │   ├── jin-chub/
 │       │   ├── jin-claude-init/
 │       │   ├── jin-cleanser/
+│       │   ├── jin-codex-side/
 │       │   ├── jin-commit/
 │       │   ├── jin-deepinit/
-│       │   ├── jin-gcc/
 │       │   ├── jin-interview/
 │       │   ├── jin-sot-create/
 │       │   ├── jin-suggest/
-│       │   ├── manage-skills/
-│       │   └── verify-implementation/
+│       │   └── manage-skills/
 │       ├── scripts/                     # statusline + timer
 │       │   ├── statusline-command.sh    # statusline 렌더러
 │       │   ├── statusline-config.txt    # 표시 설정

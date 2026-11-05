@@ -1,9 +1,9 @@
 # jin-claude
 
-> Team-standard skills & hooks for Claude Code — **12 skills · 4 hooks**
-> Version: **4.1.2** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Team-standard skills & hooks for Claude Code — **10 skills · 1 hook**
+> Version: **5.0.0** · License: MIT · Marketplace: `jin-claudecode-mp`
 
-팀 공통 Claude Code 환경을 표준화하는 플러그인. 자동 키워드 라우팅, 커밋/인터뷰/초기화 자동화, 코드 리뷰·검증 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
+팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
 ---
 
@@ -22,22 +22,22 @@ claude plugin install "jin-claude@jin-claudecode-mp"
 ```
 plugins/jin-claude/
 ├── .claude-plugin/plugin.json     # 플러그인 메타데이터
-├── skills/<skill-name>/SKILL.md    # 12 skills
-├── hooks/                          # 4 runtime hooks (Pre/Post/Session/Prompt)
-├── commands/                       # (현재 비어 있음 — 커맨드 없음)
-├── docs/                           # 가이드/템플릿 (로더 대상 아님)
-└── tests/                          # 훅/스킬 검증 테스트 (로더 대상 아님)
+├── skills/<skill-name>/SKILL.md    # 스킬
+├── hooks/                          # hooks.json + hook 스크립트
+├── scripts/                        # statusline + 사용량 타이머
+├── launchd/ · systemd/             # 타이머 정의 (macOS · Linux)
+└── settings.json                   # 플러그인 설정
 ```
 
 ---
 
-## Skills (12)
+## Skills (10)
 
 ### Analysis (1)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
-| `jin-gcc` | `jin gcc`, `다관점` | 다중 관점 분석 (codex/gemini CLI 우선, 없으면 Claude agent 폴백) |
+| `jin-codex-side` | `jin codex` | Codex CLI 로 독립 second opinion (review / challenge / consult) |
 
 ### Spec & Commit (2)
 
@@ -46,18 +46,16 @@ plugins/jin-claude/
 | `jin-interview` | — | In-depth interview to create a detailed spec |
 | `jin-commit` | `jin commit`, `commit` | Gitmoji 기반 커밋 메시지 자동 추천 및 생성 |
 
-### Code Quality (2)
+### Code Quality (1)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
 | `jin-cleanser` | `jin cleanser`, `jin deslop` | AI 생성 코드 슬롭 리뷰어 — 불필요 코멘트/과잉 에러 처리/미사용 임포트 탐지 |
-| `verify-implementation` | — | 프로젝트의 모든 `verify-*` 스킬을 순차 실행 → 통합 검증 보고서 |
 
-### Knowledge & Discovery (4)
+### Knowledge & Discovery (3)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
-| `jin-chub` | `jin chub`, `chub`, `API 문서 검색` | 커뮤니티 큐레이션 API 문서를 `chub` CLI로 검색/조회/어노테이션 |
 | `jin-suggest` | `jin suggest`, `추천`, `뭐 써야` | 사용자 요청에 가장 적합한 jin-claude 스킬 추천 |
 | `jin-deepinit` | `jin deepinit`, `프로젝트 분석` | 프로젝트 구조 분석 → 스킬 안내 `AGENTS.md` 생성 |
 | `jin-sot-create` | `jin sot` | SoT 문서셋 생성 — 세부항목별 파일, fact ID, `sot_index.py` 색인 생성, `sot_validate.py` drift 검증 |
