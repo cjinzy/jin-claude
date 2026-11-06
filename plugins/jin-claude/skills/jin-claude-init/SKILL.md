@@ -139,7 +139,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py"
 - 변경 파일: 출력의 `백업:` 경로로 `cp <백업> <원본>` (전체 변경은 `diff -u <백업> <원본>`)
 - 신규 파일: 삭제
 
-마지막으로 `${CLAUDE_SKILL_DIR}/welcome.md` 를 읽어 사용법을 안내한다.
+마지막으로 Skill 도구로 `jin-claude:jin-onboard` 를 실행해 상황별 사용 흐름을 안내한다 (나중에 `jin onboard` 로 다시 볼 수 있다고 알린다).
 
 ```
 [DONE] jin-claude-init
