@@ -104,10 +104,27 @@ class TestCheckStatusline:
         with patch("preflight.CLAUDE_DIR", Path("/nonexistent")):
             assert check_statusline() is False
 
-    def test_exists(self, tmp_path: Path) -> None:
-        """statusline-command.sh가 존재하면 True."""
-        with patch("preflight.CLAUDE_DIR", tmp_path):
-            (tmp_path / "statusline-command.sh").write_text("#!/bin/bash")
+    def test_matches_plugin_copy(self, tmp_path: Path) -> None:
+        """설치본이 plugin 사본과 같으면 True."""
+        ref = tmp_path / "ref.sh"
+        ref.write_text("#!/bin/bash\necho new")
+        (tmp_path / "statusline-command.sh").write_text("#!/bin/bash\necho new")
+        with patch("preflight.CLAUDE_DIR", tmp_path), patch("preflight.PLUGIN_STATUSLINE", ref):
+            assert check_statusline() is True
+
+    def test_stale_copy(self, tmp_path: Path) -> None:
+        """설치본이 plugin 사본과 다르면 False — Step 3 재실행 대상."""
+        ref = tmp_path / "ref.sh"
+        ref.write_text("#!/bin/bash\necho new")
+        (tmp_path / "statusline-command.sh").write_text("#!/bin/bash\necho old")
+        with patch("preflight.CLAUDE_DIR", tmp_path), patch("preflight.PLUGIN_STATUSLINE", ref):
+            assert check_statusline() is False
+
+    def test_plugin_copy_missing(self, tmp_path: Path) -> None:
+        """기준 사본이 없으면 존재만 확인."""
+        (tmp_path / "statusline-command.sh").write_text("#!/bin/bash")
+        missing = tmp_path / "none.sh"
+        with patch("preflight.CLAUDE_DIR", tmp_path), patch("preflight.PLUGIN_STATUSLINE", missing):
             assert check_statusline() is True
 
 

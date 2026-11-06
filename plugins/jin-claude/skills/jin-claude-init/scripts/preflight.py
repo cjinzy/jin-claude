@@ -4,6 +4,7 @@
 settings.json을 직접 읽어 각 항목의 설치 여부를 검사한다.
 """
 
+import filecmp
 import json
 import platform
 import subprocess
@@ -15,6 +16,8 @@ from merge_settings import DEFAULT_SETTINGS, REQUIRED_SETTINGS  # 설정 단일 
 
 CLAUDE_DIR = Path.home() / ".claude"
 SETTINGS_PATH = CLAUDE_DIR / "settings.json"
+# 최신 판정 기준: 실행 중인 plugin 의 사본 (<plugin>/scripts/)
+PLUGIN_STATUSLINE = Path(__file__).resolve().parents[3] / "scripts" / "statusline-command.sh"
 
 # Step 2 설치 대상 단일 출처 (install_plugins.py 가 사용). ID 형식 = enabledPlugins 키 (plugin@marketplace).
 # 필수: 배포 CLAUDE.md·mcp-servers.md 가 전제하거나 팀 표준 → 항상 설치.
@@ -133,12 +136,19 @@ def check_plugins(settings: dict, expected: list[str] | None = None) -> dict:
 
 
 def check_statusline() -> bool:
-    """statusline-command.sh 존재 여부를 확인한다.
+    """statusline-command.sh 가 설치돼 있고 plugin 사본과 같은지 확인한다.
+
+    존재만 보면 낡은 설치본이 Step 3(sync_repo) 을 계속 건너뛰게 한다.
 
     Returns:
-        존재하면 True.
+        설치본이 있고 최신이면 True. 기준 사본이 없으면 존재 여부만 본다.
     """
-    return (CLAUDE_DIR / "statusline-command.sh").exists()
+    installed = CLAUDE_DIR / "statusline-command.sh"
+    if not installed.exists():
+        return False
+    if not PLUGIN_STATUSLINE.exists():
+        return True
+    return filecmp.cmp(installed, PLUGIN_STATUSLINE, shallow=False)
 
 
 def check_settings(settings: dict) -> dict:
