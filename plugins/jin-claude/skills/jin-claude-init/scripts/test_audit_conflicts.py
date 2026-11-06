@@ -306,23 +306,23 @@ def test_set_setting_backs_up_and_survives_reinit(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("has_file", [False, True])
 def test_uninstall_optional_updates_selection(tmp_path: Path, has_file: bool) -> None:
-    other = next(p for p in OPTIONAL_PLUGINS if p not in (SUPERLITE, BROWSER_USE))
-    claude_dir, cj = make_env(tmp_path, {SUPERLITE: {}, PSTACK: {}, other: {}})
+    other, unused = [p for p in OPTIONAL_PLUGINS if p != BROWSER_USE][:2]
+    claude_dir, cj = make_env(tmp_path, {BROWSER_USE: {}, other: {}}, user_mcp=["playwright"])
     if has_file:
-        (claude_dir / SELECTION_FILE).write_text(json.dumps({"optional": [SUPERLITE, other]}))
+        (claude_dir / SELECTION_FILE).write_text(json.dumps({"optional": [BROWSER_USE, other]}))
     with patch("audit_conflicts.subprocess.run", side_effect=_ok):
-        ac.apply([f"known:workflow-mandates/uninstall_plugin:{SUPERLITE}"], claude_dir, cj)
+        ac.apply([f"known:browser-tools/uninstall_plugin:{BROWSER_USE}"], claude_dir, cj)
     chosen = selected_plugins(claude_dir)
-    assert SUPERLITE not in chosen and other in chosen  # 재 init 이 다시 설치하지 않음
-    assert BROWSER_USE not in chosen  # 파일 없을 때 = enabled 인 OPTIONAL 만
+    assert BROWSER_USE not in chosen and other in chosen  # 재 init 이 다시 설치하지 않음
+    assert unused not in chosen  # 파일 없을 때 = enabled 인 OPTIONAL 만
 
 
 def test_failed_uninstall_keeps_selection(tmp_path: Path) -> None:
-    claude_dir, cj = make_env(tmp_path, {SUPERLITE: {}, PSTACK: {}})
-    (claude_dir / SELECTION_FILE).write_text(json.dumps({"optional": [SUPERLITE]}))
+    claude_dir, cj = make_env(tmp_path, {BROWSER_USE: {}}, user_mcp=["playwright"])
+    (claude_dir / SELECTION_FILE).write_text(json.dumps({"optional": [BROWSER_USE]}))
     with patch("audit_conflicts.subprocess.run", return_value=MagicMock(returncode=1, stdout="", stderr="boom")):
-        result = ac.apply([f"known:workflow-mandates/uninstall_plugin:{SUPERLITE}"], claude_dir, cj)
-    assert result["failed"] and SUPERLITE in selected_plugins(claude_dir)
+        result = ac.apply([f"known:browser-tools/uninstall_plugin:{BROWSER_USE}"], claude_dir, cj)
+    assert result["failed"] and BROWSER_USE in selected_plugins(claude_dir)
 
 
 def test_uninstall_non_optional_writes_no_selection(tmp_path: Path) -> None:
