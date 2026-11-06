@@ -73,6 +73,11 @@ def _run(cmd: list[str]) -> bool:
     return True
 
 
+def save_selection(claude_dir: Path, optional: list[str]) -> None:
+    """선택 플러그인 저장 → 재 init 이 이 목록만 설치 (audit 의 uninstall 도 사용)."""
+    (claude_dir / SELECTION_FILE).write_text(json.dumps({"optional": optional}) + "\n", encoding="utf-8")
+
+
 def install(settings_path: Path = SETTINGS_PATH, select: list[str] | None = None) -> int:
     """필수 + 선택 플러그인 중 빠진 것만 설치하고 실패 개수를 반환한다.
 
@@ -84,7 +89,7 @@ def install(settings_path: Path = SETTINGS_PATH, select: list[str] | None = None
         unknown = set(select) - set(OPTIONAL_PLUGINS)
         if unknown:
             raise ValueError(f"선택 목록에 없는 plugin: {sorted(unknown)}")
-        (claude_dir / SELECTION_FILE).write_text(json.dumps({"optional": select}) + "\n", encoding="utf-8")
+        save_selection(claude_dir, select)
     plugins = selected_plugins(claude_dir)
     before = _load(settings_path)
     cloned = _load(claude_dir / "plugins" / "known_marketplaces.json")

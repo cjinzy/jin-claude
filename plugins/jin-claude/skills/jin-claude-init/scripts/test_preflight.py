@@ -209,3 +209,50 @@ class TestDetermineRecommendation:
             "hooks": {"installed": 1, "total": 4},
         }
         assert determine_recommendation(report) == "partial"
+
+
+class TestCheckMcpHealth:
+    """check_mcp_health(): jin 플러그인 MCP 미연결 = missing, 그 외 실패 = 정보."""
+
+    LIST = (
+        "Checking MCP server health…\n\n"
+        "claude.ai Linear: https://x - ✔ Connected\n"
+        "plugin:serena:serena: uvx --from x serena - ✘ Failed to connect — spawn uvx ENOENT\n"
+        "plugin:context-mode:context-mode: node x - ✔ Connected\n"
+        "plugin:other:thing: node y - ✘ Failed to connect — boom\n"
+        "gbrain: gbrain serve --token=SECRET - ✘ Failed to connect — CONNECTION_CLOSED\n"
+    )
+    JIN = ["serena@claude-plugins-official", "context-mode@context-mode"]
+
+    def test_jin_plugin_failure_is_missing_with_hint(self) -> None:
+        from preflight import MCP_HINTS, check_mcp_health
+
+        r = check_mcp_health(self.LIST, self.JIN)
+        assert r["missing"] == [{"server": "plugin:serena:serena", "plugin": self.JIN[0], "hint": MCP_HINTS[self.JIN[0]]}]
+        assert r["ok"] == ["plugin:context-mode:context-mode"]
+
+    def test_other_failures_are_info_names_only(self) -> None:
+        from preflight import check_mcp_health
+
+        r = check_mcp_health(self.LIST, self.JIN)
+        assert r["other_failed"] == ["plugin:other:thing", "gbrain"]
+        assert "SECRET" not in json.dumps(r) and "ENOENT" not in json.dumps(r)
+
+    def test_list_unavailable_reports_error(self) -> None:
+        from preflight import check_mcp_health
+
+        assert check_mcp_health(None, self.JIN) == {"ok": [], "missing": [], "other_failed": [], "error": "claude mcp list 실행 실패"}
+
+    def test_mcp_list_timeout_covers_slow_servers(self) -> None:
+        """개인 MCP 하나가 30초 타임아웃이면 목록 전체가 30초+ 걸린다 (실측 35초)."""
+        from preflight import MCP_LIST_TIMEOUT_SEC
+
+        assert MCP_LIST_TIMEOUT_SEC > 60
+
+    def test_cli_flag_prints_only_mcp(self, capsys) -> None:
+        import preflight
+
+        with patch.object(preflight, "_mcp_list", return_value=self.LIST), patch.object(preflight, "selected_plugins", return_value=self.JIN), patch("sys.argv", ["preflight.py", "--mcp"]):
+            preflight.main()
+        out = json.loads(capsys.readouterr().out)
+        assert set(out) == {"mcp"} and out["mcp"]["missing"][0]["server"] == "plugin:serena:serena"

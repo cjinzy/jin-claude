@@ -7,7 +7,7 @@
 - When writing something intended for human consumption, (comment, commit message, reply to prompt) use as few words as possible. Pick every word meticulously to reduce the volume to a strict minimum. Be down to the point. Less is more.
 - Avoid magic numbers and strings by extracting recurring or meaningful values into descriptive constants (const) or enums. Keep self-explanatory, one-off values inline to avoid clutter. If a value comes from a spec (e.g. HTTP 200 OK), use a constant regardless.
 - Document the what and why with to-the-point comments, docstrings, and ASCII drawings for full systems. Minimise code duplication. Always include a traceback for error tracking.
-- If the prompt indicates that a bug is being fixed, don't write the fix right away. First write the test. Observe it failing. Then write the fix. And observe the test passing. Always create test cases and add them to .gitignore (do not git commit).
+- If the prompt indicates that a bug is being fixed, don't write the fix right away. First write the test. Observe it failing. Then write the fix. And observe the test passing. Always create test cases. Add them to .gitignore (do not git commit) unless the user asks to commit them.
 - Make full use of agents or teams
 - Split files to prevent them becoming excessively large
 - Always save plans as files with searchable names.

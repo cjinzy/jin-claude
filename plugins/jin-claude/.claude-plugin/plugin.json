@@ -1,7 +1,7 @@
 {
   "name": "jin-claude",
-  "version": "5.2.0",
-  "description": "Team-standard skills & hooks for Claude Code: 12 skills, SessionStart + UserPromptSubmit hooks, statusline",
+  "version": "5.3.0",
+  "description": "Team-standard skills & hooks for Claude Code: 11 skills, SessionStart + UserPromptSubmit hooks, statusline",
   "author": {
     "name": "jin",
     "email": "jin@stealthmole.com"

@@ -280,9 +280,21 @@ class TestAmbitionPlan:
     def test_other_modes_silent(self) -> None:
         assert context_for("로그인 기능 만들어줘", "default") is None
 
-    def test_load_names_all_skills(self) -> None:
-        for name in ("jin-claude:jin-altitude", "jin-claude:jin-depth", "jin-claude:jin-range", "## Ambition"):
+    def test_load_names_single_skill(self) -> None:
+        """세 축은 jin-ambition 한 스킬 (목록 1칸, compaction 때 본문째 재부착)."""
+        for name in ("jin-claude:jin-ambition", "## Ambition"):
             assert name in LOAD and name in ASK
+        for old in ("jin-altitude", "jin-depth", "jin-range"):
+            assert old not in LOAD and old not in ASK
+
+    def test_ambition_skill_has_all_axes(self) -> None:
+        skills = Path(__file__).resolve().parents[2]
+        text = (skills / "jin-ambition" / "SKILL.md").read_text(encoding="utf-8")
+        assert "name: jin-ambition" in text
+        for axis in ("## Altitude", "## Depth", "## Range", "$ARGUMENTS"):
+            assert axis in text
+        for old in ("jin-altitude", "jin-depth", "jin-range"):
+            assert not (skills / old).exists()
 
     def test_main_emits_additional_context(self, capsys: pytest.CaptureFixture) -> None:
         payload = json.dumps({"prompt": "계획", "permission_mode": "plan", "hook_event_name": "UserPromptSubmit"})

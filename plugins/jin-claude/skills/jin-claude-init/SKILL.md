@@ -21,7 +21,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/preflight.py"
 
 - `"full"` → 모든 Step 실행
 - `"partial"` → `missing` 항목에 해당하는 Step 만 실행
-- `"none"` → 사용자에게 재실행 / 플러그인 선택만 변경 / 종료 중 고르게 한다. 선택만 변경 → Step 1 의 선택 플러그인 질문 + Step 2 만 실행
+- `"none"` → 사용자에게 재실행 / 플러그인 선택만 변경 / 충돌 audit 만 / 종료 중 고르게 한다. 선택만 변경 → Step 1 의 선택 플러그인 질문 + Step 2 만 실행. 충돌 audit 만 → Step 6 의 3번만 실행
 
 ## Step 1 — 사용자 확인 (필수)
 
@@ -104,7 +104,28 @@ standalone 자동 설치 대상 MCP 는 현재 없다 (`MCP_SERVERS = []`). 추�
 ## Step 6 — 검증
 
 1. `preflight.py` 를 다시 실행한다. `hooks.missing` 이 비어 있어야 한다 (SessionStart: 구버전 `~/.claude/skills` 사본 백업 이동 + 타이머 재등록 + marketplace 자동 업데이트). 남은 `missing` 항목은 사용자에게 알린다.
-2. `claude plugin list`, `claude mcp list` 로 설치 상태 확인.
+2. MCP 연결 확인 (`claude mcp list` 가 모든 서버에 연결해 수십 초 걸릴 수 있다):
+
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scripts/preflight.py" --mcp
+   ```
+
+   출력: `{"mcp": {"ok", "missing", "other_failed"}}`. `missing`(jin 플러그인 MCP 미연결)은 `server`·`hint` 와 함께 알린다. `other_failed`(개인 MCP 등)는 이름만 정보로 표시한다. `error` 가 있으면 `claude mcp list` 실행 실패로 알린다. `claude plugin list` 로 플러그인 상태도 확인한다.
+3. 설치 환경 충돌 audit:
+
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scripts/audit_conflicts.py"
+   ```
+
+   출력: `findings`(severity 순 high→low, 각 `id`·`severity`·`summary`·`evidence`·`fixes`) + `counts` JSON. findings 를 severity·summary·evidence 표로 보여준다. `fixes` 가 있는 finding 은 AskUserQuestion multiSelect 로 고르게 한다 (질문당 option 최대 4개, label = fix `label`). `fixes` 가 빈 finding(`hook-stack:*` 등)은 정보로만 표시한다. 고른 fix `id` 를 넘겨 실행한다:
+
+   ```bash
+   python3 "${CLAUDE_SKILL_DIR}/scripts/audit_conflicts.py" --apply <fix-id> [<fix-id> ...]
+   ```
+
+   출력: 재검사 결과 JSON + `applied`(fix id) + `failed`(`id`·`error`). 실패가 있으면 exit 1 — 실패 항목과 남은 findings 를 사용자에게 알린다. 아무것도 안 고르면 `--apply` 를 실행하지 않는다.
+
+   `uninstall_plugin` 은 user scope 만 지운다. label·evidence 의 `<scope> scope 남음: <경로>` 사본은 그 프로젝트에서 계속 활성 — 그 경로에서 `claude plugin uninstall <id> --scope <scope>` 하라고 안내한다.
 
 ## Step 7 — 변경 안내 (필수)
 
@@ -126,4 +147,5 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py"
 - 파일: 신규 N · 변경 N · 동일 N (report_changes 출력 기준)
 - Settings: 필수 키 반영, 개인 선호·hooks 보존
 - Hooks: SessionStart 확인
+- 충돌: high N · medium N · low N (적용 N)
 ```

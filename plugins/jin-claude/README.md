@@ -1,7 +1,7 @@
 # jin-claude
 
-> Team-standard skills & hooks for Claude Code — **12 skills · 2 hooks**
-> Version: **5.2.0** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Team-standard skills & hooks for Claude Code — **11 skills · 2 hooks**
+> Version: **5.3.0** · License: MIT · Marketplace: `jin-claudecode-mp`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
@@ -31,7 +31,7 @@ plugins/jin-claude/
 
 ---
 
-## Skills (9)
+## Skills (11)
 
 ### Analysis (1)
 
@@ -47,13 +47,11 @@ plugins/jin-claude/
 | `mole-linear` | `linear`, `이슈 등록`, `MOLE-` | STEALTHMOLE Linear issue/comment work with team format rules |
 | `jin-commit` | `jin commit`, `commit` | Gitmoji 기반 커밋 메시지 자동 추천 및 생성 |
 
-### Ambition Planning (3)
+### Ambition Planning (1)
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
-| `jin-altitude` | plan 모드 ambition, `ambition` | 작업 너머의 결과를 맡기고 사람 없이 유지할 전제조건 점검 |
-| `jin-depth` | plan 모드 ambition, `ambition` | 최고 전문가의 원자료·방법·외부 판정으로 깊게 |
-| `jin-range` | plan 모드 ambition, `ambition` | 동사 재서술 → 다른 분야 기법 + red team |
+| `jin-ambition` | plan 모드 ambition, `ambition`, `/jin-claude:jin-ambition [altitude\|depth\|range]` | 3축 단일 스킬: 결과 위임 · 전문가 깊이 · 다른 분야 기법 + red team |
 
 ### Code Quality (1)
 
@@ -72,7 +70,13 @@ plugins/jin-claude/
 
 | Slug | Trigger | Description |
 |------|---------|-------------|
-| `jin-claude-init` | `jin init`, `초기화`, `환경 세팅` | 팀원 Claude Code 환경 초기화 — plugin 설치/settings/MCP/hooks/skills 동기화 |
+| `jin-claude-init` | `jin init`, `초기화`, `환경 세팅` | 팀원 Claude Code 환경 초기화 — plugin 설치/settings/MCP/hooks/skills 동기화 + 설치 환경 충돌 audit (`audit_conflicts.py`, 고른 fix 만 적용) |
+
+### Orchestration (1)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `jin-maestro` | `/jin-claude:jin-maestro` | 오케스트레이션 세션 — 계획·분배·보고만, 작업은 하위 세션에 위임·끝나면 보관·후속은 같은 세션에 연속 위임, 작업별 ultracode/normal |
 
 ### Meta (1)
 
@@ -89,7 +93,7 @@ plugins/jin-claude/
 | File | Event | Role |
 |------|-------|------|
 | `hooks/session_init.py` | `SessionStart` | 구버전 `~/.claude/skills` 사본 백업 이동 + 사용량 타이머 유실 시 재등록 + marketplace 저장소 자동 업데이트 |
-| `hooks/ambition_plan.py` | `UserPromptSubmit` | plan 모드면 ambition 계획 여부 질문 지시, 프롬프트에 `ambition`/`앰비션` 이 있으면 묻지 않고 jin-altitude·jin-depth·jin-range 로드 지시 |
+| `hooks/ambition_plan.py` | `UserPromptSubmit` | plan 모드면 ambition 계획 여부 질문 지시, 프롬프트에 `ambition`/`앰비션` 이 있으면 묻지 않고 jin-ambition 로드 지시 |
 
 > `hooks/keyword_detector.py` 는 미등록 상태(출력 형식이 hook 규격과 다름). 키워드 테이블은 상단 `KEYWORDS` dict.
 

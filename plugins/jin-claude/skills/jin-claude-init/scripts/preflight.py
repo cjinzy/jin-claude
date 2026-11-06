@@ -72,6 +72,17 @@ HOOK_TYPES = ["SessionStart", "UserPromptSubmit"]
 # 현재는 standalone으로 설치할 추가 MCP 서버가 없다.
 MCP_SERVERS: list[str] = []
 
+# Step 6 `--mcp`: jin 플러그인이 제공하는 MCP 연결 확인 (설치 여부는 plugins 항목이 본다).
+# `claude mcp list` 는 모든 서버에 실제 연결 → 개인 MCP 하나가 30초 타임아웃이면 전체가 30초+ (실측 35초).
+MCP_LIST_TIMEOUT_SEC = 120
+MCP_CONNECTED = "✔ Connected"
+PLUGIN_MCP_PREFIX = "plugin:"
+MCP_HINTS = {
+    "serena@claude-plugins-official": "uv(uvx) 설치 확인",
+    "context-mode@context-mode": "node 설치 확인",
+}
+MCP_DEFAULT_HINT = "`claude mcp list` 로 오류 확인 후 plugin 재설치"
+
 
 def _load_settings() -> dict:
     """settings.json을 로드한다.
@@ -213,20 +224,52 @@ def check_mcp_server(name: str) -> bool:
     Returns:
         설치되어 있으면 True.
     """
+    for line in (_mcp_list() or "").splitlines():
+        # standalone: "serena: ..." 또는 plugin: "plugin:X:serena: ..."
+        if line.strip().startswith(f"{name}:") or f":{name}:" in line:
+            return True
+    return False
+
+
+def _mcp_list() -> str | None:
+    """`claude mcp list` stdout. 실행 실패·타임아웃이면 None."""
     try:
-        result = subprocess.run(
-            ["claude", "mcp", "list"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        for line in result.stdout.splitlines():
-            # standalone: "serena: ..." 또는 plugin: "plugin:X:serena: ..."
-            if line.strip().startswith(f"{name}:") or f":{name}:" in line:
-                return True
-        return False
-    except (subprocess.TimeoutExpired, OSError, FileNotFoundError):
-        return False
+        result = subprocess.run(["claude", "mcp", "list"], capture_output=True, text=True, timeout=MCP_LIST_TIMEOUT_SEC)
+    except (subprocess.TimeoutExpired, OSError):
+        traceback.print_exc()
+        return None
+    return result.stdout
+
+
+def check_mcp_health(listing: str | None, plugins: list[str]) -> dict:
+    """`claude mcp list` 출력에서 연결 상태를 판정한다.
+
+    줄 형식: `<서버>: <command|url> - ✔ Connected` / `... - ✘ Failed to connect — <오류>`.
+    plugin 서버 이름 = `plugin:<plugin 이름>:<서버>`.
+
+    Returns:
+        ok: 연결된 jin 플러그인 MCP. missing: 미연결 jin 플러그인 MCP (+ 원인 힌트).
+        other_failed: 그 외 미연결 서버 이름 (정보). command·오류 문구는 비밀이 섞일 수 있어 버린다.
+    """
+    report: dict = {"ok": [], "missing": [], "other_failed": []}
+    if listing is None:
+        report["error"] = "claude mcp list 실행 실패"
+        return report
+    by_name = {p.split("@", 1)[0]: p for p in plugins}
+    for line in listing.splitlines():
+        if ": " not in line:
+            continue
+        server = line.split(": ", 1)[0].strip()
+        parts = server.split(":")
+        plugin = by_name.get(parts[1]) if server.startswith(PLUGIN_MCP_PREFIX) and len(parts) == 3 else None
+        if MCP_CONNECTED in line:
+            if plugin:
+                report["ok"].append(server)
+        elif plugin:
+            report["missing"].append({"server": server, "plugin": plugin, "hint": MCP_HINTS.get(plugin, MCP_DEFAULT_HINT)})
+        else:
+            report["other_failed"].append(server)
+    return report
 
 
 def check_hooks(settings: dict) -> dict:
@@ -331,7 +374,10 @@ def run_preflight() -> dict:
 def main() -> None:
     """메인 진입점. JSON 결과를 stdout으로 출력한다."""
     try:
-        report = run_preflight()
+        if "--mcp" in sys.argv[1:]:  # Step 6 전용 — 느려서 Step 0 에선 돌리지 않는다
+            report = {"mcp": check_mcp_health(_mcp_list(), selected_plugins())}
+        else:
+            report = run_preflight()
         print(json.dumps(report, indent=2, ensure_ascii=False))
     except Exception:
         traceback.print_exc()

@@ -11,7 +11,7 @@ Tool names below are the tool part only. The full name depends on how the server
 | Issue tracking | Linear | invoke the `mole-linear` skill first | claude.ai connector (per account) |
 | Code search by meaning | Semble | `search`, `find_related` | personal |
 | Long-term memory | Hindsight | `retain`, `recall` — rules: @memory-routing.md | personal |
-| Browser automation, UI testing | Playwright | `browser_navigate`, `browser_snapshot`, `browser_click`, … | personal |
+| Browser automation, UI testing | browser-use | `browser_exec`, `browser_screenshot` | init optional (plugin `browser-use`) |
 | Web search with citations | Tavily | search / extract (needs API key) | personal |
 | Knowledge graph / RAG | GBrain | what it exposes | personal |
 | Context compression | Headroom | `headroom_compress`, `headroom_retrieve` | personal |
