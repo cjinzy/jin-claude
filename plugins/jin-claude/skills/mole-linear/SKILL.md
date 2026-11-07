@@ -9,13 +9,7 @@ Linear work for team STEALTHMOLE. Load this before any Linear tool call and foll
 
 ## Tools
 
-Linear MCP tools. Names below are the tool part; the prefix depends on how Linear is connected (e.g. `mcp__claude_ai_Linear__list_issues` for the claude.ai connector). If no Linear tools are available, set up Linear MCP and stop:
-
-1. With the user's OK, run in the project root (local scope): `claude mcp add --transport http linear-server https://mcp.linear.app/mcp`
-2. Ask the user to run `/mcp` → `linear-server` → Authenticate (OAuth), then start a new session. Until then `claude mcp get linear-server` shows `Failed to connect`.
-3. In the new session, apply Rule 2 (bind this directory to one Linear project).
-
-Never add `linear-server` when Linear tools already exist (e.g. claude.ai connector) — duplicate toolsets. Team doc: [Linear MCP Setup](https://linear.app/stealthmole/document/linear-mcp-setup-38a6483987e1).
+Linear MCP tools. Names below are the tool part; the prefix depends on how Linear is connected (e.g. `mcp__claude_ai_Linear__list_issues` for the claude.ai connector). If no Linear tools are available, or the user asks to install/set up Linear, follow **Setup** first.
 
 * `list_issues` — filter by project / state / assignee (`me`)
 * `get_issue` — issue incl. sub-issues, `gitBranchName` (no comments)
@@ -23,6 +17,17 @@ Never add `linear-server` when Linear tools already exist (e.g. claude.ai connec
 * `save_issue` — create (no id) or update (with id): status, priority, assignee, labels, parent, due date
 * `save_comment` — add a comment to an issue
 * `list_projects`, `list_issue_labels` — look up existing values before setting them
+
+## Setup
+
+Ask before each removal or install. Team doc: [Linear MCP Setup](https://linear.app/stealthmole/document/linear-mcp-setup-38a6483987e1).
+
+1. Clean old setups:
+   * MCP: in `claude mcp list`, Linear servers = name contains `linear` or URL `mcp.linear.app` (old `mcp-remote`, `/sse`). If `mcp__claude_ai_Linear__*` tools exist (claude.ai connector), remove them all; otherwise keep only `linear-server` (HTTP `/mcp`). `claude mcp remove <name> -s <local|user|project>` (project = shared `.mcp.json`, commit needed).
+   * Rules: old `linear.md` + its `@linear.md` line in project `CLAUDE.md` / `AGENTS.md` duplicate this skill → delete both.
+2. Install only if there is no claude.ai connector and no `linear-server` — project root, local scope: `claude mcp add --transport http linear-server https://mcp.linear.app/mcp`
+3. User runs `/mcp` → `linear-server` → Authenticate (OAuth), then a new session. Until then `claude mcp get linear-server` shows `Failed to connect`. Stop here.
+4. New session: apply Rule 2, then verify with `list_issues(project=<name>, assignee="me")`.
 
 ## Statuses (team STEALTHMOLE, key `MOLE`, issue prefix `MOLE-`)
 
