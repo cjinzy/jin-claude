@@ -1,6 +1,6 @@
 ---
 name: jin-commit
-description: git diff 를 분석해 gitmoji + 한국어 커밋 메시지를 추천하고, 사용자 확인 후 커밋한다. "jin commit", "커밋", "커밋 메시지", "commit", "commit message", "git commit" 요청이나 작업 완료 후 변경사항을 커밋할 때 사용한다.
+description: git diff 를 분석해 gitmoji + 한국어 커밋 메시지를 만들어 바로 커밋한다. "jin commit", "커밋", "커밋 메시지", "commit", "commit message", "git commit" 요청이나 작업 완료 후 변경사항을 커밋할 때 사용한다.
 argument-hint: "[message]"
 ---
 
@@ -74,8 +74,8 @@ argument-hint: "[message]"
 1. `git status` + `git diff` (스테이징된 경우 `git diff --staged`) 로 변경 분석.
 2. 스테이징 대상 결정: 사용자가 지정한 파일 또는 이번 변경에 속한 파일만. `git add -A` / `git add .` 금지. 무관한 변경·비밀 파일(.env 등)은 제외하고 알린다.
 3. 이모지 선택 → 메시지 작성 (`$ARGUMENTS` 가 있으면 반영).
-4. 스테이징 목록 + 메시지를 보여주고 사용자 확인. 확인 전 커밋 금지.
-5. 승인되면 `git add <files>` → `git commit`.
+4. 호출 = 커밋 승인. 확인 없이 `git add <files>` → `git commit`. 대상 파일이 모호할 때만 묻는다.
+5. 커밋 해시 · 메시지 · 포함/제외 파일을 보고한다. push 는 하지 않는다.
 
 ## 주의사항
 

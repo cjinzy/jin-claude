@@ -20,7 +20,7 @@
 Complete tasks in this order: deploy(execute) → verify → jin-commit.
 
 ## Commit Report
-[DONE] Recommend commit messages using jin-commit skill (loaded from plugin).
+[DONE] Commit with the jin-commit skill (loaded from plugin).
 
 ## Project Specs
 - Backend: @backend-spec.md

@@ -14,7 +14,7 @@ description: jin-claude 사용 온보딩 — 상황별 워크플로(새 프로�
 1. 세션은 **plan 모드**로 시작한다 (기본값, `Shift+Tab` 으로 전환). 계획 → 승인 → 실행.
 2. plan 모드에서 ambition 계획 여부를 묻는다. 프롬프트에 `ambition` 을 쓰면 묻지 않고 적용.
 3. 버그 수정은 실패하는 테스트 먼저 → 수정 → 통과 확인 (CLAUDE.md 규칙).
-4. 끝은 실행 → 검증 → `jin commit` (커밋 메시지 추천 → 확인 후 커밋). push 는 직접.
+4. 끝은 실행 → 검증 → `jin commit` (메시지 작성 → 바로 커밋). push 는 직접.
 
 ## 새 프로젝트
 1. `jin deepinit` — 프로젝트 분석 후 AGENTS.md 생성.

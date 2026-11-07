@@ -1,7 +1,7 @@
 # jin-claude
 
 > Team-standard skills & hooks for Claude Code — **12 skills · 2 hooks**
-> Version: **5.4.5** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Version: **5.4.6** · License: MIT · Marketplace: `jin-claudecode-mp`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
@@ -45,7 +45,7 @@ plugins/jin-claude/
 |------|---------|-------------|
 | `jin-interview` | — | In-depth interview to create a detailed spec |
 | `mole-linear` | `linear`, `이슈 등록`, `MOLE-` | STEALTHMOLE Linear issue/comment work with team format rules |
-| `jin-commit` | `jin commit`, `commit` | Gitmoji 기반 커밋 메시지 자동 추천 및 생성 |
+| `jin-commit` | `jin commit`, `commit` | gitmoji 커밋 메시지 작성 후 커밋 |
 
 ### Ambition Planning (1)
 
@@ -105,7 +105,7 @@ plugins/jin-claude/
 - **Backend**: Python 3.12 · uv · Ruff · ty (type checker) · loguru
 - **Frontend**: React + TypeScript + Vite · fluentui-system-icons · npm
 - **Docs**: docstring + traceback 필수, 주석은 WHY만
-- **Git**: `jin commit` 으로 gitmoji 기반 메시지 생성
+- **Git**: `jin commit` 으로 gitmoji 메시지 작성·커밋
 - **Tool 우선순위**: Serena(심볼) → context-mode(대용량 출력) → Read(편집 대상만)
 
 자세한 팀 가이드는 repo root의 `CLAUDE.md` 참조.

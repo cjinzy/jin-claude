@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 12개 스킬, 2개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.4.5` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.4.6` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -99,7 +99,7 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 |------|------|
 | `jin-claude-init` | 팀원 환경 초기화 자동화 |
 | `jin-onboard` | 상황별 사용 워크플로 안내 — init 완료 후 자동 실행, `jin onboard` 로 다시 보기 |
-| `jin-commit` | gitmoji 기반 커밋 메시지 추천 |
+| `jin-commit` | gitmoji 커밋 메시지 작성 후 커밋 |
 | `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
 | `mole-linear` | STEALTHMOLE 팀 Linear 이슈·댓글 작업 (As-is/To-be 양식, Plan/Done/BLOCKED 댓글) |
 | `jin-ambition` | Ambition 계획 3축 — Altitude(결과 위임·전제조건) · Depth(원자료·방법·외부 판정) · Range(동사 재서술 → 다른 분야 기법 + red team). 인자로 축 하나만 가능 |
