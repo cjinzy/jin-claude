@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Team-standard skills & hooks for Claude Code: 12 skills, SessionStart + UserPromptSubmit hooks, statusline",
-    "version": "5.4.3"
+    "version": "5.4.4"
   },
   "plugins": [
     {
       "name": "jin-claude",
       "source": "./plugins/jin-claude",
       "description": "Team-standard skills & hooks for Claude Code: 12 skills, SessionStart + UserPromptSubmit hooks, statusline",
-      "version": "5.4.3",
+      "version": "5.4.4",
       "author": {
         "name": "jin",
         "email": "jin@stealthmole.com"
