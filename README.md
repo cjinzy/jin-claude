@@ -22,7 +22,7 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 
 #### Step 0 — Pre-flight Check
 
-`scripts/preflight.py`가 marketplace, 플러그인(필수 + 저장된 선택), statusline, settings, venv, 타이머, hooks 의 현재 설치 상태를 확인해 필요한 단계만 진행합니다.
+`scripts/preflight.py`가 marketplace, 플러그인(필수 + 저장된 선택), statusline·CLAUDE.md(최신 여부 포함), settings, venv, 타이머, hooks 의 현재 설치 상태를 확인해 필요한 단계만 진행합니다.
 
 #### Step 1·2 — Plugin 선택·설치 (`scripts/install_plugins.py`)
 

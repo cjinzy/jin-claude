@@ -17,7 +17,7 @@ description: 팀원 Claude Code 환경을 한 번에 초기화한다 — marketp
 python3 "${CLAUDE_SKILL_DIR}/scripts/preflight.py"
 ```
 
-출력: 항목별(marketplaces, plugins, statusline, settings, venv, timer, hooks) 설치 상태 JSON + `optional_plugins`(선택 플러그인 설명·현재 선택) + `recommendation`. plugins·marketplaces 는 필수 + 저장된 선택 기준.
+출력: 항목별(marketplaces, plugins, statusline, claude_md, settings, venv, timer, hooks) 설치 상태 JSON + `optional_plugins`(선택 플러그인 설명·현재 선택) + `recommendation`. plugins·marketplaces 는 필수 + 저장된 선택 기준. statusline·claude_md(`CLAUDE.md`·보조 문서)는 marketplace clone 사본과 내용이 다르면 낡음 → Step 3.
 
 - `"full"` → 모든 Step 실행
 - `"partial"` → `missing` 항목에 해당하는 Step 만 실행

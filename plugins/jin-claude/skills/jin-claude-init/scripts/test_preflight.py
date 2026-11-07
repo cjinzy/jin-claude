@@ -14,9 +14,9 @@ from preflight import (
     check_marketplaces,
     check_plugins,
     check_settings,
-    check_statusline,
     check_venv,
     determine_recommendation,
+    stale_synced_files,
 )
 
 
@@ -95,37 +95,44 @@ class TestCheckSettings:
         assert "effortLevel" in result["missing"]
 
 
-class TestCheckStatusline:
-    """check_statusline() 테스트 스위트."""
+class TestStaleSyncedFiles:
+    """stale_synced_files(): Step 3 대상 중 없거나 marketplace 사본과 다른 파일."""
 
-    @patch("preflight.CLAUDE_DIR", new_callable=lambda: lambda: Path("/nonexistent"))
-    def test_not_exists(self, mock_dir: Path) -> None:
-        """statusline-command.sh가 없으면 False."""
-        with patch("preflight.CLAUDE_DIR", Path("/nonexistent")):
-            assert check_statusline() is False
+    @staticmethod
+    def _setup(tmp_path: Path, installed: dict[str, str], ref: dict[str, str]) -> list:
+        """installed·ref 를 tmp_path 에 쓰고 SYNC_FILES 형태 목록을 돌려준다."""
+        home, repo = tmp_path / "home", tmp_path / "repo"
+        for root, files in ((home, installed), (repo, ref)):
+            root.mkdir(exist_ok=True)
+            for name, text in files.items():
+                (root / name).write_text(text)
+        return [(name, home / name) for name in ("CLAUDE.md", "statusline-command.sh")]
 
-    def test_matches_plugin_copy(self, tmp_path: Path) -> None:
-        """설치본이 plugin 사본과 같으면 True."""
-        ref = tmp_path / "ref.sh"
-        ref.write_text("#!/bin/bash\necho new")
-        (tmp_path / "statusline-command.sh").write_text("#!/bin/bash\necho new")
-        with patch("preflight.CLAUDE_DIR", tmp_path), patch("preflight.PLUGIN_STATUSLINE", ref):
-            assert check_statusline() is True
+    def _run(self, tmp_path: Path, installed: dict[str, str], ref: dict[str, str]) -> list[str]:
+        sync_files = self._setup(tmp_path, installed, ref)
+        repo = tmp_path / "repo"
+        with patch("preflight.SYNC_FILES", sync_files), patch("preflight.MARKETPLACE_DIR", repo):
+            return stale_synced_files()
 
-    def test_stale_copy(self, tmp_path: Path) -> None:
-        """설치본이 plugin 사본과 다르면 False — Step 3 재실행 대상."""
-        ref = tmp_path / "ref.sh"
-        ref.write_text("#!/bin/bash\necho new")
-        (tmp_path / "statusline-command.sh").write_text("#!/bin/bash\necho old")
-        with patch("preflight.CLAUDE_DIR", tmp_path), patch("preflight.PLUGIN_STATUSLINE", ref):
-            assert check_statusline() is False
+    def test_all_current(self, tmp_path: Path) -> None:
+        """모두 사본과 같으면 빈 목록."""
+        files = {"CLAUDE.md": "a", "statusline-command.sh": "b"}
+        assert self._run(tmp_path, files, files) == []
 
-    def test_plugin_copy_missing(self, tmp_path: Path) -> None:
-        """기준 사본이 없으면 존재만 확인."""
-        (tmp_path / "statusline-command.sh").write_text("#!/bin/bash")
-        missing = tmp_path / "none.sh"
-        with patch("preflight.CLAUDE_DIR", tmp_path), patch("preflight.PLUGIN_STATUSLINE", missing):
-            assert check_statusline() is True
+    def test_missing(self, tmp_path: Path) -> None:
+        """설치본이 없으면 stale."""
+        ref = {"CLAUDE.md": "a", "statusline-command.sh": "b"}
+        assert self._run(tmp_path, {"statusline-command.sh": "b"}, ref) == ["CLAUDE.md"]
+
+    def test_outdated(self, tmp_path: Path) -> None:
+        """내용이 다르면 stale — 존재만 보면 Step 3 이 계속 스킵된다."""
+        ref = {"CLAUDE.md": "new", "statusline-command.sh": "new"}
+        installed = {"CLAUDE.md": "old", "statusline-command.sh": "new"}
+        assert self._run(tmp_path, installed, ref) == ["CLAUDE.md"]
+
+    def test_no_reference(self, tmp_path: Path) -> None:
+        """기준 사본이 없으면 존재 여부만 본다."""
+        assert self._run(tmp_path, {"CLAUDE.md": "x", "statusline-command.sh": "y"}, {}) == []
 
 
 class TestCheckVenv:
@@ -191,6 +198,7 @@ class TestDetermineRecommendation:
             "marketplaces": {"ok": 5, "total": 5},
             "plugins": {"ok": 5, "total": 5},
             "statusline": True,
+            "claude_md": {"missing": []},
             "settings": {"complete": True},
             "venv": True,
             "timer": True,
@@ -205,6 +213,7 @@ class TestDetermineRecommendation:
             "marketplaces": {"ok": 0, "total": 5},
             "plugins": {"ok": 0, "total": 5},
             "statusline": False,
+            "claude_md": {"missing": ["CLAUDE.md"]},
             "settings": {"complete": False},
             "venv": False,
             "timer": False,
@@ -219,11 +228,26 @@ class TestDetermineRecommendation:
             "marketplaces": {"ok": 3, "total": 5},
             "plugins": {"ok": 5, "total": 5},
             "statusline": True,
+            "claude_md": {"missing": []},
             "settings": {"complete": True},
             "venv": True,
             "timer": False,
             "context-mode": False,
             "hooks": {"installed": 1, "total": 4},
+        }
+        assert determine_recommendation(report) == "partial"
+
+    def test_partial_when_claude_md_stale(self) -> None:
+        """CLAUDE.md 만 낡아도 'partial' (Step 3 재실행)."""
+        report = {
+            "marketplaces": {"ok": 5, "total": 5},
+            "plugins": {"ok": 5, "total": 5},
+            "statusline": True,
+            "claude_md": {"missing": ["CLAUDE.md"]},
+            "settings": {"complete": True},
+            "venv": True,
+            "timer": True,
+            "hooks": {"installed": 4, "total": 4},
         }
         assert determine_recommendation(report) == "partial"
 

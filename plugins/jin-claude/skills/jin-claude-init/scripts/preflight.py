@@ -13,11 +13,13 @@ import traceback
 from pathlib import Path
 
 from merge_settings import DEFAULT_SETTINGS, REQUIRED_SETTINGS  # 설정 단일 출처
+from sync_repo import SYNC_FILES  # Step 3 동기화 대상 단일 출처
 
 CLAUDE_DIR = Path.home() / ".claude"
 SETTINGS_PATH = CLAUDE_DIR / "settings.json"
-# 최신 판정 기준: 실행 중인 plugin 의 사본 (<plugin>/scripts/)
-PLUGIN_STATUSLINE = Path(__file__).resolve().parents[3] / "scripts" / "statusline-command.sh"
+# 최신 판정 기준: SessionStart hook 이 매 세션 pull 하는 marketplace clone (저장소 전체)
+MARKETPLACE_DIR = CLAUDE_DIR / "plugins" / "marketplaces" / "jin-claudecode-mp"
+STATUSLINE_FILE = "statusline-command.sh"
 
 # Step 2 설치 대상 단일 출처 (install_plugins.py 가 사용). ID 형식 = enabledPlugins 키 (plugin@marketplace).
 # 필수: 배포 CLAUDE.md·mcp-servers.md 가 전제하거나 팀 표준 → 항상 설치.
@@ -135,20 +137,18 @@ def check_plugins(settings: dict, expected: list[str] | None = None) -> dict:
     return {"ok": len(expected) - len(missing), "total": len(expected), "missing": missing}
 
 
-def check_statusline() -> bool:
-    """statusline-command.sh 가 설치돼 있고 plugin 사본과 같은지 확인한다.
+def stale_synced_files() -> list[str]:
+    """Step 3 동기화 대상 중 없거나 marketplace 사본과 다른 파일 이름을 돌려준다.
 
     존재만 보면 낡은 설치본이 Step 3(sync_repo) 을 계속 건너뛰게 한다.
-
-    Returns:
-        설치본이 있고 최신이면 True. 기준 사본이 없으면 존재 여부만 본다.
+    기준 사본이 없으면 존재 여부만 본다.
     """
-    installed = CLAUDE_DIR / "statusline-command.sh"
-    if not installed.exists():
-        return False
-    if not PLUGIN_STATUSLINE.exists():
-        return True
-    return filecmp.cmp(installed, PLUGIN_STATUSLINE, shallow=False)
+    stale = []
+    for src, target in SYNC_FILES:
+        ref = MARKETPLACE_DIR / src
+        if not target.exists() or (ref.exists() and not filecmp.cmp(target, ref, shallow=False)):
+            stale.append(target.name)
+    return stale
 
 
 def check_settings(settings: dict) -> dict:
@@ -329,6 +329,7 @@ def determine_recommendation(report: dict) -> str:
         report["marketplaces"]["ok"] == report["marketplaces"]["total"]
         and report["plugins"]["ok"] == report["plugins"]["total"]
         and report["statusline"] is True
+        and not report["claude_md"]["missing"]
         and report["settings"]["complete"] is True
         and report["venv"] is True
         and report["timer"] is True
@@ -365,7 +366,10 @@ def run_preflight() -> dict:
     report["plugins"] = check_plugins(settings, plugins)
     # Step 1 플러그인 선택 질문 재료. selected = 저장된 선택(없으면 전부) → 질문 기본값.
     report["optional_plugins"] = {p: {"description": d, "selected": p in plugins} for p, d in OPTIONAL_PLUGINS.items()}
-    report["statusline"] = check_statusline()
+    stale = stale_synced_files()
+    report["statusline"] = STATUSLINE_FILE not in stale
+    # CLAUDE.md + @include 보조 문서
+    report["claude_md"] = {"missing": [name for name in stale if name != STATUSLINE_FILE]}
     report["settings"] = check_settings(settings)
     report["venv"] = check_venv()
     report["timer"] = check_timer()
