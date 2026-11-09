@@ -36,7 +36,7 @@ Ask before each removal or install. Team doc: [Linear MCP Setup](https://linear.
 ## Rules
 
  1. Search existing issues first. Create one only if none exists.
- 2. If you don't know which Linear project this directory belongs to, ask the user, then save the answer to memory (CLAUDE.md / agent memory) so you don't ask again. If none exists, ask whether to create one or pick an existing one.
+ 2. Project: before the first Linear tool call, look for a `Linear project: <name>` line in the project `CLAUDE.md`. Found → use it, don't ask. Missing → ask the user which project (`list_projects(team="STEALTHMOLE")`, or create one), then write `Linear project: <name>` in the project `CLAUDE.md`.
  3. When creating, fill in project, priority (default Medium), assignee (default me), and an existing label. Title and description follow **Issue format**.
  4. Large tasks: create a parent issue and split into sub-issues, one per deliverable. Work through them one at a time.
  5. Picking the next task: `Todo` first, then `Backlog`.
