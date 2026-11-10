@@ -14,7 +14,7 @@ from report_changes import backup_path
 SECRET = "SECRET_TOKEN_123"
 SERENA = "serena@claude-plugins-official"
 ADHD = "i-have-adhd@i-have-adhd"
-SUPERLITE = "superlite@superlite-dev"
+SUPERPOWERS = "superpowers@claude-plugins-official"
 PSTACK = "pstack@pstack-claude"
 BROWSER_USE = "browser-use@claude-plugins-official"
 GSTACK_GROUP = {"_gstack_source": "gstack", "hooks": [{"type": "command", "command": "true"}]}
@@ -147,10 +147,10 @@ def test_output_style_not_met(tmp_path: Path) -> None:
 
 def test_workflow_mandates_needs_two(tmp_path: Path) -> None:
 
-    assert ids(ac.audit(*make_env(tmp_path / "a", {SUPERLITE: {}}))) == []
-    result = ac.audit(*make_env(tmp_path, {SUPERLITE: {}, PSTACK: {}}))
+    assert ids(ac.audit(*make_env(tmp_path / "a", {SUPERPOWERS: {}}))) == []
+    result = ac.audit(*make_env(tmp_path, {SUPERPOWERS: {}, PSTACK: {}}))
     assert fix_ids(result, "known:workflow-mandates") == [
-        f"known:workflow-mandates/uninstall_plugin:{SUPERLITE}",
+        f"known:workflow-mandates/uninstall_plugin:{SUPERPOWERS}",
         f"known:workflow-mandates/uninstall_plugin:{PSTACK}",
     ]
 
@@ -167,11 +167,11 @@ def test_core_plugin_never_uninstall_candidate(tmp_path: Path) -> None:
 
 def test_other_scope_copy_reported(tmp_path: Path) -> None:
     """uninstall 은 user scope 만 지운다 → 남는 local/project 사본을 evidence · label 로 알린다."""
-    env = make_env(tmp_path, {SUPERLITE: {"scopes": ["user", "local", "project"]}, PSTACK: {}})
+    env = make_env(tmp_path, {SUPERPOWERS: {"scopes": ["user", "local", "project"]}, PSTACK: {}})
     f = finding(ac.audit(*env), "known:workflow-mandates")
     left = ["local scope 남음: /proj/local", "project scope 남음: /proj/project"]
-    assert all(f"plugin {SUPERLITE} {x}" in f["evidence"] for x in left)
-    label = next(x["label"] for x in f["fixes"] if x["id"].endswith(SUPERLITE))
+    assert all(f"plugin {SUPERPOWERS} {x}" in f["evidence"] for x in left)
+    label = next(x["label"] for x in f["fixes"] if x["id"].endswith(SUPERPOWERS))
     assert all(x in label for x in left)
     assert "남음" not in next(x["label"] for x in f["fixes"] if x["id"].endswith(PSTACK))
 
@@ -254,7 +254,7 @@ def test_output_has_no_secret_values_and_sorted(tmp_path: Path) -> None:
 # --- apply ---
 
 def test_apply_uninstall_preserves_dropped_keys(tmp_path: Path) -> None:
-    claude_dir, cj = make_env(tmp_path, {SUPERLITE: {}, PSTACK: {}}, settings={"hooks": {"Stop": [GSTACK_GROUP]}})
+    claude_dir, cj = make_env(tmp_path, {SUPERPOWERS: {}, PSTACK: {}}, settings={"hooks": {"Stop": [GSTACK_GROUP]}})
     settings_path = claude_dir / "settings.json"
 
     def cli(cmd, **_k) -> MagicMock:
@@ -326,7 +326,7 @@ def test_failed_uninstall_keeps_selection(tmp_path: Path) -> None:
 
 
 def test_uninstall_non_optional_writes_no_selection(tmp_path: Path) -> None:
-    claude_dir, cj = make_env(tmp_path, {SUPERLITE: {}, PSTACK: {}})
+    claude_dir, cj = make_env(tmp_path, {SUPERPOWERS: {}, PSTACK: {}})
     with patch("audit_conflicts.subprocess.run", side_effect=_ok):
         ac.apply([f"known:workflow-mandates/uninstall_plugin:{PSTACK}"], claude_dir, cj)
     assert not (claude_dir / SELECTION_FILE).exists()

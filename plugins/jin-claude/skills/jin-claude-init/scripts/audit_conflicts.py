@@ -66,7 +66,7 @@ KNOWN_CONFLICTS: list[dict] = [
         "id": "workflow-mandates",
         "severity": MEDIUM,
         "summary": "작업 방식을 강제하는 워크플로 plugin 이 2개 이상",
-        "plugins": ["superlite@superlite-dev", "pstack@pstack-claude", "agent-skills@addy-agent-skills"],
+        "plugins": ["superpowers@claude-plugins-official", "pstack@pstack-claude", "agent-skills@addy-agent-skills"],
         "min_plugins": 2,
         "setting": None,
         "fix_setting": None,

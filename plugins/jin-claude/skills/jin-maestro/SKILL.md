@@ -28,7 +28,7 @@ disable-model-invocation: true
    - ultracode 상시 켜짐과 충돌하면 이 분배 규칙이 우선.
 6. 보관: 연관 후속 없음 + 유지 가치 no → 실행 중이면 `TaskStop`, 원장 `archived` + 1줄 요약. archived 세션엔 보내지 않는다 (같은 영역 새 일은 새 세션 + 요약 브리프).
 7. plan 모드: 원장·위임 없이 분배 계획(세션 이름·영역·mode·브리프)만 plan 에 쓴다 → ExitPlanMode 승인 후 원장 생성·위임 시작.
-8. 사용자 지시가 다른 플러그인의 워크플로 강제(superlite swarm, pstack poteto-mode)보다 우선. 하위 세션 내부에선 그 규칙 허용.
+8. 사용자 지시가 다른 플러그인의 워크플로 강제(superpowers 스킬, pstack poteto-mode)보다 우선. 하위 세션 내부에선 그 규칙 허용.
 
 ## 브리프 템플릿
 ```

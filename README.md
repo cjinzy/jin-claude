@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 12개 스킬, 2개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.4.7` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.4.8` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -26,7 +26,7 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 
 #### Step 1·2 — Plugin 선택·설치 (`scripts/install_plugins.py`)
 
-필수 3개는 항상, 선택 8개는 init 때 고른 것만 설치합니다. 선택은 `~/.claude/.jin-claude-plugins.json` 에 저장돼 재실행·preflight 가 따르고, 선택 해제한 플러그인은 제거하지 않고 알리기만 합니다. 필요한 marketplace 만 추가하며, `claude plugin` CLI 가 settings.json 을 다시 쓰며 지우는 키(hook group 의 `_gstack_source`, marketplace `autoUpdate`)는 실행 후 되살립니다. 목록 단일 출처: `preflight.py` 의 `CORE_PLUGINS`·`OPTIONAL_PLUGINS`·`EXPECTED_MARKETPLACES`.
+필수 3개는 항상, 선택 9개는 init 때 고른 것만 설치합니다. 선택은 `~/.claude/.jin-claude-plugins.json` 에 저장돼 재실행·preflight 가 따르고, 선택 해제한 플러그인은 제거하지 않고 알리기만 합니다. 필요한 marketplace 만 추가하며, `claude plugin` CLI 가 settings.json 을 다시 쓰며 지우는 키(hook group 의 `_gstack_source`, marketplace `autoUpdate`)는 실행 후 되살립니다. 목록 단일 출처: `preflight.py` 의 `CORE_PLUGINS`·`OPTIONAL_PLUGINS`·`EXPECTED_MARKETPLACES`.
 
 | Plugin | Marketplace | 구분 | 용도 |
 |--------|-------------|------|------|
@@ -36,6 +36,7 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 | `context7` | `claude-plugins-official` | 선택 | 라이브러리 최신 문서 조회 MCP (claude.ai Context7 커넥터가 있으면 불필요) |
 | `pyright-lsp` | `claude-plugins-official` | 선택 | Python 타입 검사 LSP |
 | `code-simplifier` | `claude-plugins-official` | 선택 | 코드 단순화 agent |
+| `superpowers` | `claude-plugins-official` | 선택 | 스킬 기반 개발 워크플로 (브레인스토밍·계획·TDD·디버깅) |
 | `ponytail` | `ponytail` | 선택 | 최소 코드 모드 — 매 세션 규칙 주입 |
 | `ui-ux-pro-max` | `ui-ux-pro-max-skill` | 선택 | UI/UX 디자인 DB (스타일·팔레트·폰트) |
 | `browser-use` | `claude-plugins-official` | 선택 | 실제 Chrome 제어 (자동화·스크린샷) |

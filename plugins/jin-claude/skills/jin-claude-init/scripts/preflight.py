@@ -33,6 +33,7 @@ OPTIONAL_PLUGINS: dict[str, str] = {
     "context7@claude-plugins-official": "라이브러리 최신 문서 조회 MCP (claude.ai Context7 커넥터가 있으면 불필요)",
     "pyright-lsp@claude-plugins-official": "Python 타입 검사 LSP",
     "code-simplifier@claude-plugins-official": "코드 단순화 agent",
+    "superpowers@claude-plugins-official": "스킬 기반 개발 워크플로 (브레인스토밍·계획·TDD·디버깅)",
     "ponytail@ponytail": "최소 코드 모드 — 매 세션 규칙 주입",
     "ui-ux-pro-max@ui-ux-pro-max-skill": "UI/UX 디자인 DB (스타일·팔레트·폰트)",
     "browser-use@claude-plugins-official": "실제 Chrome 제어 (자동화·스크린샷)",
