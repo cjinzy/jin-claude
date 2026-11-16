@@ -1,128 +1,70 @@
 ---
 name: mole-linear
-description: STEALTHMOLE(MOLE) 팀 규칙에 맞춰 Linear 이슈를 조회·생성·갱신하고 댓글을 단다 — 제목·As-is/To-be 본문 양식, Plan/Done/BLOCKED 댓글 템플릿, 상태 전환, 다음 agent 인계용 Agent notes. Linear 이슈 검색·생성·수정·상태 변경·댓글 작성, MOLE-123 같은 이슈 작업, 남은 작업·다음 작업 확인 등 Linear 를 다루는 모든 작업 전에 사용한다. "linear", "이슈 등록", "이슈 생성", "이슈 댓글", "MOLE-", "linear mcp setup", "linear 설치".
+description: STEALTHMOLE(MOLE) 팀 규칙에 맞춰 Linear 이슈를 조회·생성·갱신하고 댓글을 단다 — 제목·As-is/To-be 양식, Plan/Done/BLOCKED 댓글, 상태 전환, Agent notes 인계. Linear 를 다루는 모든 작업 전에 사용한다. "linear", "이슈 등록", "이슈 생성", "이슈 댓글", "MOLE-", "linear mcp setup", "linear 설치".
 ---
 
 # mole-linear
 
-Linear work for team STEALTHMOLE. Load this before any Linear tool call and follow it to the end of the task.
+Team STEALTHMOLE (key `MOLE`). Load before any Linear tool call; follow to the end of the task.
+No Linear tools, or the user asks to install/set up Linear → follow `setup.md` first.
 
-## Tools
-
-Linear MCP tools. Names below are the tool part; the prefix depends on how Linear is connected (e.g. `mcp__claude_ai_Linear__list_issues` for the claude.ai connector). If no Linear tools are available, or the user asks to install/set up Linear, follow **Setup** first.
-
-* `list_issues` — filter by project / state / assignee (`me`)
-* `get_issue` — issue incl. sub-issues, `gitBranchName` (no comments)
-* `list_comments` — comments incl. Agent notes. Read before starting work
-* `save_issue` — create (no id) or update (with id): status, priority, assignee, labels, parent, due date
-* `save_comment` — add a comment to an issue
-* `list_projects`, `list_issue_labels` — look up existing values before setting them
-
-## Setup
-
-Ask before each removal or install. Team doc: [Linear MCP Setup](https://linear.app/stealthmole/document/linear-mcp-setup-38a6483987e1).
-
-1. Clean old setups:
-   * MCP: in `claude mcp list`, Linear servers = name contains `linear` or URL `mcp.linear.app` (old `mcp-remote`, `/sse`, or `linear-server` in local/project scope — local overrides user). Never touch the claude.ai connector entry. Connector connected (`mcp__claude_ai_Linear__*` tools exist) → remove every Linear server; otherwise keep only user-scope `linear-server` with URL exactly `https://mcp.linear.app/mcp`. Scope from `claude mcp get <name>`, then `claude mcp remove <name> -s <scope>` (`project` = shared `.mcp.json`, ask before committing).
-   * Old rules duplicate this skill: remove `@linear.md` / `@mcp-linear.md` lines in `~/.claude/CLAUDE.md` and project `CLAUDE.md` / `AGENTS.md`, then delete `~/.claude/linear.md`, `~/.claude/mcp-linear.md`, `<project>/linear.md`.
-2. Install only if there is no connector and no `linear-server` — user scope, once per machine: `claude mcp add -s user --transport http linear-server https://mcp.linear.app/mcp`
-3. If no connector and `claude mcp get linear-server` is not `✔ Connected`: user runs `/mcp` → `linear-server` → Authenticate (OAuth), then ask again. A server added mid-session needs a new session before `/mcp` shows it. Stop here.
-4. Apply Rule 2 (`list_projects(team="STEALTHMOLE")`, write `Linear project: <name>` in the project `CLAUDE.md`), then verify with `list_issues(project=<name>, assignee="me")`.
-
-## Statuses (team STEALTHMOLE, key `MOLE`, issue prefix `MOLE-`)
-
-`Triage` · `Backlog` · `Todo` · `Plan` · `In Progress` · `Feedback` · `Done` · `Canceled` · `Duplicate`
+Statuses: `Triage` · `Backlog` · `Todo` · `Plan` · `In Progress` · `Feedback` · `Done` · `Canceled` · `Duplicate`
 
 ## Rules
 
- 1. Search existing issues first. Create one only if none exists.
- 2. Project: before the first Linear tool call, look for a `Linear project: <name>` line in the project `CLAUDE.md`. Found → use it, don't ask. Missing → ask the user which project (`list_projects(team="STEALTHMOLE")`, or create one), then write `Linear project: <name>` in the project `CLAUDE.md`.
- 3. When creating, fill in project, priority (default Medium), assignee (default me), and an existing label. Title and description follow **Issue format**.
- 4. Large tasks: create a parent issue and split into sub-issues, one per deliverable. Work through them one at a time.
- 5. Picking the next task: `Todo` first, then `Backlog`.
- 6. "Remaining work" = all issues except `Done` / `Canceled` / `Duplicate`.
- 7. Planning → status `Plan`, post the plan as a comment. Do not edit the description.
- 8. Working → status `In Progress`.
- 9. Blocked → comment `BLOCKED: ...` and stop. Do not guess.
-10. Done → summary comment including commit hash(es) and PR link, status `Done`, set due date. Use `Feedback` if the user must review first. Parent is Done only when all sub-issues are Done.
-11. Use the issue's `gitBranchName`; put the issue ID in commits/PRs.
-12. Never create labels/statuses, never delete issues.
-13. Every issue and comment follows **Writing style**; every comment follows **Comment format**.
-14. Before working on an issue, read `list_comments` and every `+++ Agent notes` block in them.
+1. Project: use the `Linear project: <name>` line in the project `CLAUDE.md`. Missing → ask (`list_projects(team="STEALTHMOLE")`), then write that line.
+2. Search existing issues first, archived included. Create only if none exists.
+3. Create with project, priority (default Medium), assignee (default me), an existing label. Large task → parent + one sub-issue per deliverable.
+4. Before work, read `list_comments` and every `+++ Agent notes` block in them.
+5. Next task: `Todo`, then `Backlog`. Remaining work = all except `Done` / `Canceled` / `Duplicate`.
+6. Status flow:
+   * plan → `Plan` + Plan comment. Never edit the description
+   * work → `In Progress`
+   * blocked → BLOCKED comment, then stop. Don't guess
+   * done → Done comment, `Done` + due date (`Feedback` if the user must review). Parent is Done only when all sub-issues are
+7. Git is required: issue ID in every commit and PR. Branch from the issue's `gitBranchName` (`get_issue`) when it has one.
+8. Never create labels/statuses, never delete issues.
 
-## Writing style (issues and comments)
+## Writing
 
-* Short, plain sentences. Technical terms are fine.
-* One sentence, one fact. Each section 3 lines or fewer.
-* Cut anything that doesn't change what the reader does.
-* Code names (error codes, file names, functions) in backticks.
-* Exempt: `+++ Agent notes` blocks.
+Short, plain sentences. One fact each, ≤3 lines per section, one term per concept, code names in backticks. Cut what doesn't change what the reader does. Agent detail (file lists, plans, logs) goes in a `+++ Agent notes` block at the end, exempt from these rules.
 
-## Issue format
+**Title**: one line, verb form, core change only. No tags, brackets, or trailing period. ~70 chars.
+✅ `로그인 기한이 지난 사용자에게 오류 화면 대신 재로그인 안내 표시` · ❌ `[BE] 로그인 관련 이슈`
 
-**Title** — one line, verb form, the core change only. No tags, brackets, or trailing period. ~70 chars max.
-
-* ✅ `로그인 기한이 지난 사용자에게 오류 화면 대신 재로그인 안내 표시` · `Show re-login prompt instead of error page when session expires`
-* ❌ `로그인 버그` · `[BE] 로그인 관련 이슈`
-
-**Description** — these sections, in this order:
+**Description**, in this order. As-is and To-be required. 재현 방법 only for bugs. Omit empty 참고자료, never write "없음". To-be is checkable: behavior or a number, not "개선" alone.
 
 ```
 ## As-is
 현재 상태. 관찰된 동작, 에러 메시지, 수치.
 
 ## To-be
-어떻게 수정·구현할지. 완료 여부를 확인할 수 있는 결과로.
+완료 여부를 확인할 수 있는 결과.
 
 ## 재현 방법
 1. ...
-2. ...
 기대: ... / 실제: ...
 
 ## 참고자료
 - 링크, 로그, 스크린샷, 관련 이슈 (MOLE-123)
 ```
 
-* As-is, To-be: always required.
-* 재현 방법: required for bugs. Omit when nothing to reproduce (features, chores).
-* 참고자료: omit when empty. Never write "없음".
-* To-be must be checkable. No "빠르게", "깔끔하게", "개선" alone — state observable behavior or a number.
-* One term per concept. Pre-work agent detail (file lists, implementation plan, raw logs) goes in a collapsible block at the end:
-
-```
-+++ Agent notes
-
-...
-
-+++
-```
-
-## Comment format
-
-One comment, one purpose. Don't restate the description. Lead with the prefix:
+**Comments**: one purpose each, don't restate the description, use these templates exactly. Code, logs, diffs → Agent notes or a link.
 
 ```
 Plan:
 1. ...
-2. ...
 검증: <how To-be will be confirmed>
-```
 
-```
-Done: <what changed, 1–3 lines, measured against To-be>
-검증: <test/command run and result>
+Done: <what changed vs To-be, 1–3 lines>
+검증: <command run and result>
 Commit: a1b2c3d · PR: <link>
-```
 
-```
 BLOCKED: <cause>
 필요: <what is needed, from whom>
 ```
 
-* Status-change comments (Plan / Done / BLOCKED) use these templates exactly.
-* Code, logs, diffs → `+++ Agent notes` block or a link, not the comment body.
-
-Done / BLOCKED comments end with an Agent notes block for the next agent (the description is frozen, so learnings go here):
+Done / BLOCKED end with a handoff block. Omit empty lines; skip it if nothing is worth handing off.
 
 ```
 +++ Agent notes
@@ -134,19 +76,4 @@ Done / BLOCKED comments end with an Agent notes block for the next agent (the de
 다음: <where to resume>
 
 +++
-```
-
-* Omit empty lines. Skip the block if nothing is worth handing off.
-
-## Example
-
-Send real newlines in `description` / `body`, never `\n` escapes.
-
-```
-list_issues(project="my-project", state="Todo", assignee="me")
-save_issue(team="STEALTHMOLE", project="my-project", title="로그인 기한이 지난 사용자에게 오류 화면 대신 재로그인 안내 표시", priority=3, assignee="me", labels=["backend"], description=<Issue format>)
-save_comment(issueId="MOLE-123", body=<Plan: template>)
-list_comments(issueId="MOLE-123")  # read prior Agent notes first
-save_issue(id="MOLE-123", state="In Progress")
-save_comment(issueId="MOLE-123", body=<Done: template>)
 ```
