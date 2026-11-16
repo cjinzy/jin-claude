@@ -1,7 +1,7 @@
 # jin-claude
 
 > Team-standard skills & hooks for Claude Code — **12 skills · 2 hooks**
-> Version: **5.4.8** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Version: **5.4.9** · License: MIT · Marketplace: `jin-claudecode-mp`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
@@ -64,7 +64,8 @@ plugins/jin-claude/
 | Slug | Trigger | Description |
 |------|---------|-------------|
 | `jin-deepinit` | `jin deepinit`, `프로젝트 분석` | 프로젝트 구조 분석 → 스킬 안내 `AGENTS.md` 생성 |
-| `jin-sot-create` | `jin sot` | SoT 문서셋 생성 — 세부항목별 파일, fact ID, `sot_index.py` 색인 생성, `sot_validate.py` drift 검증 |
+| `jin-sot-create` | `jin sot` | SoT 문서셋 생성 — 세부항목별 파일, fact ID, `sot_index.py` 색인 생성 |
+| `jin-sot-verify` | `/jin-claude:jin-sot-verify` | SoT 검증 (수동) — `sot_validate.py` 구조·drift 검사, 오류 수정 |
 
 ### Environment Init (2)
 

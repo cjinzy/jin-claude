@@ -194,9 +194,8 @@ interactive channel → apply neither; list each pending edit in the summary.
 ```markdown
 
 ## SoT
-`sot/` is the Source of Truth; `sot/Index.md` lists every doc. In the verify step, before
-jin-commit, run the jin-sot-create skill's `scripts/sot_validate.py --root sot` and fix every
-error. Update protocol: `sot/rules/sot-maintenance.md`.
+`sot/` is the Source of Truth; `sot/Index.md` lists every doc. Validation is manual:
+`/jin-claude:jin-sot-verify`. Update protocol: `sot/rules/sot-maintenance.md`.
 ```
 
 `sot/` already exists → add only what is missing and regenerate `Index.md`, then run Step 5.

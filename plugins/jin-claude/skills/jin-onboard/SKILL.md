@@ -18,7 +18,7 @@ description: jin-claude 사용 온보딩 — 상황별 워크플로(새 프로�
 
 ## 새 프로젝트
 1. `jin deepinit` — 프로젝트 분석 후 AGENTS.md 생성.
-2. `jin sot` — SoT 문서셋(`sot/`) 생성. 아키텍처·스키마·규칙의 인용 가능한 출처.
+2. `jin sot` — SoT 문서셋(`sot/`) 생성. 아키텍처·스키마·규칙의 인용 가능한 출처. 검증은 `/jin-claude:jin-sot-verify` (자동 실행 없음).
 
 ## 기능 개발
 1. 요구가 모호하면 `jin interview` — 질문으로 스펙 파일 확정.
@@ -58,6 +58,7 @@ description: jin-claude 사용 온보딩 — 상황별 워크플로(새 프로�
 | jin-maestro | `/jin-claude:jin-maestro` | 오케스트레이션 세션 |
 | jin-deepinit | `jin deepinit` | AGENTS.md 생성 |
 | jin-sot-create | `jin sot` | SoT 문서셋 |
+| jin-sot-verify | `/jin-claude:jin-sot-verify` | SoT 검증 (수동) |
 | jin-codex-side | `jin codex` | Codex 세컨드 오피니언 |
 | jin-cleanser | `jin cleanser` | AI 슬롭 리포트 |
 | jin-commit | `jin commit` | gitmoji 커밋 |

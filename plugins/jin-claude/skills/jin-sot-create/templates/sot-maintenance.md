@@ -13,11 +13,11 @@ updated: 2026-10-02
 
 Reserved id block: `RUL-9xx` is docset governance. Project rules use `RUL-0xx`.
 
-## RUL-901 — SoT revalidation runs in the verify step, before jin-commit
+## RUL-901 — SoT revalidation is manual: `/jin-claude:jin-sot-verify`
 
-Order is `deploy → verify → jin-commit`. In verify, run the jin-sot-create skill's
-`scripts/sot_validate.py --root sot`. Every `error` is fixed before the commit; `warning` and
-`info` go in the change summary. A green run is the only evidence this docset is still true.
+Nothing runs it automatically. Call it after editing `sot/` or when the code under
+`verified_paths` changed. Every `error` it reports is fixed; `warning` and `info` go in its
+summary. A green run is the only evidence this docset is still true.
 
 ## RUL-902 — A `DRIFT` doc is corrected or explicitly marked stale — never left silently wrong
 
@@ -39,5 +39,5 @@ two places, one of them links to the other. Two copies drift, and then neither i
 ## RUL-904 — `Index.md` is regenerated from frontmatter, never hand-edited
 
 Add or remove a doc → `scripts/sot_index.py --root sot` (jin-sot-create skill). A doc missing
-from the index does not exist as far as any reader is concerned, and `--check` in the verify step
-catches the omission before anyone relies on it.
+from the index does not exist as far as any reader is concerned, and `--check` in
+`/jin-claude:jin-sot-verify` catches the omission before anyone relies on it.

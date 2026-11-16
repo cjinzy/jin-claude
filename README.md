@@ -1,8 +1,8 @@
 # jin-claude
 
-Claude Code 팀 표준 환경 플러그인. 12개 스킬, 2개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
+Claude Code 팀 표준 환경 플러그인. 13개 스킬, 2개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.4.8` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `5.4.9` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -92,7 +92,7 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 
 ---
 
-## 스킬 (12개)
+## 스킬 (13개)
 
 ### 핵심 워크플로우
 
@@ -104,7 +104,8 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 | `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
 | `mole-linear` | STEALTHMOLE 팀 Linear 이슈·댓글 작업 (As-is/To-be 양식, Plan/Done/BLOCKED 댓글) |
 | `jin-ambition` | Ambition 계획 3축 — Altitude(결과 위임·전제조건) · Depth(원자료·방법·외부 판정) · Range(동사 재서술 → 다른 분야 기법 + red team). 인자로 축 하나만 가능 |
-| `jin-sot-create` | SoT 문서셋 생성 — 세부항목별 파일 + fact ID 인용 + Index 생성기 + drift 검증 |
+| `jin-sot-create` | SoT 문서셋 생성 — 세부항목별 파일 + fact ID 인용 + Index 생성기 |
+| `jin-sot-verify` | SoT 검증 (수동 호출) — Index·frontmatter·ID·drift, 오류 수정 |
 | `jin-maestro` | 오케스트레이션 세션 — 계획·분배·보고만, 작업은 하위 세션에 위임·끝나면 보관·후속은 같은 세션에 연속 위임, 작업별 ultracode/normal |
 
 ### 코드 품질 & 분석
@@ -259,6 +260,7 @@ jin-claude/
 │       │   ├── jin-onboard/
 │       │   ├── mole-linear/
 │       │   ├── jin-sot-create/
+│       │   ├── jin-sot-verify/
 │       │   └── manage-skills/
 │       ├── scripts/                     # statusline + timer
 │       │   ├── statusline-command.sh    # statusline 렌더러
