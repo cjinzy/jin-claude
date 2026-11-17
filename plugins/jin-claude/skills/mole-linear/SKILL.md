@@ -22,7 +22,7 @@ Statuses: `Triage` · `Backlog` · `Todo` · `Plan` · `In Progress` · `Feedbac
    * work → `In Progress`
    * blocked → BLOCKED comment, then stop. Don't guess
    * done → Done comment, `Done` + due date (`Feedback` if the user must review). Parent is Done only when all sub-issues are
-7. Git is required: issue ID in every commit and PR. Branch from the issue's `gitBranchName` (`get_issue`) when it has one.
+7. Git is required: issue ID in every commit and PR. Branch: `<user>/<issue-id>` in lowercase (e.g. `jin/mole-123`), `<user>` = the part of the issue's `gitBranchName` before `/`. No title slug.
 8. Never create labels/statuses, never delete issues.
 
 ## Writing
