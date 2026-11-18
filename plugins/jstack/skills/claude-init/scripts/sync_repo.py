@@ -1,4 +1,4 @@
-"""jin-claude git repo에서 statusline·설정·venv를 동기화하는 스크립트.
+"""jstack git repo에서 statusline·설정·venv를 동기화하는 스크립트.
 
 repo를 https 로 clone/pull 한 후, 개별 파일을 ~/.claude/ 하위에 복사하고
 가상환경과 사용량 타이머를 설치한다. 내용이 바뀌는 기존 파일은
@@ -18,6 +18,8 @@ REPO_DIR = Path.home() / ".claude" / ".jin-claude-repo"
 CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"
 CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jstack" / "jstack"
+# 고른 수집 주기(분, 정수). SessionStart hook(session_init.py INTERVAL_FILE)이 재등록 때 읽는다.
+INTERVAL_FILE = CLAUDE_DIR / ".jin-claude-usage-interval"
 
 # CLAUDE.md 가 @include 하는 보조 문서. 함께 복사하지 않으면 참조가 깨진다.
 CLAUDE_INCLUDES = (
@@ -288,6 +290,8 @@ def install_timer(repo_dir: Path, interval_minutes: int = 5) -> None:
     if not install_script.exists():
         print("[sync_repo] install-timer.sh 없음, timer 설치 건너뜀")
         return
+    # 설치 결과와 무관하게 저장 — 실패·타임아웃이면 hook 이 같은 주기로 재시도
+    INTERVAL_FILE.write_text(str(interval_minutes))
     try:
         result = subprocess.run(
             ["bash", str(install_script), str(interval_minutes)],

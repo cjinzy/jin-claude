@@ -17,7 +17,11 @@ TIMER_MARKERS = {
     "darwin": Path("Library/LaunchAgents/com.jin-claude.fetch-usage.plist"),
     "linux": Path(".config/systemd/user/fetch-claude-usage.timer"),
 }
-DEFAULT_INTERVAL_MIN = "5"
+# init 이 고른 수집 주기(분). sync_repo.py INTERVAL_FILE 과 같은 파일
+# (hooks/ 와 scripts/ 는 서로 import 하지 않는다).
+INTERVAL_FILE = Path(".claude/.jin-claude-usage-interval")
+INTERVALS_MIN = (1, 3, 5, 10)  # install-timer.sh 허용값
+DEFAULT_INTERVAL_MIN = 5
 # hooks.json timeout(10s) 안에 끝나야 hook 이 강제 종료되지 않는다
 GIT_PULL_TIMEOUT_SEC = 8
 # 구버전(≤3.x) sync_repo 가 ~/.claude/skills 에 복사한 스킬 중 plugin 과 이름이 겹치거나(사용자 스킬이
@@ -26,7 +30,7 @@ LEGACY_SKILLS = {"jin-claude-init", "jin-commit", "jin-interview", "manage-skill
 
 
 def auto_update() -> None:
-    """jin-claude marketplace repo를 자동 업데이트한다."""
+    """jstack marketplace repo를 자동 업데이트한다."""
     base = Path.home() / ".claude" / "plugins" / "marketplaces"
     if not base.exists():
         return
@@ -76,8 +80,17 @@ def retire_legacy_skills() -> None:
             print(f"[jstack] warning: retire {src} failed: {e!r}", file=sys.stderr)
 
 
+def saved_interval(home: Path) -> int:
+    """init 이 저장한 수집 주기. 없거나 정수 아님·허용값 밖이면 기본값."""
+    try:
+        minutes = int((home / INTERVAL_FILE).read_text())
+    except (OSError, ValueError):
+        return DEFAULT_INTERVAL_MIN
+    return minutes if minutes in INTERVALS_MIN else DEFAULT_INTERVAL_MIN
+
+
 def ensure_timer() -> None:
-    """사용량 수집 타이머가 사라졌으면 재등록한다.
+    """사용량 수집 타이머가 사라졌으면 init 때 고른 주기로 재등록한다.
 
     타이머는 init 때 한 번만 설치되므로, OS 업그레이드·정리 도구 등으로
     plist/timer 가 지워지면 캐시 갱신이 조용히 멈춘다. 매 세션 파일 존재만 확인.
@@ -91,7 +104,7 @@ def ensure_timer() -> None:
     # ponytail: 실패해도 marker 가 없으니 다음 세션이 재시도. 동시 세션 경합은 무시.
     try:
         subprocess.Popen(
-            ["bash", str(installer), DEFAULT_INTERVAL_MIN],
+            ["bash", str(installer), str(saved_interval(home))],
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

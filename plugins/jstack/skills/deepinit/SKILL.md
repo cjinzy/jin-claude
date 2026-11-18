@@ -44,4 +44,5 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/project_analyzer.py" --markdown <path>   # 
 
 ## 주의사항
 
-- `.git`, `.venv`, `node_modules`, `__pycache__` 등 숨김·빌드 디렉토리는 스캔에서 제외된다.
+- 언어 집계는 `IGNORE_DIRS`(`.git`, `.venv`, `node_modules`, `__pycache__`, `dist`, `build` 등) 이름만 제외한다. 그 밖의 숨김 디렉토리(`.claude/` 등)는 집계된다.
+- 디렉토리 트리와 루트 기준 구조 판별은 `IGNORE_DIRS` 에 더해 `.` 로 시작하는 항목을 모두 건너뛴다.

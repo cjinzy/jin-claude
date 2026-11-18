@@ -304,6 +304,14 @@ class TestCli:
         assert out.startswith("# AGENTS.md")
         assert "Python" in out
 
+    def test_dot_path_json_project_name(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`.` 인자(sot-create 호출 형태)여도 project_name 은 실제 디렉토리 이름."""
+        monkeypatch.chdir(tmp_path)
+        main(["."])
+        assert json.loads(capsys.readouterr().out)["project_name"] == tmp_path.name
+
     def test_missing_dir_exits_nonzero(self, tmp_path: Path) -> None:
         with pytest.raises(SystemExit) as exc:
             main([str(tmp_path / "nope")])

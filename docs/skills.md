@@ -34,7 +34,7 @@ jstack 스킬 13개가 각각 어떻게 동작하는지 설명합니다. 호출�
 7. 이전 대비 변경점·백업 경로·되돌리는 법을 보여주고 `onboard` 를 실행한다
 
 **결과물**: `~/.claude/CLAUDE.md`·보조 문서·`statusline-command.sh`·`settings.json` 갱신(바뀐 파일은 `<이름>_backup_<YYYYMMDD>.<확장자>` 로 백업), `~/.claude/.jin-claude-repo/`·`~/.claude/.venv/`·사용량 타이머(launchd/systemd)·`~/.claude/.jin-claude-plugins.json` 생성, 플러그인 설치
-**주의**: `statusLine`·`skipDangerousModePermissionPrompt` 같은 팀 필수 키는 기존 값을 덮어쓴다. 선택 해제한 플러그인은 제거하지 않는다. 타이머가 사라지면 세션 시작 hook 이 고른 주기와 상관없이 5분 주기로 다시 등록한다.
+**주의**: `statusLine`·`skipDangerousModePermissionPrompt` 같은 팀 필수 키는 기존 값을 덮어쓴다. 선택 해제한 플러그인은 제거하지 않는다. 타이머가 사라지면 세션 시작 hook 이 init 때 고른 주기(`~/.claude/.jin-claude-usage-interval`, 없으면 5분)로 다시 등록한다.
 
 <a name="onboard"></a>
 
@@ -170,7 +170,7 @@ jstack 스킬 13개가 각각 어떻게 동작하는지 설명합니다. 호출�
 4. drift 는 `git diff <verified_commit>..HEAD -- <verified_paths>` 로 잡는다. `status: verified` 문서면 error, 아니면 warning 이다.
 5. 구조 error 는 해당 문서의 frontmatter·ID 를 고치고 `Index.md` 를 다시 만든다.
 6. `DRIFT` 는 diff 를 읽고 사실을 고친 뒤 `updated`·`verified_commit` 을 올린다. 판단이 안 서면 `status: stale` 과 확인할 내용을 `TODO(sot):` 로 단다.
-7. error 가 0 이 될 때까지 다시 검사하고, 문서·fact 수와 수정·남은 error, warning 개수를 보고한다.
+7. error 가 0 이 될 때까지 다시 검사하고, 문서·fact 수, drift 의심 파일 수, 수정·남은 error, warning 개수를 보고한다.
 
 **결과물**: `sot/` 문서 수정, `sot/Index.md` 재생성.
 **주의**: 확인 없이 `sot/` 문서를 고친다 (편집만 하고 템플릿으로 덮어쓰지 않는다). 경로가 `sot` 로 고정이라 프로젝트 루트에서 실행해야 한다. drift 는 커밋된 변경만 본다 — 커밋 안 한 수정은 잡지 않는다.
@@ -189,7 +189,7 @@ jstack 스킬 13개가 각각 어떻게 동작하는지 설명합니다. 호출�
 **동작**
 1. 경로를 주면 그 경로 전체를 본다.
 2. 경로가 없으면 미커밋 변경과 untracked 파일을 본다. 둘 다 없으면 최근 커밋(`HEAD~1` 대비)을 본다.
-3. `slop_patterns.py` 로 정적 스캔한다: 디버그 출력(`print(`·`console.log(`·`debugger`·`pdb`·`breakpoint(`), `#` 로 주석 처리된 코드, TODO·FIXME 류 주석.
+3. `slop_patterns.py` 로 정적 스캔한다: 디버그 출력(`print(`·`console.log(`·`debugger`·`pdb`·`breakpoint(`), `#` 로 주석 처리된 코드, TODO·FIXME 류 주석. Python 패턴은 `.py` 에만, JS 패턴(`console.log`·`debugger`)은 JS/TS 파일에만 적용한다.
 4. `ruff` 가 있으면 Python 미사용 임포트(F401)도 찾는다. 없으면 건너뛰고 리포트에 적는다.
 5. Claude 가 파일을 읽고 정규식이 못 잡는 것을 찾는다: 자명한 주석, 과잉·빈 예외 처리, 상투적 docstring, 한 곳에서만 쓰는 래퍼, 뻔한 타입 표기.
 6. diff 모드에선 변경된 라인만 남긴다. untracked 파일은 전체가 대상이다.
@@ -232,7 +232,7 @@ jstack 스킬 13개가 각각 어떻게 동작하는지 설명합니다. 호출�
 **동작**
 1. `git status`·`git diff`(스테이징돼 있으면 `git diff --staged`)로 변경을 분석한다
 2. 지정한 파일이나 이번 변경에 속한 파일만 대상으로 고른다. 무관한 변경·비밀 파일(`.env` 등)은 빼고 알린다. 대상이 모호할 때만 묻는다 (질문)
-3. 변경 성격에 맞는 gitmoji 를 고르고 `<이모지> <한국어 제목> [— 스코프] [+ 추가사항]` 형식으로 메시지를 쓴다. 인자가 있으면 반영한다
+3. 변경 성격에 맞는 gitmoji 를 고르고 `<이모지> [<이슈 ID>] <한국어 제목> [— 스코프] [+ 추가사항]` 형식으로 메시지를 쓴다. 이슈 ID(예: `[MOLE-123]`)는 브랜치 이름이나 대화에서 알 수 있을 때만 넣는다. 인자가 있으면 반영한다
 4. 확인 없이 `git add <파일>` → `git commit` 한다. 호출 자체가 커밋 승인이다
 5. 커밋 해시·메시지·포함/제외 파일을 보고한다
 
@@ -252,7 +252,7 @@ jstack 스킬 13개가 각각 어떻게 동작하는지 설명합니다. 호출�
 3. 보관된 이슈까지 먼저 검색하고 없을 때만 만든다. 기본값은 우선순위 Medium, 담당자 본인, 기존 라벨. 큰 작업은 상위 이슈 + 결과물마다 하위 이슈
 4. 작업 전에 댓글과 그 안의 `+++ Agent notes` 블록을 모두 읽는다
 5. 진행에 맞춰 상태를 바꾸고 정해진 양식으로 댓글을 단다: 계획 → `Plan` + Plan 댓글, 작업 → `In Progress`, 막힘 → BLOCKED 댓글 후 중단, 완료 → Done 댓글 + `Done`(검토가 필요하면 `Feedback`)
-6. 모든 커밋·PR 에 이슈 ID 를 넣는다. 브랜치는 `<user>/<issue-id>` 소문자다 (예: `jin/mole-123`)
+6. 모든 커밋·PR 에 이슈 ID 를 넣는다 (커밋 제목 `✨ [MOLE-123] …`). 브랜치는 `<user>/<issue-id>` 소문자다 (예: `jin/mole-123`)
 
 **결과물**: Linear 이슈·댓글·상태, 프로젝트 `CLAUDE.md` 의 `Linear project:` 줄, 설치 시 user scope MCP `linear-server`, 정리 시 `~/.claude/linear.md`·`~/.claude/mcp-linear.md`·`<project>/linear.md` 삭제와 `CLAUDE.md`·`AGENTS.md` 의 `@linear.md`·`@mcp-linear.md` 줄 제거
 **주의**: 라벨·상태를 만들지 않고 이슈를 삭제하지 않는다. 이슈 설명은 As-is·To-be 양식이 필수고, Plan 단계에서는 설명을 고치지 않는다. `linear-server` 를 설치했으면 `/mcp` 에서 OAuth 인증을 직접 해야 하고, 세션 중 추가한 서버는 새 세션에서 보인다.

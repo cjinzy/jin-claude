@@ -151,6 +151,37 @@ class TestDetectStaticPatterns:
         assert len(debug_issues) == 1
         assert "breakpoint" in debug_issues[0].code_snippet
 
+    def test_Python_패턴은_py_외_무시(self, tmp_path) -> None:
+        """print/pdb/breakpoint/`#` 주석 코드는 .py 가 아니면 감지하지 않는다."""
+        test_file = tmp_path / "app.js"
+        test_file.write_text("print(x);\nbreakpoint();\n", encoding="utf-8")
+
+        assert detect_static_patterns(test_file) == []
+
+    def test_JS_패턴은_py_에서_무시(self, tmp_path) -> None:
+        """console.log/debugger 는 .py 에서 감지하지 않는다."""
+        test_file = tmp_path / "app.py"
+        test_file.write_text("console.log(x)\ndebugger\n", encoding="utf-8")
+
+        assert detect_static_patterns(test_file) == []
+
+    def test_기타_확장자는_TODO_만(self, tmp_path) -> None:
+        """언어 미지정 파일은 TODO 류만 감지하고 `#` 주석 코드는 무시한다."""
+        test_file = tmp_path / "run.sh"
+        test_file.write_text("# TODO: 정리\n# return 0\n", encoding="utf-8")
+
+        issues = detect_static_patterns(test_file)
+
+        assert [i.category for i in issues] == [SlopCategory.UNNECESSARY_COMMENT]
+
+    @pytest.mark.parametrize("ext", [".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"])
+    def test_JS_확장자_전체_감지(self, tmp_path, ext: str) -> None:
+        """JS/TS 확장자 모두 debugger 를 감지한다."""
+        test_file = tmp_path / f"app{ext}"
+        test_file.write_text("debugger;\n", encoding="utf-8")
+
+        assert len(detect_static_patterns(test_file)) == 1
+
 
 class TestParseRuffOutput:
     """parse_ruff_output 함수 테스트."""

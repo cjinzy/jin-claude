@@ -145,6 +145,11 @@ class TestCleanStaleCache:
 class TestInstallTimer:
     """install_timer() 테스트 스위트."""
 
+    @pytest.fixture(autouse=True)
+    def _isolate_interval(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """저장하는 수집 주기 파일을 실제 ~/.claude 대신 tmp_path 로."""
+        monkeypatch.setattr(sync_repo, "INTERVAL_FILE", tmp_path / ".jin-claude-usage-interval")
+
     @patch("sync_repo.subprocess.run")
     def test_script_not_found(self, mock_run: MagicMock, tmp_path: Path) -> None:
         """install-timer.sh가 없으면 건너뛴다."""
@@ -192,6 +197,17 @@ class TestInstallTimer:
 
         mock_run.side_effect = OSError("permission denied")
         install_timer(tmp_path)
+
+    @pytest.mark.parametrize("returncode", [0, 1])
+    @patch("sync_repo.subprocess.run")
+    def test_saves_interval(self, mock_run: MagicMock, returncode: int, tmp_path: Path) -> None:
+        """고른 주기 저장 → hook 이 타이머 재등록 때 재사용. 설치 실패해도 저장 (hook 재시도)."""
+        script = tmp_path / "plugins" / "jstack" / "scripts" / "install-timer.sh"
+        script.parent.mkdir(parents=True)
+        script.touch()
+        mock_run.return_value = _make_result(returncode)
+        install_timer(tmp_path, interval_minutes=10)
+        assert sync_repo.INTERVAL_FILE.read_text() == "10"
 
 
 REPO_CLAUDE_DIR = Path(__file__).resolve().parents[5] / ".claude"

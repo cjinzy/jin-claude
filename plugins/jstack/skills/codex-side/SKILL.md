@@ -82,7 +82,7 @@ rev-parse 는 패턴 통과 후에만 실행한다. 자동 감지한 `BASE` 는 
 - `--` 뒤 codex 명령을 실행하고, 540초 넘으면 끊는다 (macOS 에 GNU `timeout` 이 없어서 내장)
 - 자기 stdin 을 codex 로 넘긴다. `--boundary` 면 아래 파일시스템 경계 지시문을 앞에 붙인다
 - JSONL 이벤트를 사람이 읽는 transcript 로 `--log` 파일에 쓴다
-- stdout 에 상태 블록만 출력: `STATUS`(ok|timeout|failed|turn_failed|no_completion|empty|nested), `CODEX_EXIT`, `TOKENS`, `SESSION_ID`, `--gate` 면 `GATE`, 실패 시 `STDERR` 발췌
+- stdout 에 상태 블록만 출력: `STATUS`(ok|timeout|failed|turn_failed|no_completion|empty|nested), `CODEX_EXIT`, `TOKENS`, `SESSION_ID`, turn 실패 시 `TURN_FAILED`, `--gate` 면 `GATE`, 원인 추정 시 `HINT`, 실패 시 `STDERR` 발췌, 명령을 못 찾으면 `ERROR`
 
 규칙:
 - **사용자 텍스트는 셸 인자에 절대 넣지 않는다** (위 검증을 통과한 base·sha·모델·effort 만 예외). 프롬프트는 따옴표 붙은 heredoc (`<<'JIN_CODEX_END'`) 으로 stdin 에만 넣는다. 본문에 `JIN_CODEX_END` 단독 줄이 있으면 구분자를 바꾼다.

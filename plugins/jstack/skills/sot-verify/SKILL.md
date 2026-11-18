@@ -39,6 +39,6 @@ python3 "${CLAUDE_SKILL_DIR}/../sot-create/scripts/sot_validate.py" --root sot
 
 ```
 [DONE] sot-verify
-- 문서 N · fact N · stale N
+- 문서 N · fact N · drift 의심 파일 N (JSON `stale`: `DRIFT`·`UNVERIFIABLE_COMMIT` 이 난 파일)
 - error: 수정 N (남음 N) / warning: 코드별 개수 / TODO(sot): N
 ```

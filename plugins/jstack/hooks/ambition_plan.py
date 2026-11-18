@@ -20,7 +20,7 @@ LOAD = (
     "[jstack] Ambition 모드: 계획 작성 전에 Skill 도구로 "
     + SKILL
     + " 을 로드하고 지침을 따른다. 계획에 `## Ambition` 섹션을 넣는다 "
-    "(Altitude / Depth / Range 각 한 항목, 해당 없으면 `N/A — 이유`)."
+    "(적용한 축마다 한 항목, 해당 없으면 `N/A — 이유`)."
 )
 ASK = (
     "[jstack] plan 모드: 이 대화에서 아직 정하지 않았다면 계획을 시작하기 전에 AskUserQuestion 으로 "

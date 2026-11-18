@@ -201,7 +201,7 @@ def check_timer() -> bool:
     else:
         try:
             result = subprocess.run(
-                ["systemctl", "--user", "is-active", "jin-claude-usage.timer"],
+                ["systemctl", "--user", "is-active", "fetch-claude-usage.timer"],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -282,7 +282,7 @@ def check_mcp_health(listing: str | None, plugins: list[str]) -> dict:
 
 
 def check_hooks(settings: dict) -> dict:
-    """jin-claude hooks 설정 존재 여부를 확인한다.
+    """jstack hooks 설정 존재 여부를 확인한다.
 
     플러그인 캐시 루트의 hooks/hooks.json(Claude Code 로드 위치)을 우선 확인하고,
     없으면 글로벌 settings.json의 hooks 키를 fallback으로 확인한다.

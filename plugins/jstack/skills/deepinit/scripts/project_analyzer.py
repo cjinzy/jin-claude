@@ -1,7 +1,7 @@
 """프로젝트 구조 분석 및 프레임워크 감지 모듈.
 
 프로젝트 디렉토리를 스캔하여 사용 언어, 프레임워크, 구조를 감지하고
-사용 가능한 jin-claude 스킬을 안내하는 AGENTS.md 를 생성한다.
+사용 가능한 jstack 스킬을 안내하는 AGENTS.md 를 생성한다.
 """
 
 from __future__ import annotations
@@ -531,10 +531,12 @@ def analyze(project_dir: Path) -> dict:
     languages = detect_languages(project_dir)
     frameworks = detect_frameworks(project_dir)
     structure = detect_structure(project_dir)
+    # `.` 의 name 은 '' 이므로 resolve 후 이름을 취한다
+    resolved_dir = project_dir.resolve()
 
     return {
-        "project_dir": str(project_dir.resolve()),
-        "project_name": project_dir.name,
+        "project_dir": str(resolved_dir),
+        "project_name": resolved_dir.name,
         "languages": languages,
         "frameworks": frameworks,
         "structure": structure,

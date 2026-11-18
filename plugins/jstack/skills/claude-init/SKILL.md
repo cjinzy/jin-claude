@@ -1,6 +1,6 @@
 ---
 name: claude-init
-description: 팀원 Claude Code 환경을 한 번에 초기화한다 — marketplace·plugin 설치, jin-claude 저장소(https) 동기화, ~/.claude/settings.json 병합, 사용량 타이머 설치. 덮어쓰는 기존 파일은 "<이름>_backup_<YYYYMMDD>.<확장자>"로 백업하고, 끝나면 이전 설정 대비 변경점을 안내한다. "jin init", "jin 초기화", "claude-init", "Claude Code 초기 설정", "환경 세팅", "새 머신 세팅", "팀 환경 재설정" 요청이나, 새 머신에 Claude Code를 설치한 직후 또는 팀 공통 설정·플러그인을 최신으로 맞추고 싶을 때 사용한다.
+description: 팀원 Claude Code 환경을 한 번에 초기화한다 — marketplace·plugin 설치, jstack 저장소(https) 동기화, ~/.claude/settings.json 병합, 사용량 타이머 설치. 덮어쓰는 기존 파일은 "<이름>_backup_<YYYYMMDD>.<확장자>"로 백업하고, 끝나면 이전 설정 대비 변경점을 안내한다. "jin init", "jin 초기화", "claude-init", "Claude Code 초기 설정", "환경 세팅", "새 머신 세팅", "팀 환경 재설정" 요청이나, 새 머신에 Claude Code를 설치한 직후 또는 팀 공통 설정·플러그인을 최신으로 맞추고 싶을 때 사용한다.
 ---
 
 # Jin Claude Init
@@ -67,7 +67,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/sync_repo.py" "$INTERVAL"
 - 구버전 플러그인 캐시(`~/.claude/plugins/cache/jstack/jstack/`) 정리
 - statusline, `CLAUDE.md`, 보조 문서를 `~/.claude/` 에 복사 (변경 시 백업)
 - `~/.claude/.venv/` 생성 후 저장소 패키지 설치 (statusline 용 `fetch-claude-usage`)
-- 사용량 타이머 설치 (macOS launchd / Linux systemd)
+- 사용량 타이머 설치 (macOS launchd / Linux systemd). 주기는 `~/.claude/.jin-claude-usage-interval` 에 저장 (SessionStart hook 재등록용)
 
 출력: 단계별 `[sync_repo]` 로그. 실패 시 traceback 과 exit 1.
 
@@ -103,7 +103,7 @@ standalone 자동 설치 대상 MCP 는 현재 없다 (`MCP_SERVERS = []`). 추�
 
 ## Step 6 — 검증
 
-1. `preflight.py` 를 다시 실행한다. `hooks.missing` 이 비어 있어야 한다 (SessionStart: 구버전 `~/.claude/skills` 사본 백업 이동 + 타이머 재등록 + marketplace 자동 업데이트). 남은 `missing` 항목은 사용자에게 알린다.
+1. `preflight.py` 를 다시 실행한다. `hooks.missing` 이 비어 있어야 한다 (SessionStart `session_init.py`: 구버전 `~/.claude/skills` 사본 백업 이동 + 저장된 주기로 타이머 재등록 + marketplace 자동 업데이트 / UserPromptSubmit `ambition_plan.py`: ambition 계획 모드 안내). 남은 `missing` 항목은 사용자에게 알린다.
 2. MCP 연결 확인 (`claude mcp list` 가 모든 서버에 연결해 수십 초 걸릴 수 있다):
 
    ```bash
@@ -146,6 +146,6 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/report_changes.py"
 - Marketplace: N개 추가 / Plugins: N개 설치
 - 파일: 신규 N · 변경 N · 동일 N (report_changes 출력 기준)
 - Settings: 필수 키 반영, 개인 선호·hooks 보존
-- Hooks: SessionStart 확인
+- Hooks: SessionStart·UserPromptSubmit 확인
 - 충돌: high N · medium N · low N (적용 N)
 ```

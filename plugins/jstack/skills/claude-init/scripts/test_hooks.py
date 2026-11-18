@@ -1,9 +1,6 @@
-"""hooks 모듈 단위 테스트.
+"""hooks 단위 테스트.
 
-keyword_detector(Python, 미등록), session_init(Python, SessionStart)의 stdin/stdout JSON 프로토콜과 keyword 매칭을 검증한다.
-
-하이브리드 구성: 복잡한 로직(JSON 파싱, 한글 매칭)은 Python,
-단순 통과(approve)는 Bash로 구현되어 있다.
+session_init(SessionStart), ambition_plan(UserPromptSubmit), hooks.json 등록.
 """
 
 import json
@@ -13,100 +10,15 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+import sync_repo
 
 # hooks 디렉토리의 모듈을 import하기 위해 경로 추가
 HOOKS_DIR = Path(__file__).resolve().parent.parent.parent.parent / "hooks"
 sys.path.insert(0, str(HOOKS_DIR))
 
-from keyword_detector import KEYWORDS, main as keyword_main
 from ambition_plan import ASK, LOAD, context_for, main as ambition_main
+import session_init
 from session_init import LEGACY_SKILLS, auto_update, ensure_timer, main as session_main, retire_legacy_skills
-
-
-class TestKeywordDetector:
-    """keyword_detector.py 테스트 스위트."""
-
-    def test_jin_init_detected(self) -> None:
-        """'jin init' 키워드를 감지하면 block 결과를 반환한다."""
-        event = json.dumps({"prompt": "jin init 해줘"})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "block"
-            assert "claude-init" in output["reason"]
-
-    def test_jin_commit_detected(self) -> None:
-        """'jin commit' 키워드를 감지한다."""
-        event = json.dumps({"prompt": "jin commit"})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "block"
-            assert "commit" in output["reason"]
-
-    def test_jin_interview_detected(self) -> None:
-        """'jin interview' 키워드를 감지한다."""
-        event = json.dumps({"prompt": "jin interview 시작"})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "block"
-            assert "interview" in output["reason"]
-
-    def test_jin_codex_detected(self) -> None:
-        """'jin codex' 키워드를 감지한다 (commit 등 다른 키워드보다 우선)."""
-        event = json.dumps({"prompt": "jin codex로 이 commit 검토해줘"})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "block"
-            assert "codex-side" in output["reason"]
-
-    def test_removed_skills_not_mapped(self) -> None:
-        """제거된 스킬로 라우팅하는 키워드가 없다."""
-        removed = {"jin-gcc", "jin-chub", "verify-implementation", "jin-suggest", "guidelines"}
-        assert not removed & set(KEYWORDS.values())
-
-    def test_jin_korean_keyword(self) -> None:
-        """'jin 초기화' 한글 키워드를 감지한다."""
-        event = json.dumps({"prompt": "jin 초기화 해줘"})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "block"
-            assert "claude-init" in output["reason"]
-
-    def test_no_keyword_approves(self) -> None:
-        """키워드가 없으면 approve를 반환한다."""
-        event = json.dumps({"prompt": "hello world"})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "approve"
-
-    def test_case_insensitive(self) -> None:
-        """키워드 매칭은 대소문자를 구분하지 않는다."""
-        event = json.dumps({"prompt": "JIN INIT please"})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "block"
-
-    def test_empty_prompt_approves(self) -> None:
-        """빈 프롬프트이면 approve를 반환한다."""
-        event = json.dumps({"prompt": ""})
-        with patch("sys.stdin") as mock_stdin, patch("builtins.print") as mock_print:
-            mock_stdin.read.return_value = event
-            keyword_main()
-            output = json.loads(mock_print.call_args[0][0])
-            assert output["result"] == "approve"
 
 
 class TestSessionInit:
@@ -187,6 +99,25 @@ class TestEnsureTimer:
             ensure_timer()
         mock_run.assert_called_once()
         assert mock_run.call_args[0][0] == ["bash", str(installer), "5"]
+
+    @pytest.mark.parametrize(
+        ("saved", "arg"), [("10", "10"), ("3\n", "3"), ("abc", "5"), ("7", "5")]
+    )
+    @patch("session_init.subprocess.Popen")
+    def test_reinstalls_with_saved_interval(
+        self, mock_run: MagicMock, saved: str, arg: str, tmp_path: Path
+    ) -> None:
+        """init 이 고른 주기로 재등록. 정수 아님·허용값(1/3/5/10) 밖이면 5."""
+        installer = self._installer(tmp_path)
+        (tmp_path / ".claude" / ".jin-claude-usage-interval").write_text(saved)
+        with patch("session_init.Path.home", return_value=tmp_path), \
+             patch("session_init.sys.platform", "darwin"):
+            ensure_timer()
+        assert mock_run.call_args[0][0] == ["bash", str(installer), arg]
+
+    def test_interval_file_matches_sync_repo(self) -> None:
+        """hooks/·scripts/ 는 서로 import 하지 않아 경로 복제 — 어긋나면 주기를 못 읽는다."""
+        assert sync_repo.CLAUDE_DIR.parent / session_init.INTERVAL_FILE == sync_repo.INTERVAL_FILE
 
     @patch("session_init.subprocess.Popen")
     def test_skips_when_plist_exists(self, mock_run: MagicMock, tmp_path: Path) -> None:
@@ -293,6 +224,7 @@ class TestAmbitionPlan:
         assert "name: ambition" in text
         for axis in ("## Altitude", "## Depth", "## Range", "$ARGUMENTS"):
             assert axis in text
+        assert "적용한 축마다 한 항목" in text and "적용한 축마다 한 항목" in LOAD  # 인자로 축 하나만 적용 가능
         for old in ("jin-altitude", "jin-depth", "jin-range"):
             assert not (skills / old).exists()
 

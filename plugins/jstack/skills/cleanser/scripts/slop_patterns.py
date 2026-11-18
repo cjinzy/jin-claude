@@ -16,9 +16,11 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-# 디렉토리 모드 스캔 대상. 주석 패턴(`#`)은 Python 전용, 디버그 패턴은 JS/TS 도 포함.
-SCAN_EXTENSIONS = (".py", ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
+# 언어별 패턴 적용 대상 확장자. 디렉토리 모드는 둘의 합집합만 스캔.
 PYTHON_EXTENSION = ".py"
+PYTHON_EXTENSIONS = frozenset({PYTHON_EXTENSION})
+JS_EXTENSIONS = frozenset({".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"})
+SCAN_EXTENSIONS = PYTHON_EXTENSIONS | JS_EXTENSIONS
 RUFF_SKIPPED_NOTICE = "> ruff 미설치 — unused-import(F401) 검사 생략."
 EXIT_OK = 0
 EXIT_USAGE = 2
@@ -100,38 +102,47 @@ class SlopIssue:
 
 
 # 정적 감지 패턴 정의
-# 각 패턴: (정규식, SlopCategory, 제안 메시지)
-STATIC_PATTERNS: dict[SlopCategory, list[tuple[re.Pattern[str], str]]] = {
+# 각 패턴: (정규식, 제안 메시지, 적용 확장자 — None 이면 모든 파일)
+STATIC_PATTERNS: dict[
+    SlopCategory, list[tuple[re.Pattern[str], str, frozenset[str] | None]]
+] = {
     SlopCategory.LEFTOVER_DEBUG: [
         (
             re.compile(r"^\s*print\s*\("),
             "디버그용 print() 호출을 제거하세요.",
+            PYTHON_EXTENSIONS,
         ),
         (
             re.compile(r"^\s*console\.log\s*\("),
             "디버그용 console.log() 호출을 제거하세요.",
+            JS_EXTENSIONS,
         ),
         (
             re.compile(r"^\s*debugger\s*;?\s*$"),
             "debugger 문을 제거하세요.",
+            JS_EXTENSIONS,
         ),
         (
             re.compile(r"^\s*pdb\.set_trace\s*\("),
             "pdb.set_trace() 호출을 제거하세요.",
+            PYTHON_EXTENSIONS,
         ),
         (
             re.compile(r"^\s*breakpoint\s*\("),
             "breakpoint() 호출을 제거하세요.",
+            PYTHON_EXTENSIONS,
         ),
         (
             re.compile(r"^\s*import\s+pdb\b"),
             "디버그용 pdb 임포트를 제거하세요.",
+            PYTHON_EXTENSIONS,
         ),
     ],
     SlopCategory.DEAD_CODE: [
         (
             re.compile(r"^\s*#\s*(?:def |class |if |for |while |return |import )"),
             "주석 처리된 코드 블록이 발견되었습니다. 불필요하면 삭제를 고려하세요.",
+            PYTHON_EXTENSIONS,
         ),
     ],
     SlopCategory.UNNECESSARY_COMMENT: [
@@ -141,6 +152,7 @@ STATIC_PATTERNS: dict[SlopCategory, list[tuple[re.Pattern[str], str]]] = {
                 re.IGNORECASE,
             ),
             "TODO/FIXME 등의 임시 주석이 남아있습니다. 처리하거나 제거하세요.",
+            None,
         ),
     ],
 }
@@ -173,7 +185,9 @@ def detect_static_patterns(file_path: Path) -> list[SlopIssue]:
 
     for line_num, line_content in enumerate(lines, start=1):
         for category, patterns in STATIC_PATTERNS.items():
-            for pattern, suggestion in patterns:
+            for pattern, suggestion, extensions in patterns:
+                if extensions is not None and file_path.suffix not in extensions:
+                    continue
                 if pattern.search(line_content):
                     issues.append(
                         SlopIssue(

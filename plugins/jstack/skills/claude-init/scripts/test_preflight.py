@@ -5,7 +5,7 @@
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from preflight import (
     EXPECTED_MARKETPLACES,
@@ -14,6 +14,7 @@ from preflight import (
     check_marketplaces,
     check_plugins,
     check_settings,
+    check_timer,
     check_venv,
     determine_recommendation,
     stale_synced_files,
@@ -150,6 +151,21 @@ class TestCheckVenv:
             venv_python.parent.mkdir(parents=True)
             venv_python.touch()
             assert check_venv() is True
+
+
+INSTALL_TIMER = Path(__file__).resolve().parents[3] / "scripts" / "install-timer.sh"
+
+
+class TestCheckTimer:
+    """check_timer() — install-timer.sh 가 만드는 unit 을 조회해야 한다."""
+
+    def test_linux_queries_installed_unit(self) -> None:
+        with patch("preflight.platform.system", return_value="Linux"), \
+             patch("preflight.subprocess.run", return_value=MagicMock(stdout="active\n")) as run:
+            assert check_timer() is True
+        unit = run.call_args[0][0][-1]
+        assert unit == "fetch-claude-usage.timer"
+        assert unit in INSTALL_TIMER.read_text()
 
 
 class TestCheckHooks:

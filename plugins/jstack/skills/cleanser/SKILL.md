@@ -17,7 +17,7 @@ AI 생성 코드의 슬롭을 찾아 리포트만 한다. **삭제/수정은 하
 | leftover-debug | critical | 스크립트: `print(`, `pdb`, `breakpoint(` (Python) / `console.log(`, `debugger` (JS/TS) |
 | dead-code | warning | 스크립트: `# def/class/if/for/while/return/import` 로 시작하는 주석 (Python). 그 외 언어·미사용 함수는 시맨틱 |
 | unused-import | warning | 스크립트: ruff F401 (Python, ruff 설치 시) |
-| unnecessary-comment | warning | 스크립트: TODO/FIXME/HACK/XXX/TEMP 주석. 자명한 주석(`# 리스트를 반복한다`)은 시맨틱 |
+| unnecessary-comment | warning | 스크립트: `#` TODO/FIXME/HACK/XXX/TEMP/TEMPORARY 주석 (확장자 무관). 자명한 주석(`# 리스트를 반복한다`)은 시맨틱 |
 | excessive-error-handling | warning | 시맨틱: 발생 불가능한 예외 처리, 빈 except |
 | boilerplate-docstring | info | 시맨틱: `"""This function does X."""` 류 |
 | over-abstraction | info | 시맨틱: 한 곳에서만 쓰는 단순 래퍼 |
@@ -43,8 +43,8 @@ AI 생성 코드의 슬롭을 찾아 리포트만 한다. **삭제/수정은 하
 python3 "${CLAUDE_SKILL_DIR}/scripts/slop_patterns.py" <파일|디렉토리> [...]
 ```
 
-- 출력(stdout): 마크다운 리포트 — `### 요약`(심각도별 건수) + `### 이슈 목록` 테이블. ruff 가 없으면 끝에 `> ruff 미설치 — unused-import(F401) 검사 생략.` 한 줄.
-- 디렉토리는 `.py .js .jsx .ts .tsx .mjs .cjs` 를 재귀 스캔 (`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `dist`, `build` 제외). 파일 인자는 확장자와 무관하게 스캔.
+- 출력(stdout): 마크다운 리포트 — `### 요약`(심각도별 건수) + `### 이슈 목록` 테이블. 이슈가 없으면 둘 다 없이 `슬롭 이슈가 발견되지 않았습니다…` 한 줄. ruff 가 없으면 끝에 `> ruff 미설치 — unused-import(F401) 검사 생략.` 한 줄.
+- 디렉토리는 `.py .js .jsx .ts .tsx .mjs .cjs` 를 재귀 스캔 (`.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `dist`, `build` 제외). 파일 인자는 확장자와 무관하게 스캔하되 Python 패턴은 `.py`, JS/TS 패턴은 위 JS/TS 확장자에만 적용 (그 외 파일은 TODO 류만).
 - 종료 코드: `0` 정상, `2` 인자 없음, `3` 없는 경로 (stderr 에 경로 출력, 스캔 안 함).
 - 라인 정규식이라 오탐 가능 (예: CLI 의 의도된 `print`). 리포트 전에 해당 라인을 확인해 걸러낸다.
 

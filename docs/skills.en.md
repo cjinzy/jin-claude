@@ -34,7 +34,7 @@ What each of the 13 jstack skills does, step by step. Call them with `/jstack:<s
 7. Shows what changed, backup paths and how to roll back, then runs `onboard`
 
 **Output**: Updates `~/.claude/CLAUDE.md`, its include docs, `statusline-command.sh` and `settings.json` (changed files backed up as `<name>_backup_<YYYYMMDD>.<ext>`); creates `~/.claude/.jin-claude-repo/`, `~/.claude/.venv/`, a launchd/systemd usage timer and `~/.claude/.jin-claude-plugins.json`; installs plugins
-**Notes**: Team-required keys such as `statusLine` and `skipDangerousModePermissionPrompt` overwrite your values. Deselected plugins are not uninstalled. If the timer disappears, the session-start hook re-registers it at 5 minutes, ignoring the interval you chose.
+**Notes**: Team-required keys such as `statusLine` and `skipDangerousModePermissionPrompt` overwrite your values. Deselected plugins are not uninstalled. If the timer disappears, the session-start hook re-registers it with the interval chosen at init (`~/.claude/.jin-claude-usage-interval`, 5 minutes if absent).
 
 <a name="onboard"></a>
 
@@ -170,7 +170,7 @@ What each of the 13 jstack skills does, step by step. Call them with `/jstack:<s
 4. Drift comes from `git diff <verified_commit>..HEAD -- <verified_paths>`. It is an error for `status: verified` docs, a warning otherwise.
 5. Structural errors: fixes the doc's frontmatter or ID, then regenerates `Index.md`.
 6. `DRIFT`: reads the diff, corrects the facts, and bumps `updated` and `verified_commit`. If it cannot tell, sets `status: stale` and adds a `TODO(sot):` naming what to check.
-7. Re-runs until errors are zero, then reports doc and fact counts, errors fixed and left, and warning counts.
+7. Re-runs until errors are zero, then reports doc and fact counts, files with suspected drift, errors fixed and left, and warning counts.
 
 **Output**: Edits to `sot/` docs; regenerated `sot/Index.md`.
 **Notes**: It edits `sot/` docs without asking (edits only, never overwrites with a template). The path is fixed to `sot`, so run it from the project root. Drift sees committed changes only; uncommitted edits are not caught.
@@ -189,7 +189,7 @@ What each of the 13 jstack skills does, step by step. Call them with `/jstack:<s
 **How it works**
 1. With a path, scans everything under it.
 2. Without a path, scans uncommitted changes plus untracked files. If both are empty, scans the last commit (vs `HEAD~1`).
-3. Runs `slop_patterns.py` for static checks: debug output (`print(`, `console.log(`, `debugger`, `pdb`, `breakpoint(`), code commented out with `#`, and TODO/FIXME-style comments.
+3. Runs `slop_patterns.py` for static checks: debug output (`print(`, `console.log(`, `debugger`, `pdb`, `breakpoint(`), code commented out with `#`, and TODO/FIXME-style comments. Python patterns apply only to `.py` files, JS patterns (`console.log`, `debugger`) only to JS/TS files.
 4. If `ruff` is installed, also finds unused Python imports (F401). If not, skips that and says so in the report.
 5. Claude reads the files for what regex misses: obvious comments, excessive or empty exception handling, boilerplate docstrings, single-use wrappers, self-evident type annotations.
 6. In diff mode, keeps only changed lines. Untracked files count in full.
@@ -232,7 +232,7 @@ What each of the 13 jstack skills does, step by step. Call them with `/jstack:<s
 **How it works**
 1. Analyzes changes with `git status` and `git diff` (`git diff --staged` if files are staged)
 2. Selects only the files you named or the files belonging to this change. Unrelated changes and secrets (`.env` etc.) are left out and reported. Asks only when the target files are ambiguous (asks)
-3. Picks a gitmoji for the kind of change and writes `<emoji> <Korean title> [— scope] [+ extras]`. Uses the argument if given
+3. Picks a gitmoji for the kind of change and writes `<emoji> [<issue ID>] <Korean title> [— scope] [+ extras]`. The issue ID (e.g. `[MOLE-123]`) is added only when the branch name or conversation gives it. Uses the argument if given
 4. Runs `git add <files>` → `git commit` without confirmation. Invoking the skill is the approval
 5. Reports the commit hash, message, and included/excluded files
 
@@ -252,7 +252,7 @@ What each of the 13 jstack skills does, step by step. Call them with `/jstack:<s
 3. Searches existing issues first, archived included, and creates only if none exists. Defaults: priority Medium, assignee me, an existing label. Large tasks get a parent plus one sub-issue per deliverable
 4. Before work, reads the comments and every `+++ Agent notes` block in them
 5. Moves status and comments with fixed templates: plan → `Plan` + Plan comment; work → `In Progress`; blocked → BLOCKED comment, then stops; done → Done comment + `Done` (`Feedback` if you must review)
-6. Puts the issue ID in every commit and PR. Branch is `<user>/<issue-id>` in lowercase (e.g. `jin/mole-123`)
+6. Puts the issue ID in every commit and PR (commit title `✨ [MOLE-123] …`). Branch is `<user>/<issue-id>` in lowercase (e.g. `jin/mole-123`)
 
 **Output**: Linear issues, comments, and statuses; the `Linear project:` line in the project `CLAUDE.md`; user-scope MCP `linear-server` when installed; on cleanup, deletes `~/.claude/linear.md`, `~/.claude/mcp-linear.md`, `<project>/linear.md` and removes `@linear.md` / `@mcp-linear.md` lines from `CLAUDE.md` / `AGENTS.md`
 **Notes**: Never creates labels or statuses, never deletes issues. Descriptions must use the As-is / To-be template, and the description is never edited at the Plan stage. If `linear-server` was installed, you must authenticate via `/mcp` (OAuth) yourself; a server added mid-session shows up only in a new session.

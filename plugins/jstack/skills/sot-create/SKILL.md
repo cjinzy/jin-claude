@@ -1,7 +1,6 @@
 ---
 name: sot-create
 description: 코딩 에이전트가 인용·검증할 수 있는 SoT(Source of Truth, SSOT) 문서셋을 `sot/` 에 생성·갱신한다 — 세부항목별 파일, 머신리더블 frontmatter, fact ID, Index.md 생성기, drift 검증기. "jin sot", "sot create", "SoT 생성", "source of truth", "create a source of truth", "document this project" 요청이나, 프로젝트 문서 체계를 처음 세우거나, 아키텍처·DB 스키마·워크플로·디자인 규칙(DESIGN.md)을 문서로 정리하거나, AGENTS.md/CLAUDE.md 에 담기엔 큰 프로젝트 지식을 남겨야 할 때 사용한다.
-argument-hint: "[project path (default: cwd)]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
@@ -133,7 +132,7 @@ TODO(sot): confirm whether the reporting job is an exception.
 | `id` | `<PREFIX>-<slug>`, globally unique |
 | `status` | `draft` (incomplete) · `verified` (checked against code) · `stale` (known out of date) |
 | `updated` | ISO date of the last human- or agent-verified edit |
-| `verified_commit` | commit SHA the doc was last checked against — required for `verified` |
+| `verified_commit` | commit SHA the doc was last checked against — expected for `verified` (missing → `UNVERIFIABLE_COMMIT` warning; `overview`·`rules` exempt) |
 | `verified_paths` | repo-relative code paths this doc describes — the drift input |
 
 Body rules:
@@ -268,7 +267,7 @@ JSON on stdout, exit 1 on errors. Fix every `error` before reporting the SoT as 
 
 | Code | Level | Meaning |
 |---|---|---|
-| `MISSING_FRONTMATTER` / `MISSING_KEY` | error | document contract broken |
+| `MISSING_FRONTMATTER` / `MISSING_KEY` | error | document contract broken (also: `--root` is not a directory) |
 | `BAD_CATEGORY` / `BAD_ID_PREFIX` / `BAD_STATUS` | error | not addressable |
 | `DUPLICATE_ID` | error | two owners for one id |
 | `NOT_INDEXED` / `DEAD_LINK` | error | `Index.md` is not the entry point |
