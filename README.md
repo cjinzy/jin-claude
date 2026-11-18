@@ -4,7 +4,7 @@
 
 Claude Code 플러그인입니다. 계획, 스펙, 프로젝트 문서화(SoT), 리뷰, 커밋을 돕는 스킬 13개와 hook 2개, 사용량 statusline 을 담았습니다.
 
-> 버전 `6.1.0` · 라이선스 MIT
+> 버전 `6.2.0` · 라이선스 MIT
 
 ## 설치
 
@@ -29,7 +29,7 @@ claude plugin install jstack@jstack
 | | [`onboard`](docs/skills.md#onboard) | 상황별로 어떤 스킬을 쓰는지 안내 |
 | 계획 | [`interview`](docs/skills.md#interview) | 구현 전 인터뷰 → 스펙 파일 |
 | | [`ambition`](docs/skills.md#ambition) | 계획을 세 축(Altitude·Depth·Range)으로 확장 |
-| | [`maestro`](docs/skills.md#maestro) | 세션을 오케스트레이터로 전환, 작업은 하위 세션에 위임 · 직접 호출만 |
+| | [`maestro`](docs/skills.md#maestro) | 세션을 오케스트레이터로 전환, 작업은 하위 세션(agent·herdr pane)에 위임 · 직접 호출만 |
 | 문서화 | [`deepinit`](docs/skills.md#deepinit) | 프로젝트 분석 → `AGENTS.md` |
 | | [`sot-create`](docs/skills.md#sot-create) | 인용·검증 가능한 프로젝트 문서셋 `sot/` 생성 |
 | | [`sot-verify`](docs/skills.md#sot-verify) | `sot/` 가 코드와 맞는지 검증·수정 · 직접 호출만 |

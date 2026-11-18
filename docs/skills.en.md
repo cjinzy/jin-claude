@@ -105,14 +105,15 @@ What each of the 13 jstack skills does, step by step. Call them with `/jstack:<s
 1. This session only plans, keeps the ledger, consolidates reports, and asks you questions. Code edits, builds, tests, and research go to sub-sessions.
 2. In plan mode, it writes only the dispatch plan (session names, areas, mode, briefs). After approval it creates the ledger and starts delegating. (asks)
 3. Creates the ledger `.maestro/ledger.md` in the current directory. In a git repo, adds `.maestro/` to `info/exclude`.
-4. If an active or idle session owns the same area, it gets the work. New work goes to a new named subagent `m-<area>-<n>`. Broad one-off jobs with no follow-up run directly as a Workflow.
+4. If an active or idle session owns the same area, it gets the work. New work goes to a new sub-session `m-<area>-<n>`: inside herdr, ultracode or long jobs get an independent Claude session in a herdr pane (Workflow available); everything else gets a named subagent. Broad one-off jobs with no follow-up run directly as a Workflow.
 5. When two or more sessions will edit files in the same repo at once, each gets its own worktree. Merging is delegated too.
 6. Picks a mode per hand-off: `ultracode` for audits, migrations, reviews, and high-risk changes; `normal` for small fixes.
-7. Takes each sub-session report (`STATUS: DONE|BLOCKED`, changed files, verification evidence, follow-ups), updates the ledger, and summarizes for you.
-8. Archives sessions with no follow-up and no context worth keeping. Say "maestro 종료" to archive all and get a final summary.
+7. When a sub-session asks a question or needs a decision or approval, the orchestrator does not answer it. It asks you as-is and passes your answer back. (asks)
+8. Takes each sub-session report (`STATUS: DONE|BLOCKED`, changed files, verification evidence, questions, follow-ups), updates the ledger, and summarizes for you.
+9. Archives sessions with no follow-up and no context worth keeping. Say "maestro 종료" to archive all and get a final summary.
 
-**Output**: `.maestro/ledger.md`, a `.maestro/` line in git `info/exclude`, sub-sessions, and worktrees when needed.
-**Notes**: At most 5 active sessions, of which at most 2 run `ultracode` at once. Archiving means marking `archived` in the ledger and stopping the session if running. Archived sessions get no new work; new work in that area goes to a new session.
+**Output**: `.maestro/ledger.md`, pane-session reports `.maestro/reports/<name>.md`, a `.maestro/` line in git `info/exclude`, sub-sessions, and worktrees when needed.
+**Notes**: At most 5 active sessions, of which at most 2 run `ultracode` at once. Archiving means marking `archived` in the ledger and stopping the session if running (panes are closed). Archived sessions get no new work; new work in that area goes to a new session.
 
 ---
 

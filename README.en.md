@@ -4,7 +4,7 @@
 
 A Claude Code plugin with 13 skills for planning, specs, project documentation (SoT), review and commits, plus 2 hooks and a usage statusline.
 
-> Version `6.1.0` · License MIT
+> Version `6.2.0` · License MIT
 
 ## Install
 
@@ -29,7 +29,7 @@ How each skill works, step by step: **[docs/skills.en.md](docs/skills.en.md)**
 | | [`onboard`](docs/skills.en.md#onboard) | Shows which skill to use in which situation |
 | Plan | [`interview`](docs/skills.en.md#interview) | Interviews you before building → spec file |
 | | [`ambition`](docs/skills.en.md#ambition) | Stretches a plan along three axes (Altitude, Depth, Range) |
-| | [`maestro`](docs/skills.en.md#maestro) | Turns the session into an orchestrator that delegates to sub-sessions · manual only |
+| | [`maestro`](docs/skills.en.md#maestro) | Turns the session into an orchestrator that delegates to sub-sessions (agents or herdr panes) · manual only |
 | Document | [`deepinit`](docs/skills.en.md#deepinit) | Analyzes the project → `AGENTS.md` |
 | | [`sot-create`](docs/skills.en.md#sot-create) | Builds `sot/`, a citable, checkable project docset |
 | | [`sot-verify`](docs/skills.en.md#sot-verify) | Checks `sot/` still matches the code and fixes it · manual only |
