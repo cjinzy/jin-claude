@@ -17,7 +17,7 @@ REPO_URL = "https://github.com/cjinzy/jstack.git"
 REPO_DIR = Path.home() / ".claude" / ".jin-claude-repo"
 CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"
-CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jin-claudecode-mp" / "jstack"
+CACHE_BASE = Path.home() / ".claude" / "plugins" / "cache" / "jstack" / "jstack"
 
 # CLAUDE.md 가 @include 하는 보조 문서. 함께 복사하지 않으면 참조가 깨진다.
 CLAUDE_INCLUDES = (

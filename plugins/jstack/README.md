@@ -1,7 +1,7 @@
 # jstack
 
 > Team-standard skills & hooks for Claude Code — **12 skills · 2 hooks**
-> Version: **6.0.1** · License: MIT · Marketplace: `jin-claudecode-mp`
+> Version: **6.1.0** · License: MIT · Marketplace: `jstack`
 
 팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
@@ -10,7 +10,7 @@
 ## Install
 
 ```sh
-claude plugin install "jstack@jin-claudecode-mp"
+claude plugin install "jstack@jstack"
 ```
 
 업데이트 시에도 `update`가 아닌 `install` 재호출을 권장합니다 (marketplace 캐시/버전 불일치 회피).

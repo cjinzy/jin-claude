@@ -156,7 +156,7 @@ class TestCheckHooks:
     """check_hooks() 테스트 스위트 — 플러그인 루트 hooks/hooks.json 기준."""
 
     def _write_manifest(self, root: Path, version: str, hooks: dict) -> None:
-        hooks_dir = root / "plugins" / "cache" / "jin-claudecode-mp" / "jstack" / version / "hooks"
+        hooks_dir = root / "plugins" / "cache" / "jstack" / "jstack" / version / "hooks"
         hooks_dir.mkdir(parents=True)
         (hooks_dir / "hooks.json").write_text(json.dumps({"hooks": hooks}))
 
@@ -169,7 +169,7 @@ class TestCheckHooks:
 
     def test_legacy_location_not_counted(self, tmp_path: Path) -> None:
         """Claude Code 가 읽지 않는 .claude-plugin/hooks/hooks.json 은 설치로 보지 않는다."""
-        legacy = tmp_path / "plugins" / "cache" / "jin-claudecode-mp" / "jstack" / "4.0.2" / ".claude-plugin" / "hooks"
+        legacy = tmp_path / "plugins" / "cache" / "jstack" / "jstack" / "4.0.2" / ".claude-plugin" / "hooks"
         legacy.mkdir(parents=True)
         (legacy / "hooks.json").write_text(json.dumps({"hooks": {"SessionStart": [{}]}}))
         with patch("preflight.CLAUDE_DIR", tmp_path):

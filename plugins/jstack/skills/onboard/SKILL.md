@@ -45,7 +45,7 @@ description: jstack 사용 온보딩 — 상황별 워크플로(새 프로젝트
 - Linear 작업은 `mole-linear` 가 자동 적용 — 팀 규칙대로 이슈·댓글 작성. 라벨·상태 생성과 이슈 삭제는 하지 않는다.
 
 ## 환경 유지
-- 새 버전 반영: `claude plugin update jstack@jin-claudecode-mp` 후 새 세션 (marketplace 저장소는 세션 시작 때 자동 갱신).
+- 새 버전 반영: `claude plugin update jstack@jstack` 후 새 세션 (marketplace 저장소는 세션 시작 때 자동 갱신).
 - `jin init` 재실행 (모두 설치돼 있으면) → "충돌 audit 만" 으로 설치 환경 충돌(MCP 중복·스킬 가림·알려진 충돌) 점검, "선택만 변경" 으로 선택 플러그인 변경.
 - 검증 스킬 관리: `/jstack:manage-skills`.
 

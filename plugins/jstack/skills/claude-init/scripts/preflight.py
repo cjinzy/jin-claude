@@ -18,7 +18,7 @@ from sync_repo import SYNC_FILES  # Step 3 동기화 대상 단일 출처
 CLAUDE_DIR = Path.home() / ".claude"
 SETTINGS_PATH = CLAUDE_DIR / "settings.json"
 # 최신 판정 기준: SessionStart hook 이 매 세션 pull 하는 marketplace clone (저장소 전체)
-MARKETPLACE_DIR = CLAUDE_DIR / "plugins" / "marketplaces" / "jin-claudecode-mp"
+MARKETPLACE_DIR = CLAUDE_DIR / "plugins" / "marketplaces" / "jstack"
 STATUSLINE_FILE = "statusline-command.sh"
 
 # Step 2 설치 대상 단일 출처 (install_plugins.py 가 사용). ID 형식 = enabledPlugins 키 (plugin@marketplace).
@@ -296,7 +296,7 @@ def check_hooks(settings: dict) -> dict:
     hooks: dict = {}
 
     # 플러그인 캐시에서 hooks.json 탐색
-    cache_base = CLAUDE_DIR / "plugins" / "cache" / "jin-claudecode-mp" / "jstack"
+    cache_base = CLAUDE_DIR / "plugins" / "cache" / "jstack" / "jstack"
     if cache_base.exists():
         versions = sorted(
             [d for d in cache_base.iterdir() if d.is_dir() and d.name[0].isdigit()],
