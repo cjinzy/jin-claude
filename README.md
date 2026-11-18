@@ -2,7 +2,7 @@
 
 Claude Code 팀 표준 환경 플러그인. 13개 스킬, 2개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `5.4.12` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `6.0.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -13,12 +13,12 @@ Claude Code 팀 표준 환경 플러그인. 13개 스킬, 2개 hook, statusline 
 claude plugin marketplace add cjinzy/jin-claude
 
 # 2. Plugin 설치
-claude plugin install jin-claude@jin-claudecode-mp
+claude plugin install jstack@jin-claudecode-mp
 ```
 
-### 팀원 환경 초기화 (jin-claude-init)
+### 팀원 환경 초기화 (claude-init)
 
-Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레이스, 플러그인, 설정, MCP, hooks, 동기화, 통계 타이머를 자동으로 구성합니다. 덮어쓰는 기존 설정 파일은 `<name>_backup_<YYYYMMDD>.<ext>` 로 백업하고, 완료 후 init 전/후 변경 요약을 출력합니다. 실측 결과는 `plugins/jin-claude/skills/jin-claude-init/SKILL.md`을 참조하세요.
+Claude Code 내에서 `/jstack:claude-init`을 실행하면 마켓플레이스, 플러그인, 설정, MCP, hooks, 동기화, 통계 타이머를 자동으로 구성합니다. 덮어쓰는 기존 설정 파일은 `<name>_backup_<YYYYMMDD>.<ext>` 로 백업하고, 완료 후 init 전/후 변경 요약을 출력합니다. 실측 결과는 `plugins/jstack/skills/claude-init/SKILL.md`을 참조하세요.
 
 #### Step 0 — Pre-flight Check
 
@@ -77,12 +77,12 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 `scripts/preflight.py` 재실행으로 남은 `missing` 을 확인하고, `preflight.py --mcp` 로 jin 플러그인 MCP 연결을 확인합니다 (미연결은 원인 힌트와 함께 보고, 개인 MCP 실패는 정보로만 표시. 느려서 Step 0 에선 생략). Hook 은 아래 2개가 등록돼 있어야 합니다.
 
 
-`plugins/jin-claude/hooks/hooks.json`(플러그인 루트 — Claude Code 로드 위치)에 hook 2개(SessionStart, UserPromptSubmit)가 등록됩니다. 플러그인 캐시에서 직접 실행되므로 플러그인 업데이트만으로 배포됩니다.
+`plugins/jstack/hooks/hooks.json`(플러그인 루트 — Claude Code 로드 위치)에 hook 2개(SessionStart, UserPromptSubmit)가 등록됩니다. 플러그인 캐시에서 직접 실행되므로 플러그인 업데이트만으로 배포됩니다.
 
 | Hook Event | 실행 명령 | 역할 |
 |------------|-----------|------|
 | `SessionStart` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session_init.py"` | 구버전 `~/.claude/skills` 사본 백업 이동 + 사용량 타이머 유실 시 재등록 + marketplace 자동 업데이트 |
-| `UserPromptSubmit` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/ambition_plan.py"` | plan 모드면 ambition 계획 여부를 묻게 하고, 프롬프트에 `ambition`/`앰비션` 이 있으면 묻지 않고 jin-ambition 로드 |
+| `UserPromptSubmit` | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/ambition_plan.py"` | plan 모드면 ambition 계획 여부를 묻게 하고, 프롬프트에 `ambition`/`앰비션` 이 있으면 묻지 않고 ambition 로드 |
 
 이어 `scripts/audit_conflicts.py` 가 설치 환경 충돌(MCP 중복·스킬 가림·알려진 충돌 플러그인/설정·hook 누적)을 severity 순으로 보고하고, 고른 fix 만 `--apply` 로 적용합니다.
 
@@ -98,23 +98,23 @@ Claude Code 내에서 `/jin-claude:jin-claude-init`을 실행하면 마켓플레
 
 | 스킬 | 설명 |
 |------|------|
-| `jin-claude-init` | 팀원 환경 초기화 자동화 |
-| `jin-onboard` | 상황별 사용 워크플로 안내 — init 완료 후 자동 실행, `jin onboard` 로 다시 보기 |
-| `jin-commit` | gitmoji 커밋 메시지 작성 후 커밋 |
-| `jin-interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
+| `claude-init` | 팀원 환경 초기화 자동화 |
+| `onboard` | 상황별 사용 워크플로 안내 — init 완료 후 자동 실행, `jin onboard` 로 다시 보기 |
+| `commit` | gitmoji 커밋 메시지 작성 후 커밋 |
+| `interview` | 구현 전 심층 인터뷰 → 스펙 문서 |
 | `mole-linear` | STEALTHMOLE 팀 Linear 이슈·댓글 작업 (As-is/To-be 양식, Plan/Done/BLOCKED 댓글) |
-| `jin-ambition` | Ambition 계획 3축 — Altitude(결과 위임·전제조건) · Depth(원자료·방법·외부 판정) · Range(동사 재서술 → 다른 분야 기법 + red team). 인자로 축 하나만 가능 |
-| `jin-sot-create` | SoT 문서셋 생성 — 세부항목별 파일 + fact ID 인용 + Index 생성기 |
-| `jin-sot-verify` | SoT 검증 (수동 호출) — Index·frontmatter·ID·drift, 오류 수정 |
-| `jin-maestro` | 오케스트레이션 세션 — 계획·분배·보고만, 작업은 하위 세션에 위임·끝나면 보관·후속은 같은 세션에 연속 위임, 작업별 ultracode/normal |
+| `ambition` | Ambition 계획 3축 — Altitude(결과 위임·전제조건) · Depth(원자료·방법·외부 판정) · Range(동사 재서술 → 다른 분야 기법 + red team). 인자로 축 하나만 가능 |
+| `sot-create` | SoT 문서셋 생성 — 세부항목별 파일 + fact ID 인용 + Index 생성기 |
+| `sot-verify` | SoT 검증 (수동 호출) — Index·frontmatter·ID·drift, 오류 수정 |
+| `maestro` | 오케스트레이션 세션 — 계획·분배·보고만, 작업은 하위 세션에 위임·끝나면 보관·후속은 같은 세션에 연속 위임, 작업별 ultracode/normal |
 
 ### 코드 품질 & 분석
 
 | 스킬 | 설명 |
 |------|------|
-| `jin-cleanser` | AI 생성 코드 슬롭 리뷰어 (deslop) |
-| `jin-codex-side` | Codex CLI 로 독립 second opinion (review / challenge / consult) |
-| `jin-deepinit` | 프로젝트 구조 분석 → AGENTS.md 생성 |
+| `cleanser` | AI 생성 코드 슬롭 리뷰어 (deslop) |
+| `codex-side` | Codex CLI 로 독립 second opinion (review / challenge / consult) |
+| `deepinit` | 프로젝트 구조 분석 → AGENTS.md 생성 |
 
 ### 유틸리티
 
@@ -245,22 +245,22 @@ jin-claude/
 ├── .claude-plugin/
 │   └── marketplace.json                 # 마켓플레이스 카탈로그
 ├── plugins/
-│   └── jin-claude/                      # 단일 플러그인
+│   └── jstack/                          # 단일 플러그인
 │       ├── .claude-plugin/
 │       │   └── plugin.json              # 플러그인 매니페스트
 │       ├── skills/                      # 스킬
-│       │   ├── jin-claude-init/
-│       │   ├── jin-cleanser/
-│       │   ├── jin-ambition/
-│       │   ├── jin-codex-side/
-│       │   ├── jin-commit/
-│       │   ├── jin-deepinit/
-│       │   ├── jin-interview/
-│       │   ├── jin-maestro/
-│       │   ├── jin-onboard/
+│       │   ├── claude-init/
+│       │   ├── cleanser/
+│       │   ├── ambition/
+│       │   ├── codex-side/
+│       │   ├── commit/
+│       │   ├── deepinit/
+│       │   ├── interview/
+│       │   ├── maestro/
+│       │   ├── onboard/
 │       │   ├── mole-linear/
-│       │   ├── jin-sot-create/
-│       │   ├── jin-sot-verify/
+│       │   ├── sot-create/
+│       │   ├── sot-verify/
 │       │   └── manage-skills/
 │       ├── scripts/                     # statusline + timer
 │       │   ├── statusline-command.sh    # statusline 렌더러

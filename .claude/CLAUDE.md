@@ -17,10 +17,10 @@
 @mcp-servers.md
 
 ## Completion
-Complete tasks in this order: deploy(execute) → verify → jin-commit.
+Complete tasks in this order: deploy(execute) → verify → commit.
 
 ## Commit Report
-[DONE] Commit with the jin-commit skill (loaded from plugin).
+[DONE] Commit with the commit skill (loaded from plugin).
 
 ## Project Specs
 - Backend: @backend-spec.md
@@ -30,7 +30,7 @@ Complete tasks in this order: deploy(execute) → verify → jin-commit.
 @memory-routing.md
 
 ## SoT (Source of Truth)
-SoT lives in `sot/` (entry point `sot/Index.md`), managed locally and excluded from Git via .gitignore. Create and maintain it with the `jin-sot-create` skill, which defines the categories and file layout.
+SoT lives in `sot/` (entry point `sot/Index.md`), managed locally and excluded from Git via .gitignore. Create and maintain it with the `sot-create` skill, which defines the categories and file layout.
 
 ## Issue Management
 - Use Linear for tracking.

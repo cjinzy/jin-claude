@@ -1,4 +1,4 @@
-"""Tests for jin-interview skill.
+"""Tests for interview skill.
 
 Validates:
 - Skill YAML frontmatter parsing
@@ -20,8 +20,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 HOME_CLAUDE = Path.home() / ".claude"
 
 SKILL_PATHS = [
-    PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md",
-    HOME_CLAUDE / "skills" / "jin-interview" / "SKILL.md",
+    PROJECT_ROOT / ".claude" / "skills" / "interview" / "SKILL.md",
+    HOME_CLAUDE / "skills" / "interview" / "SKILL.md",
 ]
 
 
@@ -91,7 +91,7 @@ def _parse_frontmatter(content: str) -> dict:
 
 
 class TestSkillFrontmatter:
-    """Tests for jin-interview skill YAML frontmatter parsing."""
+    """Tests for interview skill YAML frontmatter parsing."""
 
     @pytest.fixture(params=SKILL_PATHS, ids=["project", "home"])
     def skill_path(self, request: pytest.FixtureRequest) -> Path:
@@ -112,10 +112,10 @@ class TestSkillFrontmatter:
         assert isinstance(frontmatter, dict)
 
     def test_name_is_zy_interview(self, skill_path: Path) -> None:
-        """Skill name must be 'jin-interview', not 'mole-interview'."""
+        """Skill name must be 'interview', not 'mole-interview'."""
         content = skill_path.read_text(encoding="utf-8")
         frontmatter = _parse_frontmatter(content)
-        assert frontmatter["name"] == "jin-interview"
+        assert frontmatter["name"] == "interview"
 
     def test_has_description(self, skill_path: Path) -> None:
         """Skill must have a description field."""
@@ -153,7 +153,7 @@ class TestInterviewPhases:
     @pytest.fixture()
     def skill_content(self) -> str:
         """Read skill content from project repo."""
-        path = PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md"
+        path = PROJECT_ROOT / ".claude" / "skills" / "interview" / "SKILL.md"
         if not path.exists():
             pytest.skip("Skill file not found in project repo")
         return path.read_text(encoding="utf-8")
@@ -201,7 +201,7 @@ class TestSpecOutputFormat:
     @pytest.fixture()
     def skill_content(self) -> str:
         """Read skill content from project repo."""
-        path = PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md"
+        path = PROJECT_ROOT / ".claude" / "skills" / "interview" / "SKILL.md"
         if not path.exists():
             pytest.skip("Skill file not found in project repo")
         return path.read_text(encoding="utf-8")
@@ -236,8 +236,8 @@ class TestFileSynchronization:
 
     def test_skill_files_match(self) -> None:
         """Skill SKILL.md should be identical in both locations."""
-        project = PROJECT_ROOT / ".claude" / "skills" / "jin-interview" / "SKILL.md"
-        home = HOME_CLAUDE / "skills" / "jin-interview" / "SKILL.md"
+        project = PROJECT_ROOT / ".claude" / "skills" / "interview" / "SKILL.md"
+        home = HOME_CLAUDE / "skills" / "interview" / "SKILL.md"
         if not project.exists() or not home.exists():
             pytest.skip("One or both skill files not found")
         assert project.read_text(encoding="utf-8") == home.read_text(encoding="utf-8")

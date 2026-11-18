@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT="$SCRIPT_DIR/plugins/jin-claude/scripts/statusline-command.sh"
+SCRIPT="$SCRIPT_DIR/plugins/jstack/scripts/statusline-command.sh"
 
 passed=0
 failed=0

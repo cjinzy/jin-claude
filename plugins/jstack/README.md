@@ -1,0 +1,112 @@
+# jstack
+
+> Team-standard skills & hooks for Claude Code — **12 skills · 2 hooks**
+> Version: **6.0.0** · License: MIT · Marketplace: `jin-claudecode-mp`
+
+팀 공통 Claude Code 환경을 표준화하는 플러그인. 커밋/인터뷰/초기화 자동화, 코드 리뷰 스킬을 한 곳에서 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
+
+---
+
+## Install
+
+```sh
+claude plugin install "jstack@jin-claudecode-mp"
+```
+
+업데이트 시에도 `update`가 아닌 `install` 재호출을 권장합니다 (marketplace 캐시/버전 불일치 회피).
+
+---
+
+## Directory Layout
+
+```
+plugins/jstack/
+├── .claude-plugin/plugin.json     # 플러그인 메타데이터
+├── skills/<skill-name>/SKILL.md    # 스킬
+├── hooks/                          # hooks.json + hook 스크립트
+├── scripts/                        # statusline + 사용량 타이머
+├── launchd/ · systemd/             # 타이머 정의 (macOS · Linux)
+└── settings.json                   # 플러그인 설정
+```
+
+---
+
+## Skills (12)
+
+### Analysis (1)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `codex-side` | `jin codex` | Codex CLI 로 독립 second opinion (review / challenge / consult) |
+
+### Spec & Commit (3)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `interview` | — | In-depth interview to create a detailed spec |
+| `mole-linear` | `linear`, `이슈 등록`, `MOLE-` | STEALTHMOLE Linear issue/comment work with team format rules |
+| `commit` | `jin commit`, `commit` | gitmoji 커밋 메시지 작성 후 커밋 |
+
+### Ambition Planning (1)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `ambition` | plan 모드 ambition, `ambition`, `/jstack:ambition [altitude\|depth\|range]` | 3축 단일 스킬: 결과 위임 · 전문가 깊이 · 다른 분야 기법 + red team |
+
+### Code Quality (1)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `cleanser` | `jin cleanser`, `jin deslop` | AI 생성 코드 슬롭 리뷰어 — 불필요 코멘트/과잉 에러 처리/미사용 임포트 탐지 |
+
+### Knowledge & Discovery (2)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `deepinit` | `jin deepinit`, `프로젝트 분석` | 프로젝트 구조 분석 → 스킬 안내 `AGENTS.md` 생성 |
+| `sot-create` | `jin sot` | SoT 문서셋 생성 — 세부항목별 파일, fact ID, `sot_index.py` 색인 생성 |
+| `sot-verify` | `/jstack:sot-verify` | SoT 검증 (수동) — `sot_validate.py` 구조·drift 검사, 오류 수정 |
+
+### Environment Init (2)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `claude-init` | `jin init`, `초기화`, `환경 세팅` | 팀원 Claude Code 환경 초기화 — plugin 설치/settings/MCP/hooks/skills 동기화 + 설치 환경 충돌 audit (`audit_conflicts.py`, 고른 fix 만 적용) |
+| `onboard` | `jin onboard`, `온보딩`, `사용법` | 상황별 워크플로 안내 (새 프로젝트·기능·버그·큰 작업·리뷰·이슈·환경) — init 완료 후 자동 실행 |
+
+### Orchestration (1)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `maestro` | `/jstack:maestro` | 오케스트레이션 세션 — 계획·분배·보고만, 작업은 하위 세션에 위임·끝나면 보관·후속은 같은 세션에 연속 위임, 작업별 ultracode/normal |
+
+### Meta (1)
+
+| Slug | Trigger | Description |
+|------|---------|-------------|
+| `manage-skills` | — | 세션 변경사항 분석 → 검증 스킬 누락 탐지 → 스킬 생성/업데이트 + CLAUDE.md 관리 |
+
+---
+
+## Hooks (2)
+
+`hooks/hooks.json` 에 등록 — Claude Code 는 플러그인 루트의 이 파일만 로드한다.
+
+| File | Event | Role |
+|------|-------|------|
+| `hooks/session_init.py` | `SessionStart` | 구버전 `~/.claude/skills` 사본 백업 이동 + 사용량 타이머 유실 시 재등록 + marketplace 저장소 자동 업데이트 |
+| `hooks/ambition_plan.py` | `UserPromptSubmit` | plan 모드면 ambition 계획 여부 질문 지시, 프롬프트에 `ambition`/`앰비션` 이 있으면 묻지 않고 ambition 로드 지시 |
+
+> `hooks/keyword_detector.py` 는 미등록 상태(출력 형식이 hook 규격과 다름). 키워드 테이블은 상단 `KEYWORDS` dict.
+
+---
+
+## Project Conventions (요약)
+
+- **Backend**: Python 3.12 · uv · Ruff · ty (type checker) · loguru
+- **Frontend**: React + TypeScript + Vite · fluentui-system-icons · npm
+- **Docs**: docstring + traceback 필수, 주석은 WHY만
+- **Git**: `jin commit` 으로 gitmoji 메시지 작성·커밋
+- **Tool 우선순위**: Serena(심볼) → context-mode(대용량 출력) → Read(편집 대상만)
+
+자세한 팀 가이드는 repo root의 `CLAUDE.md` 참조.
