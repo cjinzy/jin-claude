@@ -8,6 +8,8 @@ argument-hint: "[altitude|depth|range]"
 
 계획을 더 크게가 아니라 더 높게·깊게·넓게. 출처: Felix Rieseberg, "How to be more ambitious" (2026-10).
 
+**plan 모드 진입**: plan 모드가 아니면 먼저 EnterPlanMode 를 호출한다 (사용자 승인 1회). 거절되면 현재 모드로 계속한다.
+
 **축 선택**: 인자 `$ARGUMENTS` 가 `altitude`·`depth`·`range` 중 하나면 그 축만, 비었으면 세 축 모두 적용한다.
 
 **계획 반영**: 계획에 `## Ambition` 섹션 — 적용한 축마다 한 항목. 해당 없으면 `N/A — 이유`.
