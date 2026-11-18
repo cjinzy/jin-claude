@@ -193,8 +193,8 @@ interactive channel → apply neither; list each pending edit in the summary.
 ```markdown
 
 ## SoT
-`sot/` is the Source of Truth; `sot/Index.md` lists every doc. Validation is manual:
-`/jstack:sot-verify`. Update protocol: `sot/rules/sot-maintenance.md`.
+`sot/` is the Source of Truth; `sot/Index.md` lists every doc. Read it before planning or
+editing, then the docs covering the area you touch. Validation is manual: `/jstack:sot-verify`. Update protocol: `sot/rules/sot-maintenance.md`.
 ```
 
 `sot/` already exists → add only what is missing and regenerate `Index.md`, then run Step 5.

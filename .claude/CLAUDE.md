@@ -31,6 +31,7 @@ Complete tasks in this order: deploy(execute) → verify → commit.
 
 ## SoT (Source of Truth)
 SoT lives in `sot/` (entry point `sot/Index.md`), managed locally and excluded from Git via .gitignore. Create and maintain it with the `sot-create` skill, which defines the categories and file layout.
+`sot/Index.md` exists → read it before planning or editing, then the docs covering the area you touch. A change that invalidates a doc → update it per `sot/rules/sot-maintenance.md`.
 
 ## Issue Management
 - Use Linear for tracking.
