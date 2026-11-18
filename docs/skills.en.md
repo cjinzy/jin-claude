@@ -189,7 +189,7 @@ What each of the 13 jstack skills does, step by step. Call them with `/jstack:<s
 **How it works**
 1. With a path, scans everything under it.
 2. Without a path, scans uncommitted changes plus untracked files. If both are empty, scans the last commit (vs `HEAD~1`).
-3. Runs `slop_patterns.py` for static checks: debug output (`print(`, `console.log(`, `debugger`, `pdb`, `breakpoint(`), code commented out with `#`, and TODO/FIXME-style comments. Python patterns apply only to `.py` files, JS patterns (`console.log`, `debugger`) only to JS/TS files.
+3. Runs `slop_patterns.py` for static checks: debug output (`print(`, `console.log(`, `debugger`, `pdb`, `breakpoint(`), code commented out with `#`, and TODO/FIXME-style comments (`#`, plus `//` in JS/TS). Python patterns apply only to `.py` files, JS patterns (`console.log`, `debugger`) only to JS/TS files.
 4. If `ruff` is installed, also finds unused Python imports (F401). If not, skips that and says so in the report.
 5. Claude reads the files for what regex misses: obvious comments, excessive or empty exception handling, boilerplate docstrings, single-use wrappers, self-evident type annotations.
 6. In diff mode, keeps only changed lines. Untracked files count in full.

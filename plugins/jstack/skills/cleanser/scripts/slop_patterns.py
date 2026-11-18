@@ -21,6 +21,8 @@ PYTHON_EXTENSION = ".py"
 PYTHON_EXTENSIONS = frozenset({PYTHON_EXTENSION})
 JS_EXTENSIONS = frozenset({".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"})
 SCAN_EXTENSIONS = PYTHON_EXTENSIONS | JS_EXTENSIONS
+TODO_KEYWORDS = "TODO|FIXME|HACK|XXX|TEMP|TEMPORARY"
+TODO_SUGGESTION = "TODO/FIXME 등의 임시 주석이 남아있습니다. 처리하거나 제거하세요."
 RUFF_SKIPPED_NOTICE = "> ruff 미설치 — unused-import(F401) 검사 생략."
 EXIT_OK = 0
 EXIT_USAGE = 2
@@ -147,12 +149,14 @@ STATIC_PATTERNS: dict[
     ],
     SlopCategory.UNNECESSARY_COMMENT: [
         (
-            re.compile(
-                r"^\s*#\s*(?:TODO|FIXME|HACK|XXX|TEMP|TEMPORARY)\b",
-                re.IGNORECASE,
-            ),
-            "TODO/FIXME 등의 임시 주석이 남아있습니다. 처리하거나 제거하세요.",
+            re.compile(rf"^\s*#\s*(?:{TODO_KEYWORDS})\b", re.IGNORECASE),
+            TODO_SUGGESTION,
             None,
+        ),
+        (
+            re.compile(rf"^\s*//\s*(?:{TODO_KEYWORDS})\b", re.IGNORECASE),
+            TODO_SUGGESTION,
+            JS_EXTENSIONS,
         ),
     ],
 }

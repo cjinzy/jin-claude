@@ -189,7 +189,7 @@ jstack 스킬 13개가 각각 어떻게 동작하는지 설명합니다. 호출�
 **동작**
 1. 경로를 주면 그 경로 전체를 본다.
 2. 경로가 없으면 미커밋 변경과 untracked 파일을 본다. 둘 다 없으면 최근 커밋(`HEAD~1` 대비)을 본다.
-3. `slop_patterns.py` 로 정적 스캔한다: 디버그 출력(`print(`·`console.log(`·`debugger`·`pdb`·`breakpoint(`), `#` 로 주석 처리된 코드, TODO·FIXME 류 주석. Python 패턴은 `.py` 에만, JS 패턴(`console.log`·`debugger`)은 JS/TS 파일에만 적용한다.
+3. `slop_patterns.py` 로 정적 스캔한다: 디버그 출력(`print(`·`console.log(`·`debugger`·`pdb`·`breakpoint(`), `#` 로 주석 처리된 코드, TODO·FIXME 류 주석(`#`, JS/TS 는 `//` 도). Python 패턴은 `.py` 에만, JS 패턴(`console.log`·`debugger`)은 JS/TS 파일에만 적용한다.
 4. `ruff` 가 있으면 Python 미사용 임포트(F401)도 찾는다. 없으면 건너뛰고 리포트에 적는다.
 5. Claude 가 파일을 읽고 정규식이 못 잡는 것을 찾는다: 자명한 주석, 과잉·빈 예외 처리, 상투적 docstring, 한 곳에서만 쓰는 래퍼, 뻔한 타입 표기.
 6. diff 모드에선 변경된 라인만 남긴다. untracked 파일은 전체가 대상이다.

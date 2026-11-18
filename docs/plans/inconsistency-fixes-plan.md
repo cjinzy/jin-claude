@@ -23,3 +23,12 @@
 ## 4번 메모
 
 등록 검토 결과: 부분 문자열 매칭이라 `commit` 이 "커밋하지 마" 에도 걸리고, `commit` 스킬은 확인 없이 커밋한다. 사용자 결정: 등록하지 않음.
+
+## 추가 결정 (v6.3.1)
+
+| # | 항목 | 결정 |
+|---|---|---|
+| 13 | cleanser 가 JS/TS `// TODO` 미감지 | JS/TS 에서 `//` 도 감지 (테스트 먼저) |
+| 14 | deepinit monorepo 판정이 `packages/.cache` 등도 셈 | 숨김·`IGNORE_DIRS` 제외 (테스트 먼저) |
+| 15 | cleanser 정적 스캔이 깨끗하면 합칠 표 없음 | 문서에 "없으면 같은 형식으로 새로 만든다" |
+| 16 | `plugins/jstack/systemd/fetch-claude-usage.timer` 미사용 (5분 고정) | 삭제 — `install-timer.sh` 가 주기 반영해 생성 |

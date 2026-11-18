@@ -175,6 +175,15 @@ class TestDetectStructure:
 
         assert structure == "monorepo"
 
+    def test_숨김_폴더는_하위_패키지로_세지_않음(self, tmp_path: Path) -> None:
+        """packages/.cache 같은 숨김·무시 폴더는 monorepo 판정에서 제외한다."""
+        packages = tmp_path / "packages"
+        (packages / "a").mkdir(parents=True)
+        (packages / ".cache").mkdir()
+        (packages / "node_modules").mkdir()
+
+        assert detect_structure(tmp_path) != "monorepo"
+
     def test_monorepo_with_multiple_package_json(self, tmp_path: Path) -> None:
         """루트 하위에 복수의 package.json이 있으면 monorepo로 판별한다."""
         svc_a = tmp_path / "service-a"

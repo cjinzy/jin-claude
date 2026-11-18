@@ -17,7 +17,7 @@ AI 생성 코드의 슬롭을 찾아 리포트만 한다. **삭제/수정은 하
 | leftover-debug | critical | 스크립트: `print(`, `pdb`, `breakpoint(` (Python) / `console.log(`, `debugger` (JS/TS) |
 | dead-code | warning | 스크립트: `# def/class/if/for/while/return/import` 로 시작하는 주석 (Python). 그 외 언어·미사용 함수는 시맨틱 |
 | unused-import | warning | 스크립트: ruff F401 (Python, ruff 설치 시) |
-| unnecessary-comment | warning | 스크립트: `#` TODO/FIXME/HACK/XXX/TEMP/TEMPORARY 주석 (확장자 무관). 자명한 주석(`# 리스트를 반복한다`)은 시맨틱 |
+| unnecessary-comment | warning | 스크립트: `#` TODO/FIXME/HACK/XXX/TEMP/TEMPORARY 주석 (확장자 무관), JS/TS 는 `//` 도. 자명한 주석(`# 리스트를 반복한다`)은 시맨틱 |
 | excessive-error-handling | warning | 시맨틱: 발생 불가능한 예외 처리, 빈 except |
 | boilerplate-docstring | info | 시맨틱: `"""This function does X."""` 류 |
 | over-abstraction | info | 시맨틱: 한 곳에서만 쓰는 단순 래퍼 |
@@ -60,7 +60,7 @@ hunk 헤더 `@@ -a,b +c,d @@` → 라인 `c` ~ `c+d-1` (d 생략 = 1, d=0 = 삭�
 
 ### Step 4: 리포트
 
-스크립트 출력을 기반으로 시맨틱 결과를 같은 `이슈 목록` 테이블에 합친다 (심각도 내림차순 재번호, `요약` 건수 재집계). 끝에 카테고리별 상세를 붙인다:
+스크립트 출력을 기반으로 시맨틱 결과를 같은 `이슈 목록` 테이블에 합친다 (심각도 내림차순 재번호, `요약` 건수 재집계). 정적 스캔이 깨끗해 테이블이 없으면 같은 형식으로 새로 만든다. 끝에 카테고리별 상세를 붙인다:
 
 ```markdown
 ### 카테고리별 상세

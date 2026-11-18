@@ -322,6 +322,11 @@ def _detect_text_frameworks(
             detected[pkg_name] = framework_name
 
 
+def _is_package_dir(path: Path) -> bool:
+    """숨김·`IGNORE_DIRS` 가 아닌 디렉토리인지 — 하위 패키지 후보."""
+    return path.is_dir() and not path.name.startswith(".") and path.name not in IGNORE_DIRS
+
+
 def detect_structure(project_dir: Path) -> str:
     """프로젝트 디렉토리 구조 유형을 판별한다.
 
@@ -342,14 +347,14 @@ def detect_structure(project_dir: Path) -> str:
     for indicator in monorepo_indicators:
         indicator_dir = project_dir / indicator
         if indicator_dir.is_dir():
-            subdirs = [d for d in indicator_dir.iterdir() if d.is_dir()]
+            subdirs = [d for d in indicator_dir.iterdir() if _is_package_dir(d)]
             if len(subdirs) >= 2:
                 return "monorepo"
 
     # 하위 디렉토리에 복수의 package.json 확인
     package_json_count = 0
     for child in project_dir.iterdir():
-        if child.is_dir() and not child.name.startswith(".") and child.name not in IGNORE_DIRS:
+        if _is_package_dir(child):
             if (child / "package.json").exists():
                 package_json_count += 1
     if package_json_count >= 2:

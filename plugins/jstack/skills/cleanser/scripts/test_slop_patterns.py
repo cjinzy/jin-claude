@@ -182,6 +182,22 @@ class TestDetectStaticPatterns:
 
         assert len(detect_static_patterns(test_file)) == 1
 
+    def test_JS_슬래시_TODO_감지(self, tmp_path) -> None:
+        """JS/TS 의 `// TODO` 류 주석을 unnecessary-comment 로 감지한다."""
+        test_file = tmp_path / "app.ts"
+        test_file.write_text("// TODO: 정리\nconst a = 1; // FIXME 아님\n", encoding="utf-8")
+
+        issues = detect_static_patterns(test_file)
+
+        assert [i.line for i in issues] == [1]
+
+    def test_슬래시_TODO_는_py_에서_무시(self, tmp_path) -> None:
+        """`//` 는 Python 주석이 아니므로 .py 에서 감지하지 않는다."""
+        test_file = tmp_path / "app.py"
+        test_file.write_text("x = 1 // 2\n// TODO\n", encoding="utf-8")
+
+        assert detect_static_patterns(test_file) == []
+
 
 class TestParseRuffOutput:
     """parse_ruff_output 함수 테스트."""
