@@ -13,7 +13,7 @@ from pathlib import Path
 
 from report_changes import backup_path, text_diff, track_write
 
-REPO_URL = "https://github.com/cjinzy/jin-claude.git"
+REPO_URL = "https://github.com/cjinzy/jstack.git"
 REPO_DIR = Path.home() / ".claude" / ".jin-claude-repo"
 CLAUDE_DIR = Path.home() / ".claude"
 VENV_DIR = Path.home() / ".claude" / ".venv"

@@ -1,8 +1,8 @@
-# jin-claude
+# jstack
 
 Claude Code 팀 표준 환경 플러그인. 13개 스킬, 2개 hook, statusline 유틸리티를 단일 플러그인으로 제공합니다. 멀티 에이전트 실행은 Claude Code 내장 Agent/Workflow 도구를 사용합니다.
 
-> **현재 버전**: `6.0.0` · 마켓플레이스 슬러그: `jin-claudecode-mp`
+> **현재 버전**: `6.0.1` · 마켓플레이스 슬러그: `jin-claudecode-mp`
 
 ## 빠른 시작
 
@@ -10,7 +10,7 @@ Claude Code 팀 표준 환경 플러그인. 13개 스킬, 2개 hook, statusline 
 
 ```bash
 # 1. Marketplace 등록
-claude plugin marketplace add cjinzy/jin-claude
+claude plugin marketplace add cjinzy/jstack
 
 # 2. Plugin 설치
 claude plugin install jstack@jin-claudecode-mp
@@ -55,7 +55,7 @@ Claude Code 내에서 `/jstack:claude-init`을 실행하면 마켓플레이스, 
 
 #### Step 3 — Repo 동기화 (`scripts/sync_repo.py`)
 
-`https://github.com/cjinzy/jin-claude.git`에서 다음을 사용자 홈으로 복사·갱신합니다.
+`https://github.com/cjinzy/jstack.git`에서 다음을 사용자 홈으로 복사·갱신합니다.
 
 | 대상 | 위치 |
 |------|------|
@@ -241,7 +241,7 @@ uv run fetch-claude-usage
 ## 프로젝트 구조
 
 ```
-jin-claude/
+jstack/
 ├── .claude-plugin/
 │   └── marketplace.json                 # 마켓플레이스 카탈로그
 ├── plugins/

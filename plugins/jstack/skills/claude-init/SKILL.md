@@ -62,7 +62,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/sync_repo.py" "$INTERVAL"
 ```
 
 동작:
-- `https://github.com/cjinzy/jin-claude.git` 을 `~/.claude/.jin-claude-repo/` 에 clone, 있으면 origin 을 https 로 바꾼 뒤 `pull --ff-only`
+- `https://github.com/cjinzy/jstack.git` 을 `~/.claude/.jin-claude-repo/` 에 clone, 있으면 origin 을 https 로 바꾼 뒤 `pull --ff-only`
 - pull 실패 시 기존 clone 을 `.jin-claude-repo_backup_<YYYYMMDD>` 로 옮기고(경고 출력) 다시 clone
 - 구버전 플러그인 캐시(`~/.claude/plugins/cache/jin-claudecode-mp/jstack/`) 정리
 - statusline, `CLAUDE.md`, 보조 문서를 `~/.claude/` 에 복사 (변경 시 백업)

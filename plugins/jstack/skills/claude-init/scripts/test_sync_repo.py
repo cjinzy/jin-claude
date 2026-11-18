@@ -35,7 +35,7 @@ class TestCloneOrPull:
         return repo
 
     def test_repo_url_is_https(self) -> None:
-        assert sync_repo.REPO_URL == "https://github.com/cjinzy/jin-claude.git"
+        assert sync_repo.REPO_URL == "https://github.com/cjinzy/jstack.git"
 
     def test_switches_origin_to_https_before_pull(self, repo: Path) -> None:
         with patch("sync_repo.run_git", return_value=_make_result(0)) as git:
